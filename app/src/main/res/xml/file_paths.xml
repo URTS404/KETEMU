@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lokasi file yang boleh dibagikan lewat FileProvider.
+  Foto barang disimpan di cache/photos/ sebelum diunggah ke Supabase Storage.
+-->
+<paths>
+    <cache-path
+        name="ketemu_photos"
+        path="photos/" />
+    <files-path
+        name="ketemu_internal"
+        path="photos/" />
+</paths>

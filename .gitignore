@@ -1,0 +1,31 @@
+# ===== Gradle =====
+.gradle/
+build/
+.kotlin/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ===== Android Studio / IntelliJ =====
+.idea/
+*.iml
+captures/
+.navigation/
+
+# ===== Rahasia (JANGAN pernah di-commit) =====
+# Berisi sdk.dir, SUPABASE_URL, SUPABASE_ANON_KEY
+local.properties
+secrets.properties
+*.jks
+*.keystore
+
+# ===== Build output Android =====
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+
+# ===== OS =====
+Thumbs.db
+.DS_Store

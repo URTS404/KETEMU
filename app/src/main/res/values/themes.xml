@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Tema XML hanya sebagai "wadah" Activity.
+      Seluruh warna/tipografi produk diatur di Compose (ui/theme/Theme.kt) agar
+      identitas Teal + Orange dari logo Ketemu konsisten (PRD bagian UI/UX).
+    -->
+    <style name="Theme.Ketemu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFF4FBFA</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

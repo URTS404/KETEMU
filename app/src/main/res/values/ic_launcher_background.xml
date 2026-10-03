@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warna latar ikon adaptif, memakai Teal utama palet Ketemu (#158A90). -->
+<resources>
+    <color name="ic_launcher_background">#158A90</color>
+</resources>
