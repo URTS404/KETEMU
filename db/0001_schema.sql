@@ -7,7 +7,8 @@
 --    UserProfile -> public.profiles
 -- ============================================================================
 
-create extension if not exists pgcrypto;
+-- pgcrypto tidak diperlukan: kode pengambilan memakai md5() bawaan PostgreSQL,
+-- sehingga tidak bergantung pada schema `extensions` saat trigger berjalan.
 
 -- ---------- Tipe enum (aman dijalankan ulang) ----------
 do $$
@@ -223,7 +224,7 @@ as $$
 begin
     -- kode pengambilan hanya untuk klaim yang disetujui
     if new.status = 'DISETUJUI' and new.pickup_code is null then
-        new.pickup_code := upper(substr(encode(digest(new.id::text, 'sha256'), 'hex'), 1, 6));
+        new.pickup_code := upper(substr(md5(new.id::text), 1, 6));
     end if;
 
     if new.status is distinct from old.status and new.status <> 'MENUNGGU' then
