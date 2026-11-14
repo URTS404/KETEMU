@@ -62,7 +62,7 @@ class ForgotPasswordViewModelTest {
     fun kirimTautanResetBerhasil() {
         val viewModel = buildViewModel()
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onSendReset()
 
         assertNull(viewModel.uiState.value.error)
@@ -74,7 +74,7 @@ class ForgotPasswordViewModelTest {
         val repository = FakeAuthRepository().apply { networkError = true }
         val viewModel = buildViewModel(repository)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onSendReset()
 
         assertEquals(ForgotPasswordError.NETWORK, viewModel.uiState.value.error)

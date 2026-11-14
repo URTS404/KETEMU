@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.BuildConfig
 import org.umn.application_ketemu.core.util.isCampusEmail
+import org.umn.application_ketemu.data.auth.LocalAuthRepository
+import org.umn.application_ketemu.data.auth.TrialAccount
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.repository.AuthErrorReason
 import org.umn.application_ketemu.domain.repository.AuthRepository
@@ -50,12 +52,17 @@ data class LoginUiState(
  *
  * Validasi lokal (domain kampus + panjang kata sandi) tetap dipertahankan agar
  * umpan balik cepat dan bisa diuji tanpa jaringan. Pengecekan kredensial
- * sesungguhnya dilakukan Supabase Auth lewat [AuthRepository].
+ * sesungguhnya dilakukan oleh [AuthRepository] — pada fase UTS implementasinya
+ * adalah [LocalAuthRepository] (akun dummy aplikasi, tanpa jaringan).
+ *
+ * @param trialAccounts akun contoh yang ditampilkan di layar agar pengguna bisa
+ *   langsung menyalin email + kata sandi tanpa membuka kode sumber.
  */
 class LoginViewModel(
     private val session: SessionStore,
     private val authRepository: AuthRepository,
-    val campusDomain: String = BuildConfig.CAMPUS_EMAIL_DOMAIN
+    val campusDomain: String = BuildConfig.CAMPUS_EMAIL_DOMAIN,
+    val trialAccounts: List<TrialAccount> = LocalAuthRepository.TRIAL_ACCOUNTS
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -73,7 +80,12 @@ class LoginViewModel(
         _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
-    /** Mengecek kredensial; bila lolos, sesi dibuka dan gerbang navigasi terbuka. */
+    /**
+     * Masuk dengan kredensial akun terdaftar.
+     *
+     * Pemeriksaan sesungguhnya ada di [AuthRepository]: akun harus terdaftar DAN
+     * kata sandinya harus cocok. Tidak ada jalur pintas yang melewati kata sandi.
+     */
     fun onSignIn() {
         val state = _uiState.value
 

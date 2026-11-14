@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -74,7 +73,7 @@ fun RegisterScreen(
             if (uiState.isAwaitingEmailConfirmation) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
@@ -112,7 +111,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onFullNameChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.register_name_label)) },
                     placeholder = { Text(stringResource(R.string.register_name_hint)) },
                     isError = uiState.error == RegisterError.NAME_EMPTY
@@ -123,7 +122,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onEmailChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.login_email_label)) },
                     placeholder = { Text(stringResource(R.string.login_email_hint)) },
                     isError = uiState.error == RegisterError.EMAIL_EMPTY ||
@@ -137,7 +136,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onNimChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.register_nim_label)) },
                     placeholder = { Text(stringResource(R.string.register_nim_hint)) },
                     isError = uiState.error == RegisterError.NIM_EMPTY,
@@ -149,7 +148,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onPhoneChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.register_phone_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                 )
@@ -158,7 +157,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.register_password_label)) },
                     isError = uiState.error == RegisterError.PASSWORD_TOO_SHORT,
                     visualTransformation = if (uiState.isPasswordVisible) {
@@ -185,7 +184,7 @@ fun RegisterScreen(
                     onValueChange = viewModel::onConfirmPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     label = { Text(stringResource(R.string.register_confirm_label)) },
                     isError = uiState.error == RegisterError.PASSWORD_MISMATCH,
                     visualTransformation = if (uiState.isPasswordVisible) {

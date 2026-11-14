@@ -35,9 +35,9 @@ data class ForgotPasswordUiState(
 /**
  * ViewModel "Lupa Kata Sandi".
  *
- * Supabase tidak membedakan email terdaftar/tidak saat mengirim tautan reset
- * (untuk mencegah enumerasi akun), jadi layar hanya menampilkan konfirmasi
- * "tautan terkirim" setelah permintaan berhasil dikirim.
+ * Pada fase UTS belum ada layanan email, jadi permintaan reset hanya dicatat
+ * secara lokal dan layar menampilkan konfirmasi. Data akun uji coba (email +
+ * kata sandi) ditampilkan di layar Login agar pengguna tetap bisa masuk.
  */
 class ForgotPasswordViewModel(
     private val authRepository: AuthRepository,

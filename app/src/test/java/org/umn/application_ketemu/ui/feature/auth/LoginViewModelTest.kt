@@ -62,7 +62,7 @@ class LoginViewModelTest {
         val session = SessionStore()
         val viewModel = buildViewModel(session)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onPasswordChange("12345")
         viewModel.onSignIn()
 
@@ -87,29 +87,29 @@ class LoginViewModelTest {
     fun kredensialTerdaftarMembukaSesi() {
         val session = SessionStore()
         val repository = FakeAuthRepository().apply {
-            addUser("budi.santoso@umn.ac.id", "rahasia123")
+            addUser("budi.santoso@student.umn.ac.id", "rahasia123")
         }
         val viewModel = buildViewModel(session, repository)
 
         // Email diberi spasi + huruf besar: harus dinormalkan sebelum dikirim.
-        viewModel.onEmailChange("  Budi.Santoso@UMN.ac.id ")
+        viewModel.onEmailChange("  Budi.Santoso@STUDENT.UMN.ac.id ")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onSignIn()
 
         assertNull(viewModel.uiState.value.error)
         assertTrue(session.isLoggedIn.value)
-        assertEquals("budi.santoso@umn.ac.id", session.currentUser.value.email)
+        assertEquals("budi.santoso@student.umn.ac.id", session.currentUser.value.email)
     }
 
     @Test
     fun kredensialSalahDitolak() {
         val session = SessionStore()
         val repository = FakeAuthRepository().apply {
-            addUser("budi.santoso@umn.ac.id", "rahasia123")
+            addUser("budi.santoso@student.umn.ac.id", "rahasia123")
         }
         val viewModel = buildViewModel(session, repository)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onPasswordChange("salah123")
         viewModel.onSignIn()
 
@@ -123,7 +123,7 @@ class LoginViewModelTest {
         val repository = FakeAuthRepository().apply { networkError = true }
         val viewModel = buildViewModel(session, repository)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onSignIn()
 
@@ -138,7 +138,7 @@ class LoginViewModelTest {
         viewModel.onSignIn()
         assertEquals(LoginError.EMAIL_EMPTY, viewModel.uiState.value.error)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         assertNull(viewModel.uiState.value.error)
     }
 
@@ -148,7 +148,7 @@ class LoginViewModelTest {
 
         assertFalse(viewModel.uiState.value.canSubmit)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         assertFalse(viewModel.uiState.value.canSubmit)
 
         viewModel.onPasswordChange("rahasia123")
@@ -159,11 +159,11 @@ class LoginViewModelTest {
     fun keluarMenutupKembaliSesi() {
         val session = SessionStore()
         val repository = FakeAuthRepository().apply {
-            addUser("budi.santoso@umn.ac.id", "rahasia123")
+            addUser("budi.santoso@student.umn.ac.id", "rahasia123")
         }
         val viewModel = buildViewModel(session, repository)
 
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onSignIn()
         assertTrue(session.isLoggedIn.value)

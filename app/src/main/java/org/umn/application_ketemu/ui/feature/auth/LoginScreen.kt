@@ -1,7 +1,7 @@
 package org.umn.application_ketemu.ui.feature.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -18,14 +17,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
+import org.umn.application_ketemu.data.auth.TrialAccount
 
 /**
  * Halaman Login — pintu masuk closed-ecosystem kampus (PRD bagian Autentikasi).
@@ -73,7 +74,7 @@ fun LoginScreen(
                 onValueChange = viewModel::onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 label = { Text(stringResource(R.string.login_email_label)) },
                 placeholder = {
                     Text(stringResource(R.string.login_email_hint))
@@ -88,7 +89,7 @@ fun LoginScreen(
                 onValueChange = viewModel::onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 label = { Text(stringResource(R.string.login_password_label)) },
                 isError = uiState.error == LoginError.PASSWORD_TOO_SHORT,
                 visualTransformation = if (uiState.isPasswordVisible) {
@@ -130,7 +131,9 @@ fun LoginScreen(
                 )
             }
 
-            InfoCard()
+            // Akun uji coba: ditampilkan langsung di layar agar pengguna/penguji
+            // tidak perlu membuka kode sumber untuk mengetahui email & sandinya.
+            TrialAccountsCard(accounts = viewModel.trialAccounts)
 
             TextButton(
                 onClick = onForgotPasswordClick,
@@ -170,48 +173,84 @@ fun LoginScreen(
  */
 @Composable
 private fun BrandHeader() {
-    Surface(
-        modifier = Modifier.size(88.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.primary
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = "K",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-    }
+        Image(
+            painter = painterResource(R.drawable.ketemu_logo),
+            contentDescription = stringResource(R.string.app_name),
+            modifier = Modifier.size(96.dp)
+        )
 
-    Text(
-        text = stringResource(R.string.login_title),
-        style = MaterialTheme.typography.headlineSmall
-    )
-    Text(
-        text = stringResource(R.string.login_subtitle),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+        Text(
+            text = stringResource(R.string.login_title),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Text(
+            text = stringResource(R.string.login_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
-/** Catatan keterbatasan tahap ini, memakai warna aksen (Orange container). */
+/**
+ * Daftar akun yang sudah terdaftar pada aplikasi, lengkap dengan kata sandinya.
+ *
+ * Ditampilkan sebagai kartu (bukan tombol) supaya tidak ada jalan pintas: siapa
+ * pun tetap harus mengetik email + kata sandi pada form di atas untuk masuk.
+ */
 @Composable
-private fun InfoCard() {
+private fun TrialAccountsCard(accounts: List<TrialAccount>) {
+    if (accounts.isEmpty()) return
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer
         )
     ) {
-        Text(
-            text = stringResource(R.string.login_demo_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.padding(16.dp)
-        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.login_trial_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = stringResource(R.string.login_trial_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
+            accounts.forEach { account ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "${account.roleLabel} · ${account.fullName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        text = stringResource(R.string.login_trial_email, account.email),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        text = stringResource(R.string.login_trial_password, account.password),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+        }
     }
 }
 

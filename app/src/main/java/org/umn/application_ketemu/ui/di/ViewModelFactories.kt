@@ -11,6 +11,8 @@ import org.umn.application_ketemu.ui.feature.auth.RegisterViewModel
 import org.umn.application_ketemu.ui.feature.create.CreateReportViewModel
 import org.umn.application_ketemu.ui.feature.detail.ReportDetailViewModel
 import org.umn.application_ketemu.ui.feature.home.HomeViewModel
+import org.umn.application_ketemu.ui.feature.message.ConversationViewModel
+import org.umn.application_ketemu.ui.feature.message.MessagesViewModel
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsViewModel
 
 /**
@@ -67,7 +69,8 @@ fun homeViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
             HomeViewModel(
                 reportRepository = container.reportRepository,
                 networkMonitor = container.networkMonitor,
-                session = container.session
+                session = container.session,
+                conversationRepository = container.conversationRepository
             )
         }
     }
@@ -101,6 +104,25 @@ fun reportDetailViewModelFactory(
         ReportDetailViewModel(
             reportRepository = container.reportRepository,
             reportId = reportId
+        )
+    }
+}
+
+fun messagesViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            MessagesViewModel(conversationRepository = container.conversationRepository)
+        }
+    }
+
+fun conversationViewModelFactory(
+    container: AppContainer,
+    threadId: String
+): ViewModelProvider.Factory = viewModelFactory {
+    initializer {
+        ConversationViewModel(
+            conversationRepository = container.conversationRepository,
+            threadId = threadId
         )
     }
 }

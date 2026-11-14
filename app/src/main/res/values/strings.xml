@@ -31,10 +31,33 @@
     <string name="report_timeline_waiting">Menunggu</string>
     <string name="report_timeline_recorded">Tercatat di sistem</string>
     <string name="report_photo_empty">Foto belum tersedia</string>
+    <string name="report_description_empty">Belum ada deskripsi.</string>
 
     <!-- ===== Beranda ===== -->
     <string name="home_title">Ketemu</string>
+    <string name="home_greeting">Halo, %1$s</string>
+    <string name="home_stat_total">Laporan</string>
+    <string name="home_stat_ready">Siap diambil</string>
+    <string name="home_stat_pending">Menunggu</string>
+    <string name="home_announcement_label">Pengumuman</string>
+    <string name="home_announcement_title">Layanan Pos Barang Temuan</string>
+    <string name="home_announcement_body">Pos Basement buka 08.00–16.00. Bawa KTM saat mengambil barang Anda.</string>
+
+    <!-- ===== Notifikasi Beranda ===== -->
+    <string name="home_notification_bell">Notifikasi</string>
+    <string name="home_notification_title">Notifikasi</string>
+    <string name="home_notification_empty">Belum ada hal baru.</string>
+    <string name="home_notification_messages">%1$d pesan belum dibaca</string>
+    <string name="home_notification_messages_hint">Buka layar Pesan untuk membalas.</string>
+    <string name="home_notification_ready">%1$d barang siap diambil</string>
+    <string name="home_notification_ready_hint">Sudah dititipkan di pos, bawa KTM saat mengambil.</string>
     <string name="home_search_hint">Cari nama barang…</string>
+    <string name="home_filter_title">Filter</string>
+    <string name="home_filter_type">Jenis</string>
+    <string name="home_filter_category">Kategori</string>
+    <string name="home_filter_category_all">Semua kategori</string>
+    <string name="home_filter_reset">Reset</string>
+    <string name="home_filter_apply">Terapkan</string>
     <string name="filter_all">Semua</string>
     <string name="filter_lost">Hilang</string>
     <string name="filter_found">Ditemukan</string>
@@ -76,6 +99,8 @@
     <string name="create_offline_hint">Anda sedang offline. Laporan tetap bisa dibuat dan akan dikirim otomatis.</string>
     <string name="create_camera_denied">Izin kamera ditolak. Foto dapat ditambahkan nanti.</string>
     <string name="create_camera_unavailable">Kamera tidak tersedia di perangkat ini.</string>
+    <string name="create_error_title">Nama barang wajib diisi.</string>
+    <string name="create_error_location">Lokasi wajib diisi.</string>
 
     <!-- ===== Login ===== -->
     <string name="login_title">Masuk ke Ketemu</string>
@@ -86,13 +111,16 @@
     <string name="login_password_show">Lihat</string>
     <string name="login_password_hide">Sembunyikan</string>
     <string name="login_button">Masuk</string>
+    <string name="login_trial_title">Akun untuk uji coba</string>
+    <string name="login_trial_hint">Masuk memakai salah satu akun di bawah ini. Kata sandinya sama dengan NIM/NIDN akun tersebut.</string>
+    <string name="login_trial_email">Email: %1$s</string>
+    <string name="login_trial_password">Sandi: %1$s</string>
     <string name="login_error_email_empty">Email kampus wajib diisi.</string>
     <string name="login_error_password">Kata sandi minimal 6 karakter.</string>
     <string name="login_error_domain">Gunakan email kampus, contoh: nama@student.umn.ac.id.</string>
     <string name="login_error_invalid_credentials">Email atau kata sandi salah.</string>
     <string name="login_error_network">Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.</string>
     <string name="login_error_rate_limited">Terlalu banyak percobaan. Tunggu beberapa saat lalu coba lagi.</string>
-    <string name="login_demo_hint">Masuk dengan akun Supabase yang sudah terdaftar, atau daftar akun baru dengan email kampus Anda.</string>
     <string name="login_forgot_password">Lupa kata sandi?</string>
     <string name="login_register_prompt">Belum punya akun?</string>
     <string name="login_register_action">Daftar</string>
@@ -129,13 +157,21 @@
     <string name="forgot_error_domain">Gunakan email kampus, contoh: nama@student.umn.ac.id.</string>
     <string name="forgot_error_network">Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.</string>
     <string name="forgot_error_rate_limited">Terlalu banyak percobaan. Tunggu beberapa saat lalu coba lagi.</string>
-    <string name="forgot_success_title">Tautan reset terkirim</string>
-    <string name="forgot_success_desc">Jika email terdaftar, kami mengirim tautan untuk mengatur ulang kata sandi Anda. Silakan cek kotak masuk (termasuk folder spam).</string>
+    <string name="forgot_success_title">Permintaan atur ulang dicatat</string>
+    <string name="forgot_success_desc">Pada versi ini pengiriman email belum aktif. Silakan masuk memakai kata sandi NIM/NIDN yang tertera di layar Login, atau daftar akun baru.</string>
     <string name="forgot_back_to_login">Kembali ke Login</string>
 
     <!-- ===== Profil: sesi ===== -->
     <string name="profile_account_section">Akun</string>
     <string name="profile_logout">Keluar</string>
+    <string name="profile_role_simulation_title">Simulasi peran (untuk demo pengujian akses)</string>
+    <string name="profile_role_simulation_hint">Mengganti peran tidak mengubah akun Anda — hanya hak akses yang berubah.</string>
+
+    <!-- ===== Percakapan ===== -->
+    <string name="chat_about_report">Tentang barang ini</string>
+    <string name="chat_input_hint">Tulis pesan…</string>
+    <string name="chat_send">Kirim</string>
+    <string name="chat_typing">sedang menulis…</string>
 
     <!-- ===== Staff (pencegahan fraud) ===== -->
     <string name="staff_queue_title">Antrean Verifikasi</string>

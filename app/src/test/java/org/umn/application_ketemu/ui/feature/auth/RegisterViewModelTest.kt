@@ -51,7 +51,7 @@ class RegisterViewModelTest {
 
         // Email diberi spasi + huruf besar: harus dinormalkan.
         viewModel.onFullNameChange("Siti Aminah")
-        viewModel.onEmailChange("  Siti.Aminah@UMN.ac.id ")
+        viewModel.onEmailChange("  Siti.Aminah@STUDENT.UMN.ac.id ")
         viewModel.onNimChange("00000067890")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onConfirmPasswordChange("rahasia123")
@@ -59,7 +59,7 @@ class RegisterViewModelTest {
 
         assertNull(viewModel.uiState.value.error)
         assertTrue(session.isLoggedIn.value)
-        assertEquals("siti.aminah@umn.ac.id", session.currentUser.value.email)
+        assertEquals("siti.aminah@student.umn.ac.id", session.currentUser.value.email)
         assertEquals("Siti Aminah", session.currentUser.value.fullName)
     }
 
@@ -69,7 +69,7 @@ class RegisterViewModelTest {
         val viewModel = buildViewModel(session)
 
         viewModel.onFullNameChange("Siti Aminah")
-        viewModel.onEmailChange("siti.aminah@umn.ac.id")
+        viewModel.onEmailChange("siti.aminah@student.umn.ac.id")
         viewModel.onNimChange("00000067890")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onConfirmPasswordChange("rahasia999")
@@ -83,12 +83,12 @@ class RegisterViewModelTest {
     fun emailSudahTerdaftarDitolak() {
         val session = SessionStore()
         val repository = FakeAuthRepository().apply {
-            addUser("budi.santoso@umn.ac.id", "rahasia123")
+            addUser("budi.santoso@student.umn.ac.id", "rahasia123")
         }
         val viewModel = buildViewModel(session, repository)
 
         viewModel.onFullNameChange("Budi Santoso")
-        viewModel.onEmailChange("budi.santoso@umn.ac.id")
+        viewModel.onEmailChange("budi.santoso@student.umn.ac.id")
         viewModel.onNimChange("00000012345")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onConfirmPasswordChange("rahasia123")
@@ -105,7 +105,7 @@ class RegisterViewModelTest {
         val viewModel = buildViewModel(session, repository)
 
         viewModel.onFullNameChange("Siti Aminah")
-        viewModel.onEmailChange("siti.aminah@umn.ac.id")
+        viewModel.onEmailChange("siti.aminah@student.umn.ac.id")
         viewModel.onNimChange("00000067890")
         viewModel.onPasswordChange("rahasia123")
         viewModel.onConfirmPasswordChange("rahasia123")

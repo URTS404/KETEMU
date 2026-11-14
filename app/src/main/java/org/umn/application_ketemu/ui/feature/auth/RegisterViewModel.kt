@@ -49,9 +49,9 @@ data class RegisterUiState(
  * ViewModel Pendaftaran akun.
  *
  * Validasi lokal (nama, email kampus, NIM, panjang/kecocokan kata sandi) tetap
- * dipertahankan. Pendaftaran sesungguhnya dilakukan Supabase Auth lewat
- * [AuthRepository]. Bila verifikasi email masih aktif di Supabase, pengguna
- * diarahkan menunggu email konfirmasi alih-alih langsung masuk.
+ * dipertahankan. Pendaftaran dilakukan lewat [AuthRepository] — pada fase UTS
+ * implementasinya lokal (akun ditambahkan ke daftar akun aplikasi), sehingga
+ * akun baru bisa langsung dipakai masuk tanpa jaringan.
  */
 class RegisterViewModel(
     private val session: SessionStore,
@@ -64,8 +64,17 @@ class RegisterViewModel(
 
     fun onFullNameChange(value: String) = _uiState.update { it.copy(fullName = value, error = null) }
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, error = null) }
-    fun onNimChange(value: String) = _uiState.update { it.copy(nimNidn = value, error = null) }
-    fun onPhoneChange(value: String) = _uiState.update { it.copy(phone = value, error = null) }
+    /** NIM/NIDN hanya menerima angka (validasi numeric-only saat mengetik). */
+    fun onNimChange(value: String) =
+        _uiState.update { it.copy(nimNidn = value.filter { ch -> ch.isDigit() }, error = null) }
+
+    /** Nomor HP hanya menerima angka, spasi, tanda hubung, dan '+'. */
+    fun onPhoneChange(value: String) = _uiState.update {
+        it.copy(
+            phone = value.filter { ch -> ch.isDigit() || ch == '+' || ch == '-' || ch == ' ' },
+            error = null
+        )
+    }
     fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value, error = null) }
     fun onConfirmPasswordChange(value: String) =
         _uiState.update { it.copy(confirmPassword = value, error = null) }
