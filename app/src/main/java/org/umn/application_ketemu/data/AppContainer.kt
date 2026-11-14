@@ -4,10 +4,14 @@ import android.content.Context
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
+import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
+import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.AuthRepository
+import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ConversationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 
@@ -27,6 +31,12 @@ class AppContainer(context: Context) {
         initialThreads = DummyData.conversations(),
         initialMessages = DummyData.messages()
     )
+
+    /** Pengajuan klaim + antrean keputusan moderator. */
+    val claimRepository: ClaimRepository = InMemoryClaimRepository(DummyData.claims())
+
+    /** Log aktivitas moderator (append-only). */
+    val auditLogRepository: AuditLogRepository = InMemoryAuditLogRepository()
 
     val networkMonitor: NetworkMonitor = NetworkMonitor(context)
 

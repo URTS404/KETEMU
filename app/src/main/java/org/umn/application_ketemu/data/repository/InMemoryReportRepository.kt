@@ -13,6 +13,9 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
  * Perannya sama seperti sebuah tabel lokal pada versi final: seluruh pembacaan
  * mengalir lewat satu StateFlow sehingga UI sudah terbiasa dengan pola
  * "data berubah -> UI ikut berubah" (persis perilaku Room Flow nanti).
+ *
+ * Sejak tahap admin panel, laporan bisa ditandai [Report.isArchived]: laporan
+ * yang diarsipkan hilang dari Beranda tetapi tetap tersimpan (bisa dipulihkan).
  */
 class InMemoryReportRepository(
     initialReports: List<Report>
@@ -21,11 +24,25 @@ class InMemoryReportRepository(
     private val reports = MutableStateFlow(initialReports)
 
     override fun observeReports(): Flow<List<Report>> =
-        reports.map { list -> list.sortedByDescending { it.createdAt } }
+        reports.map { list ->
+            list.filterNot { it.isArchived }.sortedByDescending { it.createdAt }
+        }
+
+    override fun observeArchivedReports(): Flow<List<Report>> =
+        reports.map { list ->
+            list.filter { it.isArchived }.sortedByDescending { it.createdAt }
+        }
+
+    override fun observeModerationQueue(): Flow<List<Report>> =
+        reports.map { list ->
+            list.filter { !it.isArchived && it.status == ReportStatus.DILAPORKAN }
+                .sortedBy { it.createdAt }
+        }
 
     override fun observeMyReports(ownerId: String): Flow<List<Report>> =
         reports.map { list ->
-            list.filter { it.ownerId == ownerId }.sortedByDescending { it.createdAt }
+            list.filter { it.ownerId == ownerId && !it.isArchived }
+                .sortedByDescending { it.createdAt }
         }
 
     override suspend fun getReport(id: String): Report? =
@@ -40,6 +57,19 @@ class InMemoryReportRepository(
             if (report.id == reportId) {
                 report.copy(
                     status = status,
+                    updatedAt = System.currentTimeMillis()
+                )
+            } else {
+                report
+            }
+        }
+    }
+
+    override suspend fun setArchived(reportId: String, archived: Boolean) {
+        reports.value = reports.value.map { report ->
+            if (report.id == reportId) {
+                report.copy(
+                    isArchived = archived,
                     updatedAt = System.currentTimeMillis()
                 )
             } else {

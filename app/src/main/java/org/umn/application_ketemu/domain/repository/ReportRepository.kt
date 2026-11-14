@@ -21,6 +21,20 @@ interface ReportRepository {
     /** Seluruh laporan, terbaru di depan. Dipakai Beranda. */
     fun observeReports(): Flow<List<Report>>
 
+    /** Laporan yang disembunyikan moderator (tidak tampil di Beranda). */
+    fun observeArchivedReports(): Flow<List<Report>>
+
+    /**
+     * Antrean moderasi: laporan yang belum diverifikasi petugas.
+     *
+     * Urut terlama dulu (FIFO) karena antrean dilayani dari yang paling lama
+     * menunggu. Laporan yang sudah diarsipkan tidak ikut.
+     */
+    fun observeModerationQueue(): Flow<List<Report>>
+
+    /** Menyembunyikan / memunculkan laporan dari daftar publik (khusus moderator). */
+    suspend fun setArchived(reportId: String, archived: Boolean)
+
     /** Laporan milik satu pengguna, terbaru di depan. Dipakai layar "Laporan Saya". */
     fun observeMyReports(ownerId: String): Flow<List<Report>>
 

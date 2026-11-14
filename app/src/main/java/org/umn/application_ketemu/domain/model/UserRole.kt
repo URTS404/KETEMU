@@ -10,5 +10,15 @@ package org.umn.application_ketemu.domain.model
 enum class UserRole {
     USER,
     STAFF,
-    ADMIN
+    ADMIN;
+
+    /**
+     * Hak membuka panel moderasi.
+     *
+     * Dipakai di dua tempat: menyembunyikan tombol masuk panel admin, dan
+     * menolak aksi bila peran berubah saat layar sudah terbuka. Di Supabase
+     * nanti aturan yang sama ditegakkan lagi lewat Row Level Security.
+     */
+    val canModerate: Boolean
+        get() = this == STAFF || this == ADMIN
 }

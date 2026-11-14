@@ -1,6 +1,8 @@
 package org.umn.application_ketemu.data.dummy
 
 import org.umn.application_ketemu.domain.model.ChatMessage
+import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.ConversationThread
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosLocation
@@ -142,6 +144,57 @@ object DummyData {
                 status = ReportStatus.DILAPORKAN,
                 syncStatus = SyncStatus.PENDING,
                 createdAt = now - 12 * minute
+            )
+        )
+    }
+
+    /**
+     * Klaim contoh untuk antrean admin.
+     *
+     * Dua klaim menunggu keputusan (menempel pada laporan temuan yang sudah
+     * diserahkan ke pos) dan satu klaim yang sudah disetujui sebagai riwayat.
+     * Dengan begitu layar admin punya isi sejak demo pertama.
+     */
+    fun claims(): List<Claim> {
+        val now = System.currentTimeMillis()
+        val minute = 60_000L
+        val hour = 60 * minute
+        val day = 24 * hour
+
+        return listOf(
+            Claim(
+                id = "clm-001",
+                reportId = "rpt-002",
+                reportTitle = "KTM atas nama Andi Wijaya",
+                claimantId = "user-lain-03",
+                claimantName = "Andi Wijaya",
+                claimantEmail = "andi.wijaya@student.umn.ac.id",
+                answer = "NIM saya 00000077777 dan foto di kartu sesuai dengan wajah saya.",
+                createdAt = now - 45 * minute
+            ),
+            Claim(
+                id = "clm-002",
+                reportId = "rpt-005",
+                reportTitle = "Payung Lipat Biru",
+                claimantId = "user-lain-06",
+                claimantEmail = "rani.kusuma@student.umn.ac.id",
+                claimantName = "Rani Kusuma",
+                answer = "Gagang kayunya ada tulisan nama saya dengan spidol hitam.",
+                createdAt = now - 3 * hour
+            ),
+            Claim(
+                id = "clm-003",
+                reportId = "rpt-003",
+                reportTitle = "AirPods Gen 2 (case putih)",
+                claimantId = "user-lain-04",
+                claimantName = "Dewi Lestari",
+                claimantEmail = "dewi.lestari@student.umn.ac.id",
+                answer = "Case ada goresan kecil di sudut kanan dan stiker nama di dalamnya.",
+                status = ClaimStatus.DISETUJUI,
+                createdAt = now - 2 * day,
+                decidedAt = now - day,
+                decidedBy = staff.fullName,
+                pickupCode = "K7M2QP"
             )
         )
     }

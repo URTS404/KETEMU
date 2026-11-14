@@ -25,5 +25,7 @@ data class Report(
     val status: ReportStatus = ReportStatus.DILAPORKAN,
     val syncStatus: SyncStatus = SyncStatus.PENDING,
     val createdAt: Long,
-    val updatedAt: Long = createdAt
+    val updatedAt: Long = createdAt,
+    /** `true` bila laporan disembunyikan moderator (tidak tampil di Beranda). */
+    val isArchived: Boolean = false
 )
