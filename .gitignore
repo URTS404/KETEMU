@@ -29,3 +29,10 @@ output.json
 # ===== OS =====
 Thumbs.db
 .DS_Store
+
+# ===== Berkas kerja lokal (tidak untuk repo) =====
+# Alat bantu pengujian/analisis pribadi + materi kuliah (mis. teks soal UTS).
+tools/
+
+# Dokumen rubrik berisi tautan pribadi (link Drive) - diserahkan bersama arsip tugas, bukan repo
+README.txt

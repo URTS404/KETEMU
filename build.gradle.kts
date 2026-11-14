@@ -6,19 +6,30 @@ plugins {
 }
 
 // ============================================================================
-// ONEDRIVE-SAFE BUILD
+// LOKASI OUTPUT BUILD (OPSIONAL)
 // ----------------------------------------------------------------------------
-// Proyek ini berada di dalam folder OneDrive. Setiap build, Gradle menulis
-// ribuan file ke folder "build/" (APK, generated Hilt/Room, KSP, R class).
-// OneDrive mencoba men-sync & mengunci file-file itu sehingga build bisa
-// gagal acak ("Access is denied" / "Unable to delete directory").
+// Baku: tanpa pengaturan apa pun, Gradle memakai lokasi standar Android, yaitu
+// <folder proyek>/build dan <folder proyek>/app/build. Dengan begitu proyek ini
+// bisa di-build di komputer mana pun (termasuk saat dinilai) tanpa path khusus
+// dan tanpa syarat izin tulis ke folder di luar proyek.
 //
-// Solusinya: seluruh output build dialihkan ke folder DI LUAR OneDrive.
-// Sisa file kecil yang masih di dalam OneDrive hanyalah kode sumber.
+// Pengalihan HANYA dipakai bila diminta secara eksplisit, misalnya ketika
+// proyek diletakkan di folder yang di-sync cloud (OneDrive/Google Drive) dan
+// build gagal acak karena berkas dikunci proses sinkronisasi:
+//
+//   gradle.properties : ketemu.buildDir=D:/AndroidBuilds/Ketemu
+//   atau CLI          : gradlew.bat assembleDebug -Pketemu.buildDir=D:/AndroidBuilds/Ketemu
+//
+// Tanpa salah satu baris di atas, pengalihan tidak aktif sama sekali.
 // ============================================================================
-val externalBuildRoot = File("C:/AndroidBuilds/Ketemu")
+val externalBuildRoot: String? = providers
+    .gradleProperty("ketemu.buildDir")
+    .orNull
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
 
-subprojects {
-    val projectDirName = name
-    layout.buildDirectory.set(File(externalBuildRoot, projectDirName))
+if (externalBuildRoot != null) {
+    subprojects {
+        layout.buildDirectory.set(File(externalBuildRoot, name))
+    }
 }
