@@ -1,12 +1,13 @@
 package org.umn.application_ketemu.data
 
 import android.content.Context
-import org.umn.application_ketemu.BuildConfig
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
+import org.umn.application_ketemu.data.remote.SupabaseProvider
+import org.umn.application_ketemu.data.remote.SupabaseReportRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
@@ -27,7 +28,19 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
  */
 class AppContainer(context: Context) {
 
-    val reportRepository: ReportRepository = InMemoryReportRepository(DummyData.reports())
+    /**
+     * Sumber data laporan.
+     *
+     * Supabase aktif -> data dibaca dari tabel `reports` (lihat
+     * [SupabaseReportRepository]); tanpa kunci -> data contoh in-memory seperti
+     * pada tahap UTS. Panel admin, layar detail, dan laporan saya memakai
+     * interface yang sama sehingga tidak perlu diubah.
+     */
+    val reportRepository: ReportRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseReportRepository(SupabaseProvider.client)
+    } else {
+        InMemoryReportRepository(DummyData.reports())
+    }
 
     /** Data percakapan (dummy) - sumber layar Pesan & layar Percakapan. */
     val conversationRepository: ConversationRepository = InMemoryConversationRepository(
@@ -51,9 +64,9 @@ class AppContainer(context: Context) {
      * cadangan agar demo kelas tidak bergantung jaringan. Tanpa kunci, seluruh
      * autentikasi berjalan lokal (mode UTS).
      */
-    val authRepository: AuthRepository = if (supabaseConfigured()) {
+    val authRepository: AuthRepository = if (SupabaseProvider.isConfigured) {
         FallbackAuthRepository(
-            primary = SupabaseAuthRepository(),
+            primary = SupabaseAuthRepository(SupabaseProvider.client),
             fallback = LocalAuthRepository()
         )
     } else {
@@ -63,7 +76,5 @@ class AppContainer(context: Context) {
     val session: SessionStore = SessionStore()
 
     /** Apakah project Supabase sudah dikonfigurasi pada build ini. */
-    fun supabaseConfigured(): Boolean =
-        BuildConfig.SUPABASE_URL.isNotBlank() &&
-            (BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank() || BuildConfig.SUPABASE_ANON_KEY.isNotBlank())
+    fun supabaseConfigured(): Boolean = SupabaseProvider.isConfigured
 }

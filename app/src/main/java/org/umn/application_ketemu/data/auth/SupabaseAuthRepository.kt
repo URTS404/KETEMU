@@ -1,20 +1,14 @@
 package org.umn.application_ketemu.data.auth
 
-import com.russhwolf.settings.MapSettings
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.SettingsCodeVerifierCache
-import io.github.jan.supabase.auth.SettingsSessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.createSupabaseClient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import org.umn.application_ketemu.BuildConfig
 import org.umn.application_ketemu.domain.model.UserProfile
 import org.umn.application_ketemu.domain.model.UserRole
 import org.umn.application_ketemu.domain.repository.AuthErrorReason
@@ -29,21 +23,9 @@ import org.umn.application_ketemu.domain.repository.AuthResult
  * tetap bisa dibuka tanpa memanggil jaringan sampai pengguna benar-benar
  * mencoba masuk/daftar.
  */
-class SupabaseAuthRepository : AuthRepository {
-
-    private val client: SupabaseClient by lazy {
-        createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
-        ) {
-            install(Auth) {
-                // Simpan sesi & cache PKCE di memori (prototipe). Menghindari kebutuhan
-                // Settings platform (SharedPreferences) yang tidak tersedia otomatis.
-                sessionManager = SettingsSessionManager(MapSettings())
-                codeVerifierCache = SettingsCodeVerifierCache(MapSettings())
-            }
-        }
-    }
+class SupabaseAuthRepository(
+    private val client: SupabaseClient = org.umn.application_ketemu.data.remote.SupabaseProvider.client
+) : AuthRepository {
 
     override suspend fun signIn(email: String, password: String): AuthResult = try {
         client.auth.signInWith(Email) {

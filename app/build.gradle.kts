@@ -5,6 +5,8 @@ plugins {
     // Catatan AGP 9: plugin 'org.jetbrains.kotlin.android' TIDAK dipakai lagi karena
     // Kotlin sudah menjadi bagian bawaan AGP (built-in Kotlin).
     alias(libs.plugins.kotlin.compose)
+    // @Serializable untuk DTO PostgREST (reports/claims/audit_logs).
+    alias(libs.plugins.kotlin.serialization)
 }
 
 /**
@@ -98,6 +100,7 @@ dependencies {
     // Supabase Auth (M2): menggantikan autentikasi lokal dengan Supabase.
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth.kt)
+    implementation(libs.supabase.postgrest.kt)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.multiplatform.settings.test)
     implementation(libs.kotlinx.serialization.json)
