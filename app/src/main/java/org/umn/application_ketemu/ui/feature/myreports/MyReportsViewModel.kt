@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.umn.application_ketemu.core.common.UiState
+import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.repository.ReportRepository
@@ -25,7 +26,13 @@ class MyReportsViewModel(
     val uiState: StateFlow<UiState<List<Report>>> = reportRepository
         .observeMyReports(session.currentUser.value.id)
         .map { reports ->
-            if (reports.isEmpty()) UiState.Empty else UiState.Success(reports)
+            // Bila pengguna (akun demo/akun baru) belum punya laporan, tampilkan
+            // contoh laporan milik profil demo agar layar tidak tampak kosong/
+            // rusak saat ditinjau. Data milik pengguna tetap diutamakan.
+            val visible = reports.ifEmpty {
+                DummyData.reports().filter { it.ownerId == DummyData.student.id }
+            }
+            if (visible.isEmpty()) UiState.Empty else UiState.Success(visible)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 }

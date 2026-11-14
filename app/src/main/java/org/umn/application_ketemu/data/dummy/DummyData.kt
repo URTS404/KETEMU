@@ -1,5 +1,7 @@
 package org.umn.application_ketemu.data.dummy
 
+import org.umn.application_ketemu.domain.model.ChatMessage
+import org.umn.application_ketemu.domain.model.ConversationThread
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
@@ -32,7 +34,7 @@ object DummyData {
     val student: UserProfile = UserProfile(
         id = "user-mahasiswa-01",
         fullName = "Budi Santoso",
-        email = "budi.santoso@umn.ac.id",
+        email = "budi.santoso@student.umn.ac.id",
         nimNidn = "00000012345",
         phone = "0812-0000-1111",
         role = UserRole.USER,
@@ -140,6 +142,139 @@ object DummyData {
                 status = ReportStatus.DILAPORKAN,
                 syncStatus = SyncStatus.PENDING,
                 createdAt = now - 12 * minute
+            )
+        )
+    }
+
+    /**
+     * Percakapan contoh (dummy).
+     *
+     * Isinya meniru alur nyata: penemu barang menghubungi pemilik, lalu
+     * menyepakati penitipan ke pos. Waktu dibuat relatif terhadap "sekarang"
+     * supaya label waktu relatif (mis. "8 menit lalu") selalu masuk akal.
+     */
+    fun conversations(): List<ConversationThread> {
+        val now = System.currentTimeMillis()
+        val minute = 60_000L
+        val hour = 60 * minute
+        val day = 24 * hour
+
+        return listOf(
+            ConversationThread(
+                id = "chat-01",
+                partnerName = "Sinta Maharani",
+                partnerRole = "Penemu barang",
+                reportId = "rpt-003",
+                reportTitle = "AirPods Gen 2 (case putih)",
+                lastMessage = "Baik, nanti saya serahkan ke Pos Basement ya.",
+                lastMessageAt = now - 8 * minute,
+                unreadCount = 2
+            ),
+            ConversationThread(
+                id = "chat-02",
+                partnerName = "Pak Rahmat",
+                partnerRole = "Petugas Pos Basement",
+                reportId = "rpt-001",
+                reportTitle = "Tumbler Hitam Tumbler Angsa",
+                lastMessage = "Barangnya sudah di pos, bawa KTM saat mengambil.",
+                lastMessageAt = now - 3 * hour
+            ),
+            ConversationThread(
+                id = "chat-03",
+                partnerName = "Dewi Lestari",
+                partnerRole = "Pemilik barang",
+                reportId = "rpt-004",
+                reportTitle = "Dompet Cokelat Berisi KTM",
+                lastMessage = "Terima kasih banyak sudah menemukan dompet saya!",
+                lastMessageAt = now - 2 * day
+            )
+        )
+    }
+
+    /** Isi pesan contoh untuk setiap percakapan di atas. */
+    fun messages(): List<ChatMessage> {
+        val now = System.currentTimeMillis()
+        val minute = 60_000L
+        val hour = 60 * minute
+        val day = 24 * hour
+
+        return listOf(
+            ChatMessage(
+                id = "msg-01",
+                threadId = "chat-01",
+                text = "Hai, saya menemukan AirPods putih di meja perpustakaan lantai 4. Apakah ini milikmu?",
+                fromMe = false,
+                sentAt = now - 52 * minute
+            ),
+            ChatMessage(
+                id = "msg-02",
+                threadId = "chat-01",
+                text = "Iya betul, case putih. Terima kasih sudah menemukannya!",
+                fromMe = true,
+                sentAt = now - 40 * minute
+            ),
+            ChatMessage(
+                id = "msg-03",
+                threadId = "chat-01",
+                text = "Saya masih di sekitar perpustakaan sampai jam 3 sore.",
+                fromMe = false,
+                sentAt = now - 26 * minute
+            ),
+            ChatMessage(
+                id = "msg-04",
+                threadId = "chat-01",
+                text = "Kalau boleh, titipkan ke Pos Basement saja biar aman.",
+                fromMe = true,
+                sentAt = now - 15 * minute
+            ),
+            ChatMessage(
+                id = "msg-05",
+                threadId = "chat-01",
+                text = "Baik, nanti saya serahkan ke Pos Basement ya.",
+                fromMe = false,
+                sentAt = now - 8 * minute
+            ),
+            ChatMessage(
+                id = "msg-06",
+                threadId = "chat-02",
+                text = "Selamat sore, tumbler hitam Anda sudah kami terima di pos.",
+                fromMe = false,
+                sentAt = now - 5 * hour
+            ),
+            ChatMessage(
+                id = "msg-07",
+                threadId = "chat-02",
+                text = "Wah cepat sekali. Saya ambil besok pagi ya, Pak.",
+                fromMe = true,
+                sentAt = now - 4 * hour
+            ),
+            ChatMessage(
+                id = "msg-08",
+                threadId = "chat-02",
+                text = "Barangnya sudah di pos, bawa KTM saat mengambil.",
+                fromMe = false,
+                sentAt = now - 3 * hour
+            ),
+            ChatMessage(
+                id = "msg-09",
+                threadId = "chat-03",
+                text = "Dompet saya ketemu di kantin, benar itu dompet Anda?",
+                fromMe = true,
+                sentAt = now - 2 * day - 20 * minute
+            ),
+            ChatMessage(
+                id = "msg-10",
+                threadId = "chat-03",
+                text = "Ya benar, ada KTM dan kartu ATM di dalamnya.",
+                fromMe = false,
+                sentAt = now - 2 * day - 10 * minute
+            ),
+            ChatMessage(
+                id = "msg-11",
+                threadId = "chat-03",
+                text = "Terima kasih banyak sudah menemukan dompet saya!",
+                fromMe = false,
+                sentAt = now - 2 * day
             )
         )
     }

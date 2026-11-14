@@ -2,7 +2,7 @@ package org.umn.application_ketemu.domain.repository
 
 import org.umn.application_ketemu.domain.model.UserProfile
 
-/** Alasan kegagalan autentikasi (dipetakan dari error Supabase). */
+/** Alasan kegagalan autentikasi (dipetakan ke pesan pada layar Login/Daftar). */
 enum class AuthErrorReason {
     INVALID_CREDENTIALS,
     USER_ALREADY_EXISTS,
@@ -15,8 +15,8 @@ sealed interface AuthResult {
     /**
      * Berhasil.
      *
-     * [user] null hanya terjadi pada pendaftaran saat verifikasi email masih
-     * diaktifkan di Supabase (pengguna belum otomatis masuk).
+     * [user] null hanya terjadi pada pendaftaran yang masih menunggu verifikasi
+     * email (tidak dipakai pada implementasi lokal fase UTS).
      */
     data class Success(val user: UserProfile?) : AuthResult
     data class Failure(val reason: AuthErrorReason) : AuthResult
