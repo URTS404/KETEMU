@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Versi tema gelap untuk Android 12+ (API 31+). Lihat values-v31/themes.xml. -->
+    <style name="Theme.Ketemu" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF0E1515</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+    </style>
+</resources>

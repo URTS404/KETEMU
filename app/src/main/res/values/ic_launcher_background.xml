@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Warna latar ikon adaptif, memakai Teal utama palet Ketemu (#158A90). -->
+<!--
+  Warna latar ikon adaptif.
+  Dipakai PUTIH agar sesuai dengan kanvas asli logo Ketemu. Latar Teal tidak
+  dipakai karena logo sendiri memuat warna Teal (mark-nya jadi menyatu/hilang).
+-->
 <resources>
-    <color name="ic_launcher_background">#158A90</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>
+

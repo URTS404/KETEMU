@@ -86,6 +86,7 @@ fun KetemuTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = KetemuTypography,
+        shapes = KetemuShapes,
         content = content
     )
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Tema untuk Android 12+ (API 31+): SPLASH SCREEN diatur eksplisit.
+
+      Tanpa pengaturan ini, sistem memakai ikon aplikasi sebagai logo splash lalu
+      MEMOTONGNYA menjadi lingkaran. Area yang terlihat hanya 2/3 kanvas,
+      sedangkan ikon launcher memakai 66% kanvas -> sudut logo terpotong.
+      Karena itu dipakai @drawable/ic_splash_logo yang kontennya hanya 40%
+      kanvas sehingga logo tampil utuh.
+
+      Catatan: style ini menggantikan Theme.Ketemu pada API 31+, jadi seluruh
+      item dari values/themes.xml ikut ditulis ulang di sini.
+    -->
+    <style name="Theme.Ketemu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFF4FBFA</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+    </style>
+</resources>
