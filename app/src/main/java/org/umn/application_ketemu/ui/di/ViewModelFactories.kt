@@ -5,6 +5,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import org.umn.application_ketemu.data.AppContainer
 import org.umn.application_ketemu.ui.MainViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminAuditViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminClaimsViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
 import org.umn.application_ketemu.ui.feature.auth.ForgotPasswordViewModel
 import org.umn.application_ketemu.ui.feature.auth.LoginViewModel
 import org.umn.application_ketemu.ui.feature.auth.RegisterViewModel
@@ -126,3 +130,52 @@ fun conversationViewModelFactory(
         )
     }
 }
+
+/** Panel admin: dashboard ringkasan. */
+fun adminDashboardViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminDashboardViewModel(
+                reportRepository = container.reportRepository,
+                claimRepository = container.claimRepository,
+                auditLogRepository = container.auditLogRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Panel admin: antrean moderasi laporan. */
+fun adminModerationViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminModerationViewModel(
+                reportRepository = container.reportRepository,
+                auditLogRepository = container.auditLogRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Panel admin: keputusan klaim. */
+fun adminClaimsViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminClaimsViewModel(
+                claimRepository = container.claimRepository,
+                reportRepository = container.reportRepository,
+                auditLogRepository = container.auditLogRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Panel admin: log aktivitas. */
+fun adminAuditViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminAuditViewModel(
+                auditLogRepository = container.auditLogRepository,
+                session = container.session
+            )
+        }
+    }

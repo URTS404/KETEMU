@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,7 @@ import org.umn.application_ketemu.ui.components.InitialsAvatar
 fun ProfileScreen(
     user: UserProfile,
     onSwitchRole: (UserRole) -> Unit,
+    onOpenAdmin: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -147,6 +149,26 @@ fun ProfileScreen(
                     )
                 }
             }
+
+            // Pintu masuk panel moderasi: hanya dirender untuk STAFF/ADMIN.
+            // Lapis kedua ada di ViewModel (menolak aksi bila peran berubah).
+            if (user.role.canModerate) {
+                Button(
+                    onClick = onOpenAdmin,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.admin_open),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.admin_open_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             OutlinedButton(
                 onClick = onSignOut,
                 modifier = Modifier.fillMaxWidth()

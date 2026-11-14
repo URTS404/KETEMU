@@ -55,9 +55,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.R
+import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.ui.LocalAppContainer
 import org.umn.application_ketemu.ui.MainViewModel
 import org.umn.application_ketemu.ui.components.OfflineBanner
+import org.umn.application_ketemu.ui.di.adminAuditViewModelFactory
+import org.umn.application_ketemu.ui.di.adminClaimsViewModelFactory
+import org.umn.application_ketemu.ui.di.adminDashboardViewModelFactory
+import org.umn.application_ketemu.ui.di.adminModerationViewModelFactory
 import org.umn.application_ketemu.ui.di.conversationViewModelFactory
 import org.umn.application_ketemu.ui.di.createReportViewModelFactory
 import org.umn.application_ketemu.ui.di.homeViewModelFactory
@@ -65,6 +70,15 @@ import org.umn.application_ketemu.ui.di.mainViewModelFactory
 import org.umn.application_ketemu.ui.di.messagesViewModelFactory
 import org.umn.application_ketemu.ui.di.myReportsViewModelFactory
 import org.umn.application_ketemu.ui.di.reportDetailViewModelFactory
+import org.umn.application_ketemu.ui.feature.admin.AdminAuditScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminAuditViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminClaimsScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminClaimsViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminDashboardScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminModerationScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminUsersScreen
 import org.umn.application_ketemu.ui.feature.create.CreateReportScreen
 import org.umn.application_ketemu.ui.feature.create.CreateReportViewModel
 import org.umn.application_ketemu.ui.feature.detail.ReportDetailScreen
@@ -223,6 +237,7 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     ProfileScreen(
                         user = currentUser,
                         onSwitchRole = { role -> container.session.switchRole(role) },
+                        onOpenAdmin = { navController.navigate(KetemuRoutes.ADMIN) },
                         onSignOut = {
                             container.session.signOut()
                             scope.launch { container.authRepository.signOut() }
@@ -296,6 +311,88 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     )
                     ConversationScreen(
                         viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                // ================= Panel admin (STAFF/ADMIN) =================
+                composable(
+                    route = KetemuRoutes.ADMIN,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: AdminDashboardViewModel = viewModel(
+                        factory = adminDashboardViewModelFactory(container)
+                    )
+                    AdminDashboardScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() },
+                        onOpenModeration = { navController.navigate(KetemuRoutes.ADMIN_MODERATION) },
+                        onOpenClaims = { navController.navigate(KetemuRoutes.ADMIN_CLAIMS) },
+                        onOpenAudit = { navController.navigate(KetemuRoutes.ADMIN_AUDIT) },
+                        onOpenUsers = { navController.navigate(KetemuRoutes.ADMIN_USERS) }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.ADMIN_MODERATION,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: AdminModerationViewModel = viewModel(
+                        factory = adminModerationViewModelFactory(container)
+                    )
+                    AdminModerationScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.ADMIN_CLAIMS,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: AdminClaimsViewModel = viewModel(
+                        factory = adminClaimsViewModelFactory(container)
+                    )
+                    AdminClaimsScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.ADMIN_AUDIT,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: AdminAuditViewModel = viewModel(
+                        factory = adminAuditViewModelFactory(container)
+                    )
+                    AdminAuditScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.ADMIN_USERS,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    AdminUsersScreen(
+                        accounts = listOf(DummyData.student, DummyData.staff),
                         onBack = { navController.popBackStack() }
                     )
                 }
