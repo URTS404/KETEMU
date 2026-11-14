@@ -1,8 +1,11 @@
 package org.umn.application_ketemu.data
 
 import android.content.Context
+import org.umn.application_ketemu.BuildConfig
 import org.umn.application_ketemu.core.network.NetworkMonitor
+import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
+import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
@@ -41,14 +44,26 @@ class AppContainer(context: Context) {
     val networkMonitor: NetworkMonitor = NetworkMonitor(context)
 
     /**
-     * Autentikasi lokal (tanpa jaringan).
+     * Autentikasi.
      *
-     * Fase UTS sengaja belum memakai backend: Supabase baru diminta pada fase
-     * berikutnya, jadi login diperiksa terhadap akun dummy aplikasi. Kelas
-     * `SupabaseAuthRepository` tetap disimpan sebagai rujukan migrasi, bukan
-     * dipakai di sini.
+     * Bila `local.properties` berisi SUPABASE_URL + kunci publishable, aplikasi
+     * memakai Supabase Auth sungguhan; akun demo lokal tetap tersedia sebagai
+     * cadangan agar demo kelas tidak bergantung jaringan. Tanpa kunci, seluruh
+     * autentikasi berjalan lokal (mode UTS).
      */
-    val authRepository: AuthRepository = LocalAuthRepository()
+    val authRepository: AuthRepository = if (supabaseConfigured()) {
+        FallbackAuthRepository(
+            primary = SupabaseAuthRepository(),
+            fallback = LocalAuthRepository()
+        )
+    } else {
+        LocalAuthRepository()
+    }
 
     val session: SessionStore = SessionStore()
+
+    /** Apakah project Supabase sudah dikonfigurasi pada build ini. */
+    fun supabaseConfigured(): Boolean =
+        BuildConfig.SUPABASE_URL.isNotBlank() &&
+            (BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank() || BuildConfig.SUPABASE_ANON_KEY.isNotBlank())
 }
