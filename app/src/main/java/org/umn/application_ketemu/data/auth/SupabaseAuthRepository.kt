@@ -67,7 +67,7 @@ class SupabaseAuthRepository : AuthRepository {
         phone: String,
         password: String
     ): AuthResult = try {
-        val userInfo = client.auth.signUpWith(Email) {
+        client.auth.signUpWith(Email) {
             this.email = email
             this.password = password
             data = buildJsonObject {
@@ -76,14 +76,18 @@ class SupabaseAuthRepository : AuthRepository {
                 put("phone", phone)
             }
         }
-        if (userInfo == null) {
-            // Confirm email dinonaktifkan -> langsung masuk.
-            AuthResult.Success(client.auth.currentUserOrNull()?.toUserProfile())
-        } else {
-            // Confirm email aktif -> pengguna menunggu verifikasi email.
+        // Sumber kebenaran "sudah punya sesi" adalah currentSessionOrNull(), bukan
+        // nilai balik signUpWith: GoTrue tetap mengembalikan objek user walau
+        // sesi belum dibuat (kasus Confirm email aktif).
+        val session = client.auth.currentSessionOrNull()
+        if (session == null) {
+            // Confirm email aktif -> pengguna harus klik tautan dulu.
             AuthResult.Success(null)
+        } else {
+            AuthResult.Success(client.auth.currentUserOrNull()?.toUserProfile())
         }
     } catch (e: Exception) {
+        android.util.Log.e("SupabaseAuth", "signUp gagal: ${e.javaClass.simpleName}: ${e.message}", e)
         AuthResult.Failure(e.toAuthErrorReason())
     }
 
