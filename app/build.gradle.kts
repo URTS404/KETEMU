@@ -95,7 +95,6 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
-    implementation("io.github.jan-tennert.supabase:supabase-kt:VERSION")
     // Supabase Auth (M2): menggantikan autentikasi lokal dengan Supabase.
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth.kt)
