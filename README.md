@@ -51,6 +51,17 @@ Login diperiksa secara lokal, tanpa jaringan. Kata sandi tiap akun sama dengan N
 
 Akun uji juga ditampilkan langsung pada layar Login agar mudah dipakai saat demonstrasi.
 
+## Panel admin (tahap 1 UAS)
+
+Masuk sebagai staf (`rahmat@umn.ac.id` / `STAFF-001`), buka tab **Akun**, lalu tekan **Buka Panel Admin**:
+
+- **Dashboard** — antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
+- **Moderasi laporan** — verifikasi laporan baru (status naik ke *Diserahkan ke Pos*) atau arsipkan laporan yang tidak relevan.
+- **Verifikasi klaim** — tinjau jawaban verifikasi pengklaim, lalu setujui (kode pengambilan diterbitkan, laporan menjadi *Siap Diambil*) atau tolak.
+- **Log aktivitas** — jejak keputusan moderator yang tidak bisa diubah.
+
+Panel ini hanya dirender untuk peran STAFF/ADMIN, dan setiap aksi diperiksa ulang di ViewModel. Data masih in-memory pada tahap ini; rencana Supabase + Room ada di [docs/v2-roadmap.md](docs/v2-roadmap.md).
+
 ## Struktur proyek
 
 ```

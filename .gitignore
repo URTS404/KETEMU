@@ -36,3 +36,5 @@ tools/
 
 # Dokumen rubrik berisi tautan pribadi (link Drive) - diserahkan bersama arsip tugas, bukan repo
 README.txt
+# Tangkapan layar pengujian lokal (dibagikan lewat arsip tugas, bukan repo)
+screenshots/
