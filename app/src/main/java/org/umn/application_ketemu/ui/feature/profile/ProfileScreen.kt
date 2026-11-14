@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.domain.model.UserProfile
 import org.umn.application_ketemu.domain.model.UserRole
+import org.umn.application_ketemu.ui.components.InitialsAvatar
 
 /**
  * Layar Profil.
@@ -66,31 +67,43 @@ fun ProfileScreen(
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = user.fullName,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = user.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        InitialsAvatar(
+                            name = user.fullName,
+                            size = 84.dp,
+                            textStyle = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = user.fullName,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = user.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                     Text(
                         text = "NIM/NIDN: ${user.nimNidn}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -116,8 +129,13 @@ fun ProfileScreen(
             }
 
             Text(
-                text = "Simulasi peran (untuk demo pengujian akses)",
+                text = stringResource(R.string.profile_role_simulation_title),
                 style = MaterialTheme.typography.labelLarge
+            )
+            Text(
+                text = stringResource(R.string.profile_role_simulation_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -129,7 +147,6 @@ fun ProfileScreen(
                     )
                 }
             }
-
             OutlinedButton(
                 onClick = onSignOut,
                 modifier = Modifier.fillMaxWidth()
@@ -142,3 +159,4 @@ fun ProfileScreen(
         }
     }
 }
+

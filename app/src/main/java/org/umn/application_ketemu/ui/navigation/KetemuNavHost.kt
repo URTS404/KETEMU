@@ -1,10 +1,22 @@
 package org.umn.application_ketemu.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,10 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -27,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,9 +58,11 @@ import org.umn.application_ketemu.R
 import org.umn.application_ketemu.ui.LocalAppContainer
 import org.umn.application_ketemu.ui.MainViewModel
 import org.umn.application_ketemu.ui.components.OfflineBanner
+import org.umn.application_ketemu.ui.di.conversationViewModelFactory
 import org.umn.application_ketemu.ui.di.createReportViewModelFactory
 import org.umn.application_ketemu.ui.di.homeViewModelFactory
 import org.umn.application_ketemu.ui.di.mainViewModelFactory
+import org.umn.application_ketemu.ui.di.messagesViewModelFactory
 import org.umn.application_ketemu.ui.di.myReportsViewModelFactory
 import org.umn.application_ketemu.ui.di.reportDetailViewModelFactory
 import org.umn.application_ketemu.ui.feature.create.CreateReportScreen
@@ -56,10 +71,51 @@ import org.umn.application_ketemu.ui.feature.detail.ReportDetailScreen
 import org.umn.application_ketemu.ui.feature.detail.ReportDetailViewModel
 import org.umn.application_ketemu.ui.feature.home.HomeScreen
 import org.umn.application_ketemu.ui.feature.home.HomeViewModel
+import org.umn.application_ketemu.ui.feature.message.ConversationScreen
+import org.umn.application_ketemu.ui.feature.message.ConversationViewModel
 import org.umn.application_ketemu.ui.feature.message.MessageScreen
+import org.umn.application_ketemu.ui.feature.message.MessagesViewModel
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsScreen
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsViewModel
 import org.umn.application_ketemu.ui.feature.profile.ProfileScreen
+
+/*
+ * ============================================================================
+ *  Transisi navigasi
+ * ----------------------------------------------------------------------------
+ *  Durasi sengaja singkat (~300ms) agar pindah layar terasa responsif.
+ *  Tiga pola:
+ *   - Tab (Beranda/Aktivitas/Pesan/Akun) : fade cepat, tanpa geser.
+ *   - Layar tumpukan (List -> Detail)    : geser dari kanan (pola "push").
+ *   - Formulir (Buat Laporan)            : naik dari bawah seperti lembaran.
+ * ============================================================================
+ */
+private const val NAV_ANIM_MS = 300
+
+private val navFadeIn: EnterTransition = fadeIn(tween(NAV_ANIM_MS))
+private val navFadeOut: ExitTransition = fadeOut(tween(NAV_ANIM_MS))
+
+/** Push: layar baru masuk dari kanan, layar lama bergeser sedikit ke kiri. */
+private val pushEnter: EnterTransition =
+    slideInHorizontally(tween(NAV_ANIM_MS), initialOffsetX = { full -> full }) +
+        fadeIn(tween(NAV_ANIM_MS))
+private val pushExit: ExitTransition =
+    slideOutHorizontally(tween(NAV_ANIM_MS), targetOffsetX = { full -> -full / 3 }) +
+        fadeOut(tween(NAV_ANIM_MS))
+private val pushPopEnter: EnterTransition =
+    slideInHorizontally(tween(NAV_ANIM_MS), initialOffsetX = { full -> -full / 3 }) +
+        fadeIn(tween(NAV_ANIM_MS))
+private val pushPopExit: ExitTransition =
+    slideOutHorizontally(tween(NAV_ANIM_MS), targetOffsetX = { full -> full }) +
+        fadeOut(tween(NAV_ANIM_MS))
+
+/** Sheet: formulir naik dari bawah, lalu turun lagi saat ditutup. */
+private val sheetEnter: EnterTransition =
+    slideInVertically(tween(NAV_ANIM_MS), initialOffsetY = { full -> full }) +
+        fadeIn(tween(NAV_ANIM_MS))
+private val sheetPopExit: ExitTransition =
+    slideOutVertically(tween(NAV_ANIM_MS), targetOffsetY = { full -> full }) +
+        fadeOut(tween(NAV_ANIM_MS))
 
 /**
  * Kerangka utama aplikasi.
@@ -114,7 +170,12 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
             NavHost(
                 navController = navController,
                 startDestination = KetemuRoutes.HOME,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
+                // Bawaan: fade cepat untuk pergantian tab antar layar tingkat atas.
+                enterTransition = { navFadeIn },
+                exitTransition = { navFadeOut },
+                popEnterTransition = { navFadeIn },
+                popExitTransition = { navFadeOut }
             ) {
                 composable(KetemuRoutes.HOME) {
                     val viewModel: HomeViewModel = viewModel(
@@ -127,6 +188,9 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         },
                         onCreateReportClick = {
                             navController.navigate(KetemuRoutes.CREATE_REPORT)
+                        },
+                        onOpenMessages = {
+                            navController.navigateToTopLevel(KetemuRoutes.MESSAGE)
                         }
                     )
                 }
@@ -144,7 +208,15 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                 }
 
                 composable(KetemuRoutes.MESSAGE) {
-                    MessageScreen()
+                    val viewModel: MessagesViewModel = viewModel(
+                        factory = messagesViewModelFactory(container)
+                    )
+                    MessageScreen(
+                        viewModel = viewModel,
+                        onThreadClick = { threadId ->
+                            navController.navigate(KetemuRoutes.conversation(threadId))
+                        }
+                    )
                 }
 
                 composable(KetemuRoutes.PROFILE) {
@@ -158,7 +230,14 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     )
                 }
 
-                composable(KetemuRoutes.CREATE_REPORT) {
+                composable(
+                    route = KetemuRoutes.CREATE_REPORT,
+                    // Terasa seperti lembaran yang naik dari bawah.
+                    enterTransition = { sheetEnter },
+                    exitTransition = { navFadeOut },
+                    popEnterTransition = { navFadeIn },
+                    popExitTransition = { sheetPopExit }
+                ) {
                     val viewModel: CreateReportViewModel = viewModel(
                         factory = createReportViewModelFactory(container)
                     )
@@ -175,7 +254,12 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         navArgument(KetemuRoutes.ARG_REPORT_ID) {
                             type = NavType.StringType
                         }
-                    )
+                    ),
+                    // Pola "push": geser dari kanan saat membuka detail.
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
                 ) { entry ->
                     val reportId = entry.arguments
                         ?.getString(KetemuRoutes.ARG_REPORT_ID)
@@ -189,10 +273,41 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         onBack = { navController.popBackStack() }
                     )
                 }
+
+                composable(
+                    route = KetemuRoutes.CONVERSATION,
+                    arguments = listOf(
+                        navArgument(KetemuRoutes.ARG_THREAD_ID) {
+                            type = NavType.StringType
+                        }
+                    ),
+                    // Pola "push": geser dari kanan saat membuka percakapan.
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) { entry ->
+                    val threadId = entry.arguments
+                        ?.getString(KetemuRoutes.ARG_THREAD_ID)
+                        .orEmpty()
+
+                    val viewModel: ConversationViewModel = viewModel(
+                        factory = conversationViewModelFactory(container, threadId)
+                    )
+                    ConversationScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
 }
+
+/** Tinggi bar navigasi, tinggi tonjolan, dan ukuran tombol scan ("ngambang"). */
+private val BAR_HEIGHT = 72.dp
+private val SCAN_OVERHANG = 22.dp
+private val SCAN_BUTTON_SIZE = 58.dp
 
 @Composable
 private fun KetemuBottomBar(
@@ -200,63 +315,83 @@ private fun KetemuBottomBar(
     onNavigate: (String) -> Unit,
     onScanClick: () -> Unit
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 8.dp
+    // Tinggi slot = tinggi bar + ruang tonjolan tombol scan.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(BAR_HEIGHT + SCAN_OVERHANG)
     ) {
-        Row(
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp
         ) {
-            BottomBarItem(
-                selected = currentRoute == KetemuRoutes.HOME,
-                onClick = { onNavigate(KetemuRoutes.HOME) },
-                icon = { tint -> Icon(Icons.Default.Home, contentDescription = null, tint = tint) },
-                label = stringResource(R.string.nav_home),
-                modifier = Modifier.weight(1f)
-            )
-            BottomBarItem(
-                selected = currentRoute == KetemuRoutes.MY_REPORTS,
-                onClick = { onNavigate(KetemuRoutes.MY_REPORTS) },
-                icon = { tint -> Icon(Icons.Default.List, contentDescription = null, tint = tint) },
-                label = stringResource(R.string.nav_my_reports),
-                modifier = Modifier.weight(1f)
-            )
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(BAR_HEIGHT)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilledIconButton(
-                    onClick = onScanClick,
-                    modifier = Modifier.size(52.dp),
-                    shape = CircleShape
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_camera),
-                        contentDescription = stringResource(R.string.nav_scan),
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
+                BottomBarItem(
+                    selected = currentRoute == KetemuRoutes.HOME,
+                    onClick = { onNavigate(KetemuRoutes.HOME) },
+                    icon = { tint -> Icon(Icons.Default.Home, contentDescription = null, tint = tint) },
+                    label = stringResource(R.string.nav_home),
+                    modifier = Modifier.weight(1f)
+                )
+                BottomBarItem(
+                    selected = currentRoute == KetemuRoutes.MY_REPORTS,
+                    onClick = { onNavigate(KetemuRoutes.MY_REPORTS) },
+                    icon = { tint ->
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = null,
+                            tint = tint
+                        )
+                    },
+                    label = stringResource(R.string.nav_my_reports),
+                    modifier = Modifier.weight(1f)
+                )
+                // Ruang kosong di tengah agar tombol scan tidak menutupi tab lain.
+                Spacer(modifier = Modifier.weight(1f))
+                BottomBarItem(
+                    selected = currentRoute == KetemuRoutes.MESSAGE,
+                    onClick = { onNavigate(KetemuRoutes.MESSAGE) },
+                    icon = { tint ->
+                        Icon(painterResource(R.drawable.ic_chat), contentDescription = null, tint = tint)
+                    },
+                    label = stringResource(R.string.nav_message),
+                    modifier = Modifier.weight(1f)
+                )
+                BottomBarItem(
+                    selected = currentRoute == KetemuRoutes.PROFILE,
+                    onClick = { onNavigate(KetemuRoutes.PROFILE) },
+                    icon = { tint -> Icon(Icons.Default.Person, contentDescription = null, tint = tint) },
+                    label = stringResource(R.string.nav_profile),
+                    modifier = Modifier.weight(1f)
+                )
             }
-            BottomBarItem(
-                selected = currentRoute == KetemuRoutes.MESSAGE,
-                onClick = { onNavigate(KetemuRoutes.MESSAGE) },
-                icon = { tint ->
-                    Icon(painterResource(R.drawable.ic_chat), contentDescription = null, tint = tint)
-                },
-                label = stringResource(R.string.nav_message),
-                modifier = Modifier.weight(1f)
-            )
-            BottomBarItem(
-                selected = currentRoute == KetemuRoutes.PROFILE,
-                onClick = { onNavigate(KetemuRoutes.PROFILE) },
-                icon = { tint -> Icon(Icons.Default.Person, contentDescription = null, tint = tint) },
-                label = stringResource(R.string.nav_profile),
-                modifier = Modifier.weight(1f)
+        }
+
+        // Tombol scan diletakkan DI LUAR Surface bar: Surface meng-clip kontennya,
+        // jadi kalau berada di dalam tidak akan bisa menonjol ke atas.
+        FloatingActionButton(
+            onClick = onScanClick,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .size(SCAN_BUTTON_SIZE),
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_camera),
+                contentDescription = stringResource(R.string.nav_scan),
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -270,23 +405,44 @@ private fun BottomBarItem(
     label: String,
     modifier: Modifier = Modifier
 ) {
-    val tint = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    // Warna ikon & "pill" dianimasikan halus saat tab berpindah.
+    val tint by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        label = "tabTint"
+    )
+    val pillColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            Color.Transparent
+        },
+        label = "tabPill"
+    )
+
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier
+                .size(width = 56.dp, height = 30.dp)
+                .clip(CircleShape)
+                .background(pillColor),
             contentAlignment = Alignment.Center
         ) {
-            icon(tint)
+            Box(
+                modifier = Modifier.size(22.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                icon(tint)
+            }
         }
         Text(
             text = label,

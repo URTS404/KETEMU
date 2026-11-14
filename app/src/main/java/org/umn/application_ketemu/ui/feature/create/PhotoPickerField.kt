@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -57,7 +56,7 @@ fun PhotoPickerField(
 
     val deniedMessage = stringResource(R.string.create_camera_denied)
     val unavailableMessage = stringResource(R.string.create_camera_unavailable)
-    val shape = RoundedCornerShape(16.dp)
+    val shape = MaterialTheme.shapes.medium
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()

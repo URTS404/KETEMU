@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -140,6 +139,10 @@ private fun ReportForm(
     var location by rememberSaveable { mutableStateOf("") }
     var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Baru di-set true setelah pengguna menekan "Simpan Laporan"; memicu
+    // tampilnya pesan error per-field (isError + supportingText).
+    var showErrors by rememberSaveable { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -182,9 +185,15 @@ private fun ReportForm(
             onValueChange = { title = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.create_field_title)) },
-            placeholder = { Text(stringResource(R.string.create_field_title_hint)) }
+            placeholder = { Text(stringResource(R.string.create_field_title_hint)) },
+            isError = showErrors && title.isBlank(),
+            supportingText = if (showErrors && title.isBlank()) {
+                { Text(stringResource(R.string.create_error_title)) }
+            } else {
+                null
+            }
         )
 
         OutlinedTextField(
@@ -192,7 +201,7 @@ private fun ReportForm(
             onValueChange = { description = it },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.create_field_description)) },
             placeholder = {
                 Text(stringResource(R.string.create_field_description_hint))
@@ -206,26 +215,37 @@ private fun ReportForm(
             onValueChange = { location = it },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             label = { Text(stringResource(R.string.create_field_location)) },
-            placeholder = { Text(stringResource(R.string.create_field_location_hint)) }
+            placeholder = { Text(stringResource(R.string.create_field_location_hint)) },
+            isError = showErrors && location.isBlank(),
+            supportingText = if (showErrors && location.isBlank()) {
+                { Text(stringResource(R.string.create_error_location)) }
+            } else {
+                null
+            }
         )
 
         Button(
             onClick = {
-                onSubmit(
-                    ReportDraft(
-                        type = type,
-                        title = title,
-                        description = description,
-                        category = category,
-                        location = location,
-                        photoUri = photoUri
+                // Submission diblokir sampai field wajib valid; bila belum,
+                // tampilkan pesan error alih-alih mengirim laporan.
+                if (title.isBlank() || location.isBlank()) {
+                    showErrors = true
+                } else {
+                    onSubmit(
+                        ReportDraft(
+                            type = type,
+                            title = title,
+                            description = description,
+                            category = category,
+                            location = location,
+                            photoUri = photoUri
+                        )
                     )
-                )
+                }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = title.isNotBlank() && location.isNotBlank(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = MaterialTheme.colorScheme.onTertiary

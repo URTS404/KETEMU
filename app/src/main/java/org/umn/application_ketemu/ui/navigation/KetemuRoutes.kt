@@ -14,8 +14,12 @@ object KetemuRoutes {
     const val MESSAGE = "message"
     const val CREATE_REPORT = "create_report"
     const val REPORT_DETAIL = "report_detail/{reportId}"
+    const val CONVERSATION = "conversation/{threadId}"
 
     const val ARG_REPORT_ID = "reportId"
+    const val ARG_THREAD_ID = "threadId"
 
     fun reportDetail(reportId: String): String = "report_detail/$reportId"
+
+    fun conversation(threadId: String): String = "conversation/$threadId"
 }
