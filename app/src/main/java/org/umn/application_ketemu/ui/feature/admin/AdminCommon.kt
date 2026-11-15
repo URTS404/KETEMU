@@ -56,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.util.RelativeTime
 import org.umn.application_ketemu.domain.model.AuditAction
@@ -350,18 +351,34 @@ fun AdminHintCard(
 }
 
 /** Durasi animasi masuk isi layar admin (milidetik). */
-private const val ADMIN_REVEAL_MS = 280
-
-/** Jarak kemunculan antar item berurutan (milidetik). */
-private const val ADMIN_STAGGER_MS = 45
+private const val ADMIN_REVEAL_MS = 300
 
 /**
- * Pembungkus animasi masuk untuk isi layar admin: isi memudar sambil naik
- * sedikit, dan tiap item berurutan sesuai [index].
+ * Jeda sebelum gelombang reveal dimulai (milidetik).
  *
- * Pola stagger-nya sama dengan daftar di layar Aktivitas, jadi seluruh aplikasi
- * terasa memakai satu bahasa gerak. Indeks dihitung modulo 8 supaya daftar
- * panjang tidak membuat item terakhir menunggu terlalu lama.
+ * Layar admin dibuka lewat transisi geser 300 ms (KetemuNavHost). Jeda kecil
+ * ini membuat isi baru muncul setelah halaman hampir mendarat, sehingga
+ * pengguna sempat melihat layar kosong lalu terisi dari atas ke bawah.
+ */
+private const val ADMIN_REVEAL_BASE_MS = 90
+
+/**
+ * Jarak kemunculan antar item berurutan (milidetik).
+ *
+ * Nilainya sedikit lebih longgar daripada daftar Beranda supaya blok besar
+ * (header, kartu ringkasan, judul bagian) terbaca datang satu per satu, bukan
+ * muncul hampir bersamaan.
+ */
+private const val ADMIN_STAGGER_MS = 60
+
+/**
+ * Pembungkus animasi masuk untuk isi layar admin: isi transparan di awal, lalu
+ * memudar sambil naik sedikit sampai posisi akhirnya.
+ *
+ * Karena tiap blok diberi [index] berurutan, layar terasa kosong sesaat setelah
+ * dibuka lalu terisi dari atas ke bawah, seperti daftar di Beranda. Indeks
+ * dihitung modulo 8 supaya daftar panjang tidak membuat item terakhir menunggu
+ * terlalu lama.
  *
  * Keadaan "sudah muncul" disimpan dengan [rememberSaveable] agar animasi tidak
  * diputar ulang saat item keluar-masuk viewport saat pengguna menggulir.
@@ -374,13 +391,16 @@ fun AdminReveal(
 ) {
     var visible by rememberSaveable { mutableStateOf(false) }
     val delayMillis = (index % 8).coerceAtLeast(0) * ADMIN_STAGGER_MS
-    LaunchedEffect(Unit) { visible = true }
+    LaunchedEffect(Unit) {
+        delay(ADMIN_REVEAL_BASE_MS.toLong())
+        visible = true
+    }
 
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
         enter = fadeIn(tween(ADMIN_REVEAL_MS, delayMillis = delayMillis)) +
-            slideInVertically(tween(ADMIN_REVEAL_MS, delayMillis = delayMillis)) { it / 4 }
+            slideInVertically(tween(ADMIN_REVEAL_MS, delayMillis = delayMillis)) { it / 3 }
     ) {
         content()
     }

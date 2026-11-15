@@ -69,118 +69,140 @@ fun AdminDashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 28.dp)
         ) {
-            AdminScreenHeader(
-                title = stringResource(R.string.admin_title),
-                subtitle = stringResource(R.string.admin_subtitle),
-                roleLabel = roleLabel,
-                onBack = onBack
-            )
+            AdminReveal(index = 0) {
+                AdminScreenHeader(
+                    title = stringResource(R.string.admin_title),
+                    subtitle = stringResource(R.string.admin_subtitle),
+                    roleLabel = roleLabel,
+                    onBack = onBack
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
-            AdminSectionHeader(
-                title = stringResource(R.string.admin_section_summary),
-                trailing = {
-                    Text(
-                        text = stringResource(R.string.admin_summary_scope),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            AdminReveal(index = 1) {
+                AdminSectionHeader(
+                    title = stringResource(R.string.admin_section_summary),
+                    trailing = {
+                        Text(
+                            text = stringResource(R.string.admin_summary_scope),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AdminReveal(index = 2) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    AdminStatCard(
+                        count = state.pendingModeration,
+                        label = stringResource(R.string.admin_stat_moderation),
+                        iconRes = R.drawable.ic_admin_hourglass,
+                        tone = tones.mint,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AdminStatCard(
+                        count = state.pendingClaims,
+                        label = stringResource(R.string.admin_stat_claims),
+                        iconRes = R.drawable.ic_admin_clipboard_check,
+                        tone = tones.amber,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                AdminStatCard(
-                    count = state.pendingModeration,
-                    label = stringResource(R.string.admin_stat_moderation),
-                    iconRes = R.drawable.ic_admin_hourglass,
-                    tone = tones.mint,
-                    modifier = Modifier.weight(1f)
-                )
-                AdminStatCard(
-                    count = state.pendingClaims,
-                    label = stringResource(R.string.admin_stat_claims),
-                    iconRes = R.drawable.ic_admin_clipboard_check,
-                    tone = tones.amber,
-                    modifier = Modifier.weight(1f)
-                )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                AdminStatCard(
-                    count = state.archivedCount,
-                    label = stringResource(R.string.admin_stat_archived),
-                    iconRes = R.drawable.ic_admin_archive,
-                    tone = tones.slate,
-                    modifier = Modifier.weight(1f)
-                )
-                AdminStatCard(
-                    count = state.totalReports,
-                    label = stringResource(R.string.admin_stat_total),
-                    iconRes = R.drawable.ic_admin_document,
-                    tone = tones.blue,
-                    modifier = Modifier.weight(1f)
-                )
+            AdminReveal(index = 3) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    AdminStatCard(
+                        count = state.archivedCount,
+                        label = stringResource(R.string.admin_stat_archived),
+                        iconRes = R.drawable.ic_admin_archive,
+                        tone = tones.slate,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AdminStatCard(
+                        count = state.totalReports,
+                        label = stringResource(R.string.admin_stat_total),
+                        iconRes = R.drawable.ic_admin_document,
+                        tone = tones.blue,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
-            AdminSectionHeader(title = stringResource(R.string.admin_section_management))
+            AdminReveal(index = 4) {
+                AdminSectionHeader(title = stringResource(R.string.admin_section_management))
+            }
             Spacer(modifier = Modifier.height(12.dp))
 
-            AdminMenuRow(
-                title = stringResource(R.string.admin_menu_moderation),
-                subtitle = stringResource(R.string.admin_menu_moderation_desc),
-                iconRes = R.drawable.ic_admin_moderation,
-                tone = tones.mint,
-                onClick = onOpenModeration
-            )
+            AdminReveal(index = 5) {
+                AdminMenuRow(
+                    title = stringResource(R.string.admin_menu_moderation),
+                    subtitle = stringResource(R.string.admin_menu_moderation_desc),
+                    iconRes = R.drawable.ic_admin_moderation,
+                    tone = tones.mint,
+                    onClick = onOpenModeration
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
-            AdminMenuRow(
-                title = stringResource(R.string.admin_menu_claims),
-                subtitle = stringResource(R.string.admin_menu_claims_desc),
-                iconRes = R.drawable.ic_admin_clipboard_check,
-                tone = tones.amber,
-                onClick = onOpenClaims
-            )
+            AdminReveal(index = 6) {
+                AdminMenuRow(
+                    title = stringResource(R.string.admin_menu_claims),
+                    subtitle = stringResource(R.string.admin_menu_claims_desc),
+                    iconRes = R.drawable.ic_admin_clipboard_check,
+                    tone = tones.amber,
+                    onClick = onOpenClaims
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
-            AdminMenuRow(
-                title = stringResource(R.string.admin_menu_audit),
-                subtitle = stringResource(R.string.admin_menu_audit_desc),
-                iconRes = R.drawable.ic_admin_history,
-                tone = tones.blue,
-                onClick = onOpenAudit
-            )
+            AdminReveal(index = 7) {
+                AdminMenuRow(
+                    title = stringResource(R.string.admin_menu_audit),
+                    subtitle = stringResource(R.string.admin_menu_audit_desc),
+                    iconRes = R.drawable.ic_admin_history,
+                    tone = tones.blue,
+                    onClick = onOpenAudit
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
-            AdminMenuRow(
-                title = stringResource(R.string.admin_menu_users),
-                subtitle = stringResource(R.string.admin_menu_users_desc),
-                iconRes = R.drawable.ic_admin_users,
-                tone = tones.violet,
-                onClick = onOpenUsers
-            )
+            AdminReveal(index = 8) {
+                AdminMenuRow(
+                    title = stringResource(R.string.admin_menu_users),
+                    subtitle = stringResource(R.string.admin_menu_users_desc),
+                    iconRes = R.drawable.ic_admin_users,
+                    tone = tones.violet,
+                    onClick = onOpenUsers
+                )
+            }
 
             // Aktivitas terakhir tetap dipertahankan sebagai kertas kerja cepat;
             // daftar lengkapnya ada pada menu "Log aktivitas".
             if (state.recentAudit.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(28.dp))
-                AdminSectionHeader(title = stringResource(R.string.admin_recent_audit))
+                AdminReveal(index = 9) {
+                    AdminSectionHeader(title = stringResource(R.string.admin_recent_audit))
+                }
                 Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                        state.recentAudit.forEach { entry ->
-                            AuditRow(entry = entry)
+                AdminReveal(index = 10) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                            state.recentAudit.forEach { entry ->
+                                AuditRow(entry = entry)
+                            }
                         }
                     }
                 }

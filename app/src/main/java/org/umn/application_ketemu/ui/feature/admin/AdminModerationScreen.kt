@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
@@ -99,56 +99,68 @@ fun AdminModerationScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item(key = "header") {
-                AdminScreenHeader(
-                    title = stringResource(R.string.admin_menu_moderation),
-                    subtitle = stringResource(R.string.admin_moderation_subtitle),
-                    onBack = onBack
-                )
-            }
-
-            item(key = "summary") {
-                ModerationSummaryCard(
-                    count = queue.size,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            item(key = "section") {
-                AdminSectionHeader(
-                    title = stringResource(R.string.admin_moderation_queue_section),
-                    modifier = Modifier.padding(top = 8.dp),
-                    trailing = {
-                        Text(
-                            // Jumlah pada judul bagian memakai sumber data yang
-                            // sama dengan kartu ringkasan, jadi selalu cocok.
-                            text = stringResource(
-                                R.string.admin_moderation_queue_count,
-                                queue.size
-                            ),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
-            }
-
-            if (queue.isEmpty()) {
-                item(key = "empty") { ModerationEmptyCard() }
-            } else {
-                items(items = queue, key = { it.id }) { report ->
-                    ModerationCard(
-                        report = report,
-                        onVerify = { viewModel.verifyAndForward(report.id) },
-                        onArchive = { viewModel.archive(report.id) }
+                AdminReveal(index = 0) {
+                    AdminScreenHeader(
+                        title = stringResource(R.string.admin_menu_moderation),
+                        subtitle = stringResource(R.string.admin_moderation_subtitle),
+                        onBack = onBack
                     )
                 }
             }
 
+            item(key = "summary") {
+                AdminReveal(index = 1) {
+                    ModerationSummaryCard(
+                        count = queue.size,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            item(key = "section") {
+                AdminReveal(index = 2) {
+                    AdminSectionHeader(
+                        title = stringResource(R.string.admin_moderation_queue_section),
+                        modifier = Modifier.padding(top = 8.dp),
+                        trailing = {
+                            Text(
+                                // Jumlah pada judul bagian memakai sumber data yang
+                                // sama dengan kartu ringkasan, jadi selalu cocok.
+                                text = stringResource(
+                                    R.string.admin_moderation_queue_count,
+                                    queue.size
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
+            }
+
+            if (queue.isEmpty()) {
+                item(key = "empty") {
+                    AdminReveal(index = 3) { ModerationEmptyCard() }
+                }
+            } else {
+                itemsIndexed(items = queue, key = { _, report -> report.id }) { index, report ->
+                    AdminReveal(index = index + 3, modifier = Modifier.animateItem()) {
+                        ModerationCard(
+                            report = report,
+                            onVerify = { viewModel.verifyAndForward(report.id) },
+                            onArchive = { viewModel.archive(report.id) }
+                        )
+                    }
+                }
+            }
+
             item(key = "hint") {
-                AdminHintRow(
-                    text = stringResource(R.string.admin_moderation_hint),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                AdminReveal(index = queue.size + 3) {
+                    AdminHintRow(
+                        text = stringResource(R.string.admin_moderation_hint),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -97,69 +97,96 @@ fun AdminAuditScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item(key = "header") {
-                AdminScreenHeader(
-                    title = stringResource(R.string.admin_menu_audit),
-                    subtitle = stringResource(R.string.admin_audit_subtitle),
-                    onBack = onBack
-                )
+                AdminReveal(index = 0) {
+                    AdminScreenHeader(
+                        title = stringResource(R.string.admin_menu_audit),
+                        subtitle = stringResource(R.string.admin_audit_subtitle),
+                        onBack = onBack
+                    )
+                }
             }
 
             item(key = "summary") {
-                AuditSummaryCard(
-                    count = entries.size,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                AdminReveal(index = 1) {
+                    AuditSummaryCard(
+                        count = entries.size,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
 
             // Saringan baru berguna saat ada catatan; log kosong cukup menampilkan
             // kartu penjelasan tanpa chip yang tidak mengubah apa pun.
             if (entries.isNotEmpty()) {
                 item(key = "filter") {
-                    AuditFilterRow(
-                        selected = filter,
-                        onSelect = { filter = it }
-                    )
+                    AdminReveal(index = 2) {
+                        AuditFilterRow(
+                            selected = filter,
+                            onSelect = { filter = it }
+                        )
+                    }
                 }
             }
 
             item(key = "section") {
-                AdminSectionHeader(
-                    title = stringResource(R.string.admin_audit_history_section),
-                    trailing = {
-                        Text(
-                            // Jumlah mengikuti hasil saringan, sama seperti
-                            // daftar yang tampil di bawahnya.
-                            text = stringResource(R.string.admin_audit_count, visibleEntries.size),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
+                AdminReveal(index = 3) {
+                    AdminSectionHeader(
+                        title = stringResource(R.string.admin_audit_history_section),
+                        trailing = {
+                            Text(
+                                // Jumlah mengikuti hasil saringan, sama seperti
+                                // daftar yang tampil di bawahnya.
+                                text = stringResource(R.string.admin_audit_count, visibleEntries.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
             }
 
             if (visibleEntries.isEmpty()) {
                 item(key = "empty") {
-                    AuditEmptyCard(isFiltered = entries.isNotEmpty())
+                    AdminReveal(index = 4) {
+                        AuditEmptyCard(isFiltered = entries.isNotEmpty())
+                    }
                 }
             } else {
+                // Indeks reveal berjalan terus antar kelompok hari supaya
+                // gelombangnya tetap terasa turun dari atas ke bawah.
+                var revealIndex = 4
                 dayGroups.forEach { group ->
+                    val dayIndex = revealIndex
                     item(key = "day-${group.date}") {
-                        AuditDayLabel(
-                            date = group.date,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                        AdminReveal(index = dayIndex) {
+                            AuditDayLabel(
+                                date = group.date,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
-                    items(items = group.entries, key = { it.id }) { entry ->
-                        AuditEntryCard(entry = entry)
+                    itemsIndexed(
+                        items = group.entries,
+                        key = { _, entry -> entry.id }
+                    ) { index, entry ->
+                        AdminReveal(
+                            index = dayIndex + 1 + index,
+                            modifier = Modifier.animateItem()
+                        ) {
+                            AuditEntryCard(entry = entry)
+                        }
                     }
+                    revealIndex = dayIndex + 1 + group.entries.size
                 }
             }
 
             item(key = "hint") {
-                AdminHintRow(
-                    text = stringResource(R.string.admin_audit_hint),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                AdminReveal(index = visibleEntries.size + 4) {
+                    AdminHintRow(
+                        text = stringResource(R.string.admin_audit_hint),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

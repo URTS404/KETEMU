@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -100,56 +100,68 @@ fun AdminClaimsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item(key = "header") {
-                AdminScreenHeader(
-                    title = stringResource(R.string.admin_menu_claims),
-                    subtitle = stringResource(R.string.admin_claims_subtitle),
-                    onBack = onBack
-                )
-            }
-
-            item(key = "summary") {
-                AdminSummaryCard(
-                    label = stringResource(R.string.admin_claims_pending_label),
-                    count = claims.size,
-                    unit = stringResource(R.string.admin_claims_pending_unit),
-                    iconRes = R.drawable.ic_admin_clipboard_check,
-                    tone = tones.amber,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            item(key = "section") {
-                AdminSectionHeader(
-                    title = stringResource(R.string.admin_claims_queue_section),
-                    modifier = Modifier.padding(top = 8.dp),
-                    trailing = {
-                        Text(
-                            // Jumlah pada judul bagian memakai sumber data yang
-                            // sama dengan kartu ringkasan, jadi selalu cocok.
-                            text = stringResource(R.string.admin_claims_queue_count, claims.size),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
-            }
-
-            if (claims.isEmpty()) {
-                item(key = "empty") { ClaimsEmptyCard() }
-            } else {
-                items(items = claims, key = { it.id }) { claim ->
-                    ClaimCard(
-                        claim = claim,
-                        onReview = { selected = claim }
+                AdminReveal(index = 0) {
+                    AdminScreenHeader(
+                        title = stringResource(R.string.admin_menu_claims),
+                        subtitle = stringResource(R.string.admin_claims_subtitle),
+                        onBack = onBack
                     )
                 }
             }
 
+            item(key = "summary") {
+                AdminReveal(index = 1) {
+                    AdminSummaryCard(
+                        label = stringResource(R.string.admin_claims_pending_label),
+                        count = claims.size,
+                        unit = stringResource(R.string.admin_claims_pending_unit),
+                        iconRes = R.drawable.ic_admin_clipboard_check,
+                        tone = tones.amber,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            item(key = "section") {
+                AdminReveal(index = 2) {
+                    AdminSectionHeader(
+                        title = stringResource(R.string.admin_claims_queue_section),
+                        modifier = Modifier.padding(top = 8.dp),
+                        trailing = {
+                            Text(
+                                // Jumlah pada judul bagian memakai sumber data yang
+                                // sama dengan kartu ringkasan, jadi selalu cocok.
+                                text = stringResource(R.string.admin_claims_queue_count, claims.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
+            }
+
+            if (claims.isEmpty()) {
+                item(key = "empty") {
+                    AdminReveal(index = 3) { ClaimsEmptyCard() }
+                }
+            } else {
+                itemsIndexed(items = claims, key = { _, claim -> claim.id }) { index, claim ->
+                    AdminReveal(index = index + 3, modifier = Modifier.animateItem()) {
+                        ClaimCard(
+                            claim = claim,
+                            onReview = { selected = claim }
+                        )
+                    }
+                }
+            }
+
             item(key = "hint") {
-                AdminHintRow(
-                    text = stringResource(R.string.admin_claims_hint),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                AdminReveal(index = claims.size + 3) {
+                    AdminHintRow(
+                        text = stringResource(R.string.admin_claims_hint),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }
