@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -339,20 +340,24 @@ fun AdminHintCard(
 }
 
 /**
- * Sapuan gradasi untuk kartu ringkasan admin: putih kartu di kiri atas, lalu
- * memudar ke warna pastel [tone] di kanan bawah.
+ * Sapuan gradasi untuk kartu ringkasan admin: pastel tipis di kiri atas, lalu
+ * makin pekat ke kanan bawah.
  *
- * Gradasi dipakai alih-alih warna rata supaya kartu ringkasan terasa seperti
- * kertas berwarna, bukan blok warna. Kontras teks tetap aman karena warna
- * paling pekat hanya muncul di sudut, bukan di bawah teks utama.
+ * Kedua ujung gradasi dicampur dari [tone], bukan dari putih murni, supaya
+ * warna kartu tetap terbaca sebagai warna (bukan putih yang memudar). Ujung
+ * pekat hanya dicampur 22% ke arah [AdminTone.content], jadi masih terasa
+ * pastel dan teks yang memakai `content` tetap kontras.
  */
 @Composable
-fun adminToneBrush(tone: AdminTone): Brush = Brush.linearGradient(
-    colors = listOf(
-        MaterialTheme.colorScheme.surfaceContainerLowest,
-        tone.container
+fun adminToneBrush(tone: AdminTone): Brush {
+    val base = MaterialTheme.colorScheme.surfaceContainerLowest
+    return Brush.linearGradient(
+        colors = listOf(
+            lerp(base, tone.container, 0.6f),
+            lerp(tone.container, tone.content, 0.22f)
+        )
     )
-)
+}
 
 /**
  * Kartu ringkasan besar di atas daftar kerja admin (moderasi, klaim, log).
