@@ -213,6 +213,12 @@
     <string name="admin_queue_empty_desc">Tidak ada laporan yang menunggu verifikasi.</string>
     <string name="admin_action_verify">Verifikasi &amp; teruskan ke Pos</string>
     <string name="admin_action_archive">Arsipkan</string>
+    <string name="admin_moderation_subtitle">Tinjau laporan sebelum diteruskan ke Pos.</string>
+    <string name="admin_moderation_pending_label">Perlu ditinjau</string>
+    <string name="admin_moderation_pending_unit">laporan menunggu verifikasi</string>
+    <string name="admin_moderation_queue_section">Laporan masuk</string>
+    <string name="admin_moderation_queue_count">%1$d laporan</string>
+    <string name="admin_moderation_hint">Verifikasi untuk meneruskan laporan ke Pos.</string>
     <string name="admin_claims_empty">Tidak ada klaim menunggu</string>
     <string name="admin_claims_empty_desc">Klaim baru dari pengguna akan muncul di sini.</string>
     <string name="admin_action_review">Tinjau klaim</string>

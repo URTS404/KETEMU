@@ -69,7 +69,12 @@ fun AdminDashboardScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 28.dp)
         ) {
-            AdminDashboardHeader(roleLabel = roleLabel, onBack = onBack)
+            AdminScreenHeader(
+                title = stringResource(R.string.admin_title),
+                subtitle = stringResource(R.string.admin_subtitle),
+                roleLabel = roleLabel,
+                onBack = onBack
+            )
 
             Spacer(modifier = Modifier.height(28.dp))
             AdminSectionHeader(

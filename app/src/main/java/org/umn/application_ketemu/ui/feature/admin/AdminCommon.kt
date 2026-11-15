@@ -156,17 +156,24 @@ fun rememberAdminTones(): AdminTones =
     if (isSystemInDarkTheme()) DarkAdminTones else LightAdminTones
 
 /**
- * Header dashboard bergaya "ruang admin": tombol kembali, label modul,
- * chip peran aktif, judul besar, dan satu baris penjelasan.
+ * Header layar panel admin: tombol kembali, label modul, judul besar, dan satu
+ * baris penjelasan.
  *
- * Dipakai dashboard karena layar ini tidak memakai [TopAppBar] seperti layar
- * admin lain — judulnya sengaja besar agar terasa seperti beranda kerja.
+ * Dashboard & moderasi memakai header ini alih-alih [TopAppBar] agar judulnya
+ * besar dan terasa seperti beranda kerja, bukan layar biasa. Chip peran hanya
+ * muncul bila [roleLabel] diisi — layar kerja tidak perlu menegaskan peran lagi.
+ *
+ * @param title judul besar layar, mis. "Moderasi laporan"
+ * @param subtitle satu baris penjelas tugas layar tersebut
+ * @param roleLabel nama peran aktif; `null` menyembunyikan chip peran
  */
 @Composable
-fun AdminDashboardHeader(
-    roleLabel: String,
+fun AdminScreenHeader(
+    title: String,
+    subtitle: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    roleLabel: String? = null
 ) {
     val tones = rememberAdminTones()
 
@@ -193,29 +200,31 @@ fun AdminDashboardHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.weight(1f))
-            Surface(
-                shape = CircleShape,
-                color = tones.mint.container
-            ) {
-                Text(
-                    text = roleLabel,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = tones.mint.content
-                )
+            if (roleLabel != null) {
+                Surface(
+                    shape = CircleShape,
+                    color = tones.mint.container
+                ) {
+                    Text(
+                        text = roleLabel,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = tones.mint.content
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = stringResource(R.string.admin_title),
+            text = title,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = stringResource(R.string.admin_subtitle),
+            text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
