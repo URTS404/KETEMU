@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MailOutline
@@ -43,6 +43,10 @@ import org.umn.application_ketemu.ui.components.InitialsAvatar
  * Susunannya mengikuti layar kerja admin lain: header besar, kartu ringkasan
  * bergradasi, lalu daftar kartu putih. Chip peran tetap dipertahankan supaya
  * STAFF dan ADMIN langsung terbedakan tanpa harus membaca email.
+ *
+ * Animasi: tiap bagian masuk bergiliran (memudar + naik halus) lewat
+ * [AdminReveal], dan kartu akun memakai `Modifier.animateItem()` sehingga daftar
+ * bergeser halus bila isinya berubah.
  */
 @Composable
 fun AdminUsersScreen(
@@ -62,55 +66,71 @@ fun AdminUsersScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item(key = "header") {
-                AdminScreenHeader(
-                    title = stringResource(R.string.admin_menu_users),
-                    subtitle = stringResource(R.string.admin_users_subtitle),
-                    onBack = onBack
-                )
+                AdminReveal(index = 0) {
+                    AdminScreenHeader(
+                        title = stringResource(R.string.admin_menu_users),
+                        subtitle = stringResource(R.string.admin_users_subtitle),
+                        onBack = onBack
+                    )
+                }
             }
 
             item(key = "summary") {
-                AdminSummaryCard(
-                    label = stringResource(R.string.admin_users_summary_label),
-                    count = accounts.size,
-                    unit = stringResource(R.string.admin_users_summary_unit),
-                    iconRes = R.drawable.ic_admin_users,
-                    tone = tones.violet,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                AdminReveal(index = 1) {
+                    AdminSummaryCard(
+                        label = stringResource(R.string.admin_users_summary_label),
+                        count = accounts.size,
+                        unit = stringResource(R.string.admin_users_summary_unit),
+                        iconRes = R.drawable.ic_admin_users,
+                        tone = tones.violet,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
 
             item(key = "section") {
-                AdminSectionHeader(
-                    title = stringResource(R.string.admin_users_section),
-                    modifier = Modifier.padding(top = 8.dp),
-                    trailing = {
-                        Text(
-                            // Sama dengan isi kartu ringkasan di atas agar
-                            // angka tidak pernah berbeda antar keduanya.
-                            text = stringResource(R.string.admin_users_count, accounts.size),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
+                AdminReveal(index = 2) {
+                    AdminSectionHeader(
+                        title = stringResource(R.string.admin_users_section),
+                        modifier = Modifier.padding(top = 8.dp),
+                        trailing = {
+                            Text(
+                                // Sama dengan isi kartu ringkasan di atas agar
+                                // angka tidak pernah berbeda antar keduanya.
+                                text = stringResource(R.string.admin_users_count, accounts.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
             }
 
             if (accounts.isEmpty()) {
-                item(key = "empty") { UsersEmptyCard() }
+                item(key = "empty") {
+                    AdminReveal(index = 3) { UsersEmptyCard() }
+                }
             } else {
-                items(items = accounts, key = { it.id }) { user ->
-                    UserCard(user = user)
+                itemsIndexed(items = accounts, key = { _, user -> user.id }) { index, user ->
+                    // Nomor 0-2 sudah dipakai header, ringkasan, dan judul bagian.
+                    AdminReveal(
+                        index = index + 3,
+                        modifier = Modifier.animateItem()
+                    ) {
+                        UserCard(user = user)
+                    }
                 }
             }
 
             item(key = "hint") {
-                AdminHintCard(
-                    title = stringResource(R.string.admin_users_hint_title),
-                    text = stringResource(R.string.admin_users_desc),
-                    tone = tones.violet,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                AdminReveal(index = accounts.size + 3) {
+                    AdminHintCard(
+                        title = stringResource(R.string.admin_users_hint_title),
+                        text = stringResource(R.string.admin_users_desc),
+                        tone = tones.violet,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

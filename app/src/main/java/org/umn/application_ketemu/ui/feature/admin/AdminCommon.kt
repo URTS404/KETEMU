@@ -1,6 +1,11 @@
 package org.umn.application_ketemu.ui.feature.admin
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -35,6 +40,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -339,6 +349,43 @@ fun AdminHintCard(
     }
 }
 
+/** Durasi animasi masuk isi layar admin (milidetik). */
+private const val ADMIN_REVEAL_MS = 280
+
+/** Jarak kemunculan antar item berurutan (milidetik). */
+private const val ADMIN_STAGGER_MS = 45
+
+/**
+ * Pembungkus animasi masuk untuk isi layar admin: isi memudar sambil naik
+ * sedikit, dan tiap item berurutan sesuai [index].
+ *
+ * Pola stagger-nya sama dengan daftar di layar Aktivitas, jadi seluruh aplikasi
+ * terasa memakai satu bahasa gerak. Indeks dihitung modulo 8 supaya daftar
+ * panjang tidak membuat item terakhir menunggu terlalu lama.
+ *
+ * Keadaan "sudah muncul" disimpan dengan [rememberSaveable] agar animasi tidak
+ * diputar ulang saat item keluar-masuk viewport saat pengguna menggulir.
+ */
+@Composable
+fun AdminReveal(
+    index: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var visible by rememberSaveable { mutableStateOf(false) }
+    val delayMillis = (index % 8).coerceAtLeast(0) * ADMIN_STAGGER_MS
+    LaunchedEffect(Unit) { visible = true }
+
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(tween(ADMIN_REVEAL_MS, delayMillis = delayMillis)) +
+            slideInVertically(tween(ADMIN_REVEAL_MS, delayMillis = delayMillis)) { it / 4 }
+    ) {
+        content()
+    }
+}
+
 /**
  * Sapuan gradasi untuk kartu ringkasan admin: pastel tipis di kiri atas, lalu
  * makin pekat ke kanan bawah.
@@ -378,6 +425,14 @@ fun AdminSummaryCard(
     tone: AdminTone,
     modifier: Modifier = Modifier
 ) {
+    // Angka bergulir halus saat jumlahnya berubah; pada komposisi pertama
+    // nilainya sudah sama dengan `count` sehingga tidak ada lompatan 0 -> n.
+    val animatedCount by animateIntAsState(
+        targetValue = count,
+        animationSpec = tween(durationMillis = 520),
+        label = "adminSummaryCount"
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -403,7 +458,7 @@ fun AdminSummaryCard(
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = count.toString(),
+                        text = animatedCount.toString(),
                         style = MaterialTheme.typography.headlineMedium,
                         color = tone.content
                     )
