@@ -234,6 +234,20 @@
     <string name="admin_audit_action_unarchive">Buka arsip laporan</string>
     <string name="admin_audit_action_approve_claim">Setujui klaim</string>
     <string name="admin_audit_action_reject_claim">Tolak klaim</string>
+    <string name="admin_audit_subtitle">Riwayat keputusan moderator, tercatat permanen.</string>
+    <string name="admin_audit_total_label">Total catatan</string>
+    <string name="admin_audit_total_unit">aktivitas tercatat</string>
+    <string name="admin_audit_history_section">Riwayat keputusan</string>
+    <string name="admin_audit_count">%1$d catatan</string>
+    <string name="admin_audit_filter_all">Semua</string>
+    <string name="admin_audit_filter_report">Laporan</string>
+    <string name="admin_audit_filter_claim">Klaim</string>
+    <string name="admin_audit_filter_empty">Tidak ada catatan pada saringan ini</string>
+    <string name="admin_audit_filter_empty_desc">Pilih saringan lain untuk melihat aktivitas lainnya.</string>
+    <string name="admin_audit_today">Hari ini</string>
+    <string name="admin_audit_yesterday">Kemarin</string>
+    <string name="admin_audit_hint">Log aktivitas bersifat permanen: tidak dapat diubah atau dihapus.</string>
+
     <string name="admin_role_label">Peran</string>
     <string name="admin_close">Tutup</string>
 </resources>

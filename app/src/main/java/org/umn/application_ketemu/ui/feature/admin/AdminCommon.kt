@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -255,6 +256,33 @@ fun AdminSectionHeader(
             Spacer(modifier = Modifier.weight(1f))
             trailing()
         }
+    }
+}
+
+/**
+ * Baris petunjuk kecil di bawah sebuah daftar: ikon ⓘ + satu kalimat penjelas.
+ *
+ * Dipakai bersama oleh layar admin agar pesan bantuan selalu punya bentuk dan
+ * ukuran yang sama (tidak lagi ditulis ulang di tiap layar).
+ */
+@Composable
+fun AdminHintRow(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
