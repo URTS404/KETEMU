@@ -166,7 +166,7 @@ fun AdminAuditScreen(
 }
 
 /**
- * Kartu ringkasan log: jumlah catatan yang tersimpan. Warnanya biru — sama
+ * Kartu ringkasan log: jumlah catatan yang tersimpan. Gradasinya biru — sama
  * dengan ikon menu "Log aktivitas" di dashboard — agar bagian ini mudah dikenali.
  */
 @Composable
@@ -174,70 +174,14 @@ private fun AuditSummaryCard(
     count: Int,
     modifier: Modifier = Modifier
 ) {
-    val tone = rememberAdminTones().blue
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = tone.container)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.admin_audit_total_label).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp,
-                    color = tone.content
-                )
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = count.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = tone.content
-                    )
-                    Spacer(modifier = Modifier.size(10.dp))
-                    Text(
-                        text = stringResource(R.string.admin_audit_total_unit),
-                        modifier = Modifier.padding(bottom = 5.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tone.content
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(tone.content.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_admin_history),
-                        contentDescription = null,
-                        tint = tone.content,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
+    AdminSummaryCard(
+        label = stringResource(R.string.admin_audit_total_label),
+        count = count,
+        unit = stringResource(R.string.admin_audit_total_unit),
+        iconRes = R.drawable.ic_admin_history,
+        tone = rememberAdminTones().blue,
+        modifier = modifier
+    )
 }
 
 /**

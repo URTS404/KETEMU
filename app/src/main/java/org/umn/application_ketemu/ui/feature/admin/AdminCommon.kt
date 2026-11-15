@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -283,6 +284,106 @@ fun AdminHintRow(text: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * Sapuan gradasi untuk kartu ringkasan admin: putih kartu di kiri atas, lalu
+ * memudar ke warna pastel [tone] di kanan bawah.
+ *
+ * Gradasi dipakai alih-alih warna rata supaya kartu ringkasan terasa seperti
+ * kertas berwarna, bukan blok warna. Kontras teks tetap aman karena warna
+ * paling pekat hanya muncul di sudut, bukan di bawah teks utama.
+ */
+@Composable
+fun adminToneBrush(tone: AdminTone): Brush = Brush.linearGradient(
+    colors = listOf(
+        MaterialTheme.colorScheme.surfaceContainerLowest,
+        tone.container
+    )
+)
+
+/**
+ * Kartu ringkasan besar di atas daftar kerja admin (moderasi, klaim, log).
+ *
+ * Susunannya sama di semua layar: label kecil di atas, angka besar + satuan di
+ * kiri bawah, dan ikon di kotak putih di kanan. Latar memakai [adminToneBrush]
+ * sehingga tiap layar hanya perlu memilih tone-nya.
+ *
+ * @param label judul kecil di atas angka (ditampilkan kapital)
+ * @param unit keterangan satuan di samping angka, mis. "klaim perlu ditinjau"
+ */
+@Composable
+fun AdminSummaryCard(
+    label: String,
+    count: Int,
+    unit: String,
+    @DrawableRes iconRes: Int,
+    tone: AdminTone,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(adminToneBrush(tone))
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    color = tone.content
+                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = count.toString(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = tone.content
+                    )
+                    Spacer(modifier = Modifier.size(10.dp))
+                    Text(
+                        text = unit,
+                        modifier = Modifier.padding(bottom = 5.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = tone.content
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(tone.content.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = null,
+                        tint = tone.content,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
     }
 }
 

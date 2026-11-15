@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
@@ -43,7 +42,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.util.RelativeTime
@@ -159,76 +157,23 @@ fun AdminModerationScreen(
 /**
  * Kartu ringkasan antrean: label "perlu ditinjau", angka besar, dan ikon
  * perisai di kotak putih sebagai penanda tugas verifikasi.
+ *
+ * Bentuknya memakai [AdminSummaryCard] bersama agar gradasi mint dan susunan
+ * angkanya identik dengan kartu ringkasan layar admin lain.
  */
 @Composable
 private fun ModerationSummaryCard(
     count: Int,
     modifier: Modifier = Modifier
 ) {
-    val tone = rememberAdminTones().mint
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = tone.container)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.admin_moderation_pending_label).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp,
-                    color = tone.content
-                )
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = count.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = tone.content
-                    )
-                    Spacer(modifier = Modifier.size(10.dp))
-                    Text(
-                        text = stringResource(R.string.admin_moderation_pending_unit),
-                        modifier = Modifier.padding(bottom = 5.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tone.content
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(tone.content.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_admin_moderation),
-                        contentDescription = null,
-                        tint = tone.content,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
+    AdminSummaryCard(
+        label = stringResource(R.string.admin_moderation_pending_label),
+        count = count,
+        unit = stringResource(R.string.admin_moderation_pending_unit),
+        iconRes = R.drawable.ic_admin_moderation,
+        tone = rememberAdminTones().mint,
+        modifier = modifier
+    )
 }
 
 /**

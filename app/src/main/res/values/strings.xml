@@ -226,6 +226,13 @@
     <string name="admin_action_reject">Tolak</string>
     <string name="admin_claim_answer_label">Jawaban verifikasi</string>
     <string name="admin_claim_claimant">Pengklaim</string>
+    <string name="admin_claims_subtitle">Tinjau klaim sebelum menyetujui pengambilan.</string>
+    <string name="admin_claims_pending_label">Menunggu verifikasi</string>
+    <string name="admin_claims_pending_unit">klaim perlu ditinjau</string>
+    <string name="admin_claims_queue_section">Klaim masuk</string>
+    <string name="admin_claims_queue_count">%1$d klaim</string>
+    <string name="admin_claims_card_status">Menunggu verifikasi</string>
+    <string name="admin_claims_hint">Periksa identitas dan jawaban verifikasi sebelum menyetujui pengambilan.</string>
     <string name="admin_audit_empty">Belum ada aktivitas</string>
     <string name="admin_audit_empty_desc">Setiap verifikasi atau keputusan klaim akan tercatat di sini.</string>
     <string name="admin_users_desc">Data akun masih dari daftar lokal; manajemen penuh menyusul setelah Supabase aktif.</string>
