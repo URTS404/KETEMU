@@ -288,6 +288,57 @@ fun AdminHintRow(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
+ * Petunjuk yang tampil sebagai kotak pastel dengan judul tebal.
+ *
+ * Dipakai saat keterangan perlu lebih menonjol daripada [AdminHintRow], mis.
+ * menjelaskan asal-usul data pada layar yang belum terhubung ke server.
+ *
+ * @param title judul pendek, mis. "Daftar lokal"
+ * @param tone warna kotak; isinya tetap satu keluarga dengan chip layar ini
+ */
+@Composable
+fun AdminHintCard(
+    title: String,
+    text: String,
+    tone: AdminTone,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = tone.container)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = tone.content,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = tone.content
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = tone.content
+            )
+        }
+    }
+}
+
+/**
  * Sapuan gradasi untuk kartu ringkasan admin: putih kartu di kiri atas, lalu
  * memudar ke warna pastel [tone] di kanan bawah.
  *

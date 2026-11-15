@@ -236,6 +236,14 @@
     <string name="admin_audit_empty">Belum ada aktivitas</string>
     <string name="admin_audit_empty_desc">Setiap verifikasi atau keputusan klaim akan tercatat di sini.</string>
     <string name="admin_users_desc">Data akun masih dari daftar lokal; manajemen penuh menyusul setelah Supabase aktif.</string>
+    <string name="admin_users_subtitle">Daftar akun dan peran pengguna.</string>
+    <string name="admin_users_summary_label">Ringkasan pengguna</string>
+    <string name="admin_users_summary_unit">akun dalam daftar lokal</string>
+    <string name="admin_users_section">Daftar pengguna</string>
+    <string name="admin_users_count">%1$d akun</string>
+    <string name="admin_users_empty">Belum ada akun</string>
+    <string name="admin_users_empty_desc">Akun staf dan admin akan muncul di sini.</string>
+    <string name="admin_users_hint_title">Daftar lokal</string>
     <string name="admin_audit_action_verify">Verifikasi laporan</string>
     <string name="admin_audit_action_archive">Arsipkan laporan</string>
     <string name="admin_audit_action_unarchive">Buka arsip laporan</string>
