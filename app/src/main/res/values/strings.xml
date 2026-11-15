@@ -184,7 +184,14 @@
     <string name="staff_action_process">Proses Klaim</string>
 
     <!-- ===== Panel Admin (tahap 1 UAS) ===== -->
-    <string name="admin_title">Panel Admin</string>
+    <string name="admin_module_label">Ruang Admin</string>
+    <string name="admin_title">Panel Lost &amp; Found</string>
+    <string name="admin_subtitle">Kelola laporan dan klaim dengan mudah.</string>
+    <string name="admin_section_summary">Ringkasan</string>
+    <string name="admin_summary_scope">Semua laporan</string>
+    <string name="admin_section_management">Pengelolaan</string>
+    <string name="admin_role_staff">Satpam</string>
+    <string name="admin_role_admin">Admin</string>
     <string name="admin_open">Buka Panel Admin</string>
     <string name="admin_open_hint">Terlihat untuk peran STAFF/ADMIN.</string>
     <string name="admin_access_denied_title">Akses ditolak</string>

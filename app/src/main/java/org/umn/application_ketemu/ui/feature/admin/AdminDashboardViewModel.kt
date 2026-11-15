@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.AuditLogEntry
+import org.umn.application_ketemu.domain.model.UserRole
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
@@ -42,6 +43,19 @@ class AdminDashboardViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = session.currentUser.value.role.canModerate
+        )
+
+    /**
+     * Peran aktif untuk chip pada header dashboard ("Satpam"/"Admin").
+     * Dipisah dari [uiState] karena bukan angka ringkasan, melainkan identitas
+     * sesi — sama seperti [isAllowed] yang juga membaca [SessionStore].
+     */
+    val role: StateFlow<UserRole> = session.currentUser
+        .map { it.role }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = session.currentUser.value.role
         )
 
     val uiState: StateFlow<AdminDashboardUiState> = combine(

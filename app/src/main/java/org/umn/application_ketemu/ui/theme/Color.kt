@@ -119,3 +119,45 @@ val StatusDoneDark = Color(0xFF6FCB74)
 
 val StatusPendingSyncLight = Color(0xFFB35C00)
 val StatusPendingSyncDark = BrandOrangeLight
+
+/*
+ * ===================== TONE PANEL ADMIN =====================
+ * Kartu ringkasan dashboard admin memakai latar pastel dengan teks/ikon
+ * bernada pekat dari keluarga warna yang sama. Tujuannya: empat kartu angka
+ * tetap mudah dibedakan tanpa keluar dari palet brand (teal + orange).
+ *
+ * Setiap tone disimpan sebagai pasangan container (latar) + content
+ * (teks & ikon) untuk tema terang dan gelap, mengikuti konvensi MD3.
+ */
+val AdminToneMintContainerLight = Color(0xFFDDF3E9)
+val AdminToneMintContentLight = Color(0xFF0F5138)
+val AdminToneMintContainerDark = Color(0xFF16352B)
+val AdminToneMintContentDark = Color(0xFFA9E7CF)
+
+val AdminToneAmberContainerLight = Color(0xFFFBEBC9)
+val AdminToneAmberContentLight = Color(0xFF6B4A00)
+val AdminToneAmberContainerDark = Color(0xFF352A12)
+val AdminToneAmberContentDark = Color(0xFFF3D49C)
+
+val AdminToneSlateContainerLight = Color(0xFFE7E8EC)
+val AdminToneSlateContentLight = Color(0xFF33383E)
+val AdminToneSlateContainerDark = Color(0xFF262B2C)
+val AdminToneSlateContentDark = Color(0xFFDCE3E2)
+
+val AdminToneBlueContainerLight = Color(0xFFDEE9FB)
+val AdminToneBlueContentLight = Color(0xFF173A70)
+val AdminToneBlueContainerDark = Color(0xFF16273D)
+val AdminToneBlueContentDark = Color(0xFFC2D6F5)
+
+val AdminToneVioletContainerLight = Color(0xFFEDE8FB)
+val AdminToneVioletContentLight = Color(0xFF3F2E75)
+val AdminToneVioletContainerDark = Color(0xFF262038)
+val AdminToneVioletContentDark = Color(0xFFD9CDF7)
+
+/**
+ * Latar kartu panel admin. Sengaja lebih terang dari [LightBackground]
+ * (#F4FBFA) supaya daftar menu dan kartu informasi tetap terpisah jelas
+ * dari latar layar, seperti pada referensi desain.
+ */
+val AdminCardLight = Color(0xFFFFFFFF)
+val AdminCardDark = Color(0xFF131B1B)
