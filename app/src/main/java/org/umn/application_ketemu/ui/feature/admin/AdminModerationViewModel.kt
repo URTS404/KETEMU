@@ -61,9 +61,14 @@ class AdminModerationViewModel(
             return@launch
         }
 
-        reportRepository.updateStatus(reportId, ReportStatus.DISERAHKAN_KE_POS)
-        record(actor.id, actor.fullName, AuditAction.VERIFIKASI_LAPORAN, report.id, report.title)
-        _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke pos."
+        try {
+            reportRepository.updateStatus(reportId, ReportStatus.DISERAHKAN_KE_POS)
+            record(actor.id, actor.fullName, AuditAction.VERIFIKASI_LAPORAN, report.id, report.title)
+            _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke pos."
+        } catch (e: Exception) {
+            android.util.Log.e("AdminModeration", "verifikasi gagal: ${e.message}", e)
+            _message.value = AdminUiText.ACTION_FAILED
+        }
     }
 
     fun archive(reportId: String) = viewModelScope.launch {
@@ -77,9 +82,14 @@ class AdminModerationViewModel(
             return@launch
         }
 
-        reportRepository.setArchived(reportId, archived = true)
-        record(actor.id, actor.fullName, AuditAction.ARSIP_LAPORAN, report.id, report.title)
-        _message.value = "\"${report.title}\" diarsipkan dari Beranda."
+        try {
+            reportRepository.setArchived(reportId, archived = true)
+            record(actor.id, actor.fullName, AuditAction.ARSIP_LAPORAN, report.id, report.title)
+            _message.value = "\"${report.title}\" diarsipkan dari Beranda."
+        } catch (e: Exception) {
+            android.util.Log.e("AdminModeration", "arsip gagal: ${e.message}", e)
+            _message.value = AdminUiText.ACTION_FAILED
+        }
     }
 
     fun clearMessage() {

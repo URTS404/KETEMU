@@ -72,42 +72,47 @@ class AdminClaimsViewModel(
             return@launch
         }
 
-        val claim = claimRepository.decide(
-            claimId = claimId,
-            approve = approve,
-            decidedBy = actor.fullName,
-            note = note
-        ) ?: run {
-            _message.value = AdminUiText.CLAIM_NOT_FOUND
-            return@launch
-        }
+        try {
+            val claim = claimRepository.decide(
+                claimId = claimId,
+                approve = approve,
+                decidedBy = actor.fullName,
+                note = note
+            ) ?: run {
+                _message.value = AdminUiText.CLAIM_NOT_FOUND
+                return@launch
+            }
 
-        if (approve) {
-            reportRepository.updateStatus(claim.reportId, ReportStatus.SIAP_DIAMBIL)
-        }
+            if (approve) {
+                reportRepository.updateStatus(claim.reportId, ReportStatus.SIAP_DIAMBIL)
+            }
 
-        auditLogRepository.record(
-            AuditLogEntry(
-                id = UUID.randomUUID().toString(),
-                actorId = actor.id,
-                actorName = actor.fullName,
-                action = if (approve) AuditAction.SETUJUI_KLAIM else AuditAction.TOLAK_KLAIM,
-                targetType = "CLAIM",
-                targetId = claim.id,
-                note = claim.reportTitle,
-                createdAt = System.currentTimeMillis()
+            auditLogRepository.record(
+                AuditLogEntry(
+                    id = UUID.randomUUID().toString(),
+                    actorId = actor.id,
+                    actorName = actor.fullName,
+                    action = if (approve) AuditAction.SETUJUI_KLAIM else AuditAction.TOLAK_KLAIM,
+                    targetType = "CLAIM",
+                    targetId = claim.id,
+                    note = claim.reportTitle,
+                    createdAt = System.currentTimeMillis()
+                )
             )
-        )
 
-        _lastDecision.value = ClaimDecision(
-            claimTitle = claim.reportTitle,
-            approved = approve,
-            pickupCode = claim.pickupCode
-        )
-        _message.value = if (approve) {
-            "Klaim disetujui. Kode pengambilan: ${claim.pickupCode}"
-        } else {
-            "Klaim ditolak."
+            _lastDecision.value = ClaimDecision(
+                claimTitle = claim.reportTitle,
+                approved = approve,
+                pickupCode = claim.pickupCode
+            )
+            _message.value = if (approve) {
+                "Klaim disetujui. Kode pengambilan: ${claim.pickupCode}"
+            } else {
+                "Klaim ditolak."
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminClaims", "keputusan klaim gagal: ${e.message}", e)
+            _message.value = AdminUiText.ACTION_FAILED
         }
     }
 
