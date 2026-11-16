@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.create
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,16 +20,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,6 +36,8 @@ import org.umn.application_ketemu.R
 import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.ReportCategory
+import org.umn.application_ketemu.ui.components.SubmissionFeedbackDialog
+import org.umn.application_ketemu.ui.components.SubmissionStatus
 
 /** Isi formulir yang dikirim pengguna saat menekan "Simpan Laporan". */
 data class ReportDraft(
@@ -69,30 +68,34 @@ fun CreateReportScreen(
     modifier: Modifier = Modifier
 ) {
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
-    val saveResult by viewModel.lastSaveResult.collectAsStateWithLifecycle()
+    val saveState by viewModel.saveState.collectAsStateWithLifecycle()
+    val isSaving = saveState is SaveUiState.Saving
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val offlineMessage = stringResource(R.string.create_saved_offline)
-    val onlineMessage = stringResource(R.string.create_saved_online)
+    val savingTitle = stringResource(R.string.create_saving_title)
+    val savingMessage = stringResource(R.string.create_saving_message)
+    val successOnlineTitle = stringResource(R.string.create_success_online_title)
+    val successOfflineTitle = stringResource(R.string.create_success_offline_title)
+    val failedTitle = stringResource(R.string.create_failed_title)
+    val failedMessage = stringResource(R.string.create_failed_message)
+    val doneLabel = stringResource(R.string.create_feedback_done)
+    val retryLabel = stringResource(R.string.create_feedback_retry)
+    val closeLabel = stringResource(R.string.create_feedback_close)
 
-    LaunchedEffect(saveResult) {
-        val result = saveResult ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(
-            message = if (result.savedOffline) offlineMessage else onlineMessage
-        )
-        viewModel.consumeSaveResult()
-        onSaved()
-    }
+    // Selama proses, tombol kembali (termasuk gestur sistem) dinonaktifkan
+    // supaya pengguna tidak meninggalkan layar ketika laporan sedang dikirim.
+    BackHandler(enabled = isSaving) { }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.create_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        enabled = !isSaving
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.action_back)
@@ -107,6 +110,7 @@ fun CreateReportScreen(
     ) { innerPadding ->
         ReportForm(
             isOnline = isOnline,
+            isSubmitting = isSaving,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
@@ -123,7 +127,79 @@ fun CreateReportScreen(
             }
         )
     }
+
+    val feedback: SaveFeedbackContent? = when (val state = saveState) {
+        SaveUiState.Idle -> null
+
+        SaveUiState.Saving -> SaveFeedbackContent(
+            status = SubmissionStatus.SAVING,
+            title = savingTitle,
+            message = savingMessage,
+            onDismiss = { }
+        )
+
+        is SaveUiState.Success -> SaveFeedbackContent(
+            status = SubmissionStatus.SUCCESS,
+            title = if (state.result.savedOffline) {
+                successOfflineTitle
+            } else {
+                successOnlineTitle
+            },
+            message = if (state.result.savedOffline) {
+                stringResource(
+                    R.string.create_success_offline_message,
+                    state.result.reportTitle
+                )
+            } else {
+                stringResource(
+                    R.string.create_success_online_message,
+                    state.result.reportTitle
+                )
+            },
+            onDismiss = onSaved,
+            primaryLabel = doneLabel,
+            onPrimary = onSaved
+        )
+
+        SaveUiState.Error -> SaveFeedbackContent(
+            status = SubmissionStatus.ERROR,
+            title = failedTitle,
+            message = failedMessage,
+            onDismiss = viewModel::dismissSaveError,
+            primaryLabel = retryLabel,
+            onPrimary = viewModel::retryLastSave,
+            secondaryLabel = closeLabel,
+            onSecondary = viewModel::dismissSaveError
+        )
+    }
+
+    // Satu titik pemanggilan agar dialog tidak ditutup-buka ketika status
+    // berubah dari proses -> berhasil/gagal; animasi ilustrasi tetap mulus.
+    if (feedback != null) {
+        SubmissionFeedbackDialog(
+            status = feedback.status,
+            title = feedback.title,
+            message = feedback.message,
+            onDismissRequest = feedback.onDismiss,
+            primaryActionLabel = feedback.primaryLabel,
+            onPrimaryAction = feedback.onPrimary,
+            secondaryActionLabel = feedback.secondaryLabel,
+            onSecondaryAction = feedback.onSecondary
+        )
+    }
 }
+
+/** Isi dialog yang diturunkan dari [SaveUiState], agar pemanggilan dialog tunggal. */
+private data class SaveFeedbackContent(
+    val status: SubmissionStatus,
+    val title: String,
+    val message: String,
+    val onDismiss: () -> Unit,
+    val primaryLabel: String? = null,
+    val onPrimary: (() -> Unit)? = null,
+    val secondaryLabel: String? = null,
+    val onSecondary: (() -> Unit)? = null
+)
 
 /**
  * Isi formulir. State input disimpan dengan rememberSaveable sehingga terpulihkan
@@ -133,6 +209,7 @@ fun CreateReportScreen(
 @Composable
 private fun ReportForm(
     isOnline: Boolean,
+    isSubmitting: Boolean,
     onSubmit: (ReportDraft) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -272,6 +349,7 @@ private fun ReportForm(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = MaterialTheme.colorScheme.onTertiary

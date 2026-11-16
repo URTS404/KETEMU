@@ -97,8 +97,19 @@
     <string name="create_field_location">Lokasi terakhir terlihat / ditemukan</string>
     <string name="create_field_location_hint">Contoh: Gedung B, ruang B-301</string>
     <string name="create_save">Simpan Laporan</string>
-    <string name="create_saved_offline">Tersimpan di HP. Akan dikirim otomatis saat online.</string>
-    <string name="create_saved_online">Laporan berhasil dikirim.</string>
+
+    <!-- Umpan balik pengiriman (dialog animasi) -->
+    <string name="create_saving_title">Menyimpan laporan…</string>
+    <string name="create_saving_message">Mohon tunggu sebentar. Jangan tutup aplikasi saat laporan sedang diproses.</string>
+    <string name="create_success_online_title">Laporan berhasil dikirim!</string>
+    <string name="create_success_online_message">Laporan “%1$s” sudah masuk ke sistem. Pantau perkembangannya di menu Aktivitas.</string>
+    <string name="create_success_offline_title">Laporan aman tersimpan</string>
+    <string name="create_success_offline_message">Laporan “%1$s” tersimpan di HP dan akan dikirim otomatis saat internet tersedia.</string>
+    <string name="create_failed_title">Laporan gagal disimpan</string>
+    <string name="create_failed_message">Laporan belum terkirim. Periksa koneksi internet Anda, lalu coba lagi.</string>
+    <string name="create_feedback_done">Selesai</string>
+    <string name="create_feedback_retry">Coba Lagi</string>
+    <string name="create_feedback_close">Tutup</string>
     <string name="create_offline_hint">Anda sedang offline. Laporan tetap bisa dibuat dan akan dikirim otomatis.</string>
     <string name="create_camera_denied">Izin kamera ditolak. Foto dapat ditambahkan nanti.</string>
     <string name="create_camera_unavailable">Kamera tidak tersedia di perangkat ini.</string>
