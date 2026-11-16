@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
@@ -124,6 +125,8 @@ class SupabaseReportRepository(
                 categoryId = report.category.name,
                 photoUrl = report.photoUri,
                 lastSeenLocation = report.lastSeenLocation,
+                latitude = report.coordinates?.latitude,
+                longitude = report.coordinates?.longitude,
                 posId = report.pos?.id,
                 status = report.status.name
             )
@@ -141,7 +144,7 @@ class SupabaseReportRepository(
          */
         const val SELECT_COLUMNS =
             "id,owner_id,type,title,description,category_id,photo_url,last_seen_location," +
-                "status,is_archived,created_at,updated_at," +
+                "latitude,longitude,status,is_archived,created_at,updated_at," +
                 "pos_locations(id,name,building),profiles(full_name)"
     }
 }
@@ -156,6 +159,8 @@ private data class ReportInsert(
     @kotlinx.serialization.SerialName("category_id") val categoryId: String,
     @kotlinx.serialization.SerialName("photo_url") val photoUrl: String?,
     @kotlinx.serialization.SerialName("last_seen_location") val lastSeenLocation: String,
+    val latitude: Double?,
+    val longitude: Double?,
     @kotlinx.serialization.SerialName("pos_id") val posId: String?,
     val status: String
 )
@@ -166,6 +171,13 @@ internal fun ReportRow.toDomain(): Report? {
     val category = categoryId
         ?.let { runCatching { ReportCategory.valueOf(it) }.getOrNull() }
         ?: ReportCategory.LAINNYA
+
+    // Koordinat hanya dipakai bila lengkap dan berada di rentang bumi; baris
+    // dengan data GPS setengah jadi diperlakukan seperti laporan tanpa titik.
+    val coordinates = latitude?.let { lat ->
+        longitude?.let { lng -> GeoPoint(latitude = lat, longitude = lng).takeIf { it.isValid } }
+    }
+
     return Report(
         id = id,
         ownerId = ownerId,
@@ -181,7 +193,8 @@ internal fun ReportRow.toDomain(): Report? {
         syncStatus = SyncStatus.SYNCED,
         createdAt = parsedCreatedAt,
         updatedAt = updatedAt.toEpochMillisOrNull() ?: parsedCreatedAt,
-        isArchived = isArchived
+        isArchived = isArchived,
+        coordinates = coordinates
     )
 }
 

@@ -7,6 +7,13 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0001_schema.sql` | Tipe enum, tabel `profiles`, `categories`, `pos_locations`, `reports`, `claims`, `audit_logs`, trigger profil otomatis, trigger audit, trigger kode pengambilan |
 | `0002_rls.sql` | Fungsi bantu `is_staff()`/`is_admin()`, Row Level Security semua tabel, penjaga kolom sensitif |
 | `0003_seed.sql` | Master data kategori + 4 pos barang temuan |
+| `0004_seed_reports.sql` | Laporan contoh untuk demo |
+| `0005_promote_staff.sql` | Promosi akun petugas (`STAFF`) |
+| `0006_promote_staff_fix.sql` | Perbaikan promosi petugas |
+| `0007_seed_claim.sql` | Klaim contoh untuk antrean admin |
+| `0008_selfcheck.sql` | Query pemeriksaan cepat setelah setup |
+| `0009_fix_audit_enum_cast.sql` | Perbaikan cast enum pada trigger audit |
+| `0010_report_coordinates.sql` | Kolom `latitude`/`longitude` untuk titik peta |
 
 ## 1. Buat project
 
@@ -29,6 +36,10 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 1. `db/0001_schema.sql`
 2. `db/0002_rls.sql`
 3. `db/0003_seed.sql`
+4. `db/0010_report_coordinates.sql` — wajib bila memakai fitur titik peta
+
+Berkas `0004`–`0009` hanya berisi data contoh dan perbaikan; jalankan bila
+project Anda berasal dari versi skema sebelumnya.
 
 Semua berkas aman dijalankan ulang (memakai `create ... if not exists`,
 `create or replace`, `drop policy if exists`, dan `on conflict do update`).

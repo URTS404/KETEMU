@@ -11,6 +11,18 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <!--
+      Fitur GPS: menandai titik tempat barang terakhir terlihat/ditemukan.
+      Izin diminta saat pengguna menekan "Gunakan lokasi saya", bukan saat aplikasi
+      dibuka. Peta tetap bisa dipakai tanpa izin (ketuk peta untuk menandai manual),
+      jadi perangkat tanpa GPS tidak dikecualikan.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
     <application
         android:name=".KetemuApp"
         android:allowBackup="true"

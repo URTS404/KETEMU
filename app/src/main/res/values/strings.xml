@@ -32,6 +32,9 @@
     <string name="report_timeline_recorded">Tercatat di sistem</string>
     <string name="report_photo_empty">Foto belum tersedia</string>
     <string name="report_description_empty">Belum ada deskripsi.</string>
+    <string name="report_location_title">Lokasi di peta</string>
+    <string name="report_location_coordinates">Koordinat: %1$s</string>
+    <string name="report_location_open_maps">Buka di aplikasi peta</string>
 
     <!-- ===== Beranda ===== -->
     <string name="home_title">Ketemu</string>
@@ -101,6 +104,16 @@
     <string name="create_camera_unavailable">Kamera tidak tersedia di perangkat ini.</string>
     <string name="create_error_title">Nama barang wajib diisi.</string>
     <string name="create_error_location">Lokasi wajib diisi.</string>
+    <string name="create_location_map_label">Titik lokasi di peta (opsional)</string>
+    <string name="create_location_map_hint">Ketuk peta untuk menandai titik, atau gunakan lokasi GPS Anda. Deskripsi lokasi di atas tetap wajib diisi.</string>
+    <string name="create_location_gps_cta">Gunakan lokasi saya</string>
+    <string name="create_location_gps_loading">Mencari lokasi…</string>
+    <string name="create_location_clear">Hapus titik</string>
+    <string name="create_location_coordinates">Koordinat: %1$s</string>
+    <string name="create_location_permission_denied">Izin lokasi ditolak. Anda tetap bisa menandai titik dengan mengetuk peta.</string>
+    <string name="create_location_disabled">GPS/lokasi perangkat nonaktif. Aktifkan lokasi atau tandai titik dengan mengetuk peta.</string>
+    <string name="create_location_unavailable">Lokasi belum ditemukan. Coba lagi atau tandai manual dengan mengetuk peta.</string>
+    <string name="map_attribution">© OpenStreetMap contributors</string>
 
     <!-- ===== Login ===== -->
     <string name="login_title">Masuk ke Ketemu</string>

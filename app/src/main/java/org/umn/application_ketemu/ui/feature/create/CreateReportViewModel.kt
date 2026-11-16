@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
@@ -56,6 +57,7 @@ class CreateReportViewModel(
         description: String,
         category: ReportCategory,
         location: String,
+        coordinates: GeoPoint?,
         photoUri: String?
     ) {
         if (title.isBlank() || location.isBlank()) return
@@ -76,6 +78,9 @@ class CreateReportViewModel(
                 category = category,
                 photoUri = photoUri,
                 lastSeenLocation = location.trim(),
+                // Titik GPS hanya disimpan bila valid; kolom teks lokasi tetap
+                // menjadi deskripsi utama yang dibaca petugas.
+                coordinates = coordinates?.takeIf { it.isValid },
                 status = ReportStatus.DILAPORKAN,
                 syncStatus = if (online) SyncStatus.SYNCED else SyncStatus.PENDING,
                 createdAt = now

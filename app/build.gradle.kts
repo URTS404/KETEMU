@@ -97,6 +97,8 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    // Peta OpenStreetMap + penanda lokasi barang (tanpa API key).
+    implementation(libs.osmdroid.android)
     // Supabase Auth (M2): menggantikan autentikasi lokal dengan Supabase.
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth.kt)

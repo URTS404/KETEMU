@@ -49,6 +49,7 @@ import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.ui.components.EmptyState
 import org.umn.application_ketemu.ui.components.LoadingSkeletonList
+import org.umn.application_ketemu.ui.components.ReportLocationSection
 import org.umn.application_ketemu.ui.components.StatusChipRow
 import org.umn.application_ketemu.ui.components.StatusTimeline
 
@@ -180,6 +181,16 @@ private fun DetailContent(
                         ?: report.lastSeenLocation,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Titik GPS hanya muncul bila laporan memang menyimpannya, sehingga
+            // laporan lama (tanpa koordinat) tetap tampil seperti sebelumnya.
+            report.coordinates?.takeIf { it.isValid }?.let { point ->
+                ReportLocationSection(
+                    point = point,
+                    label = report.pos?.name ?: report.lastSeenLocation,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

@@ -20,6 +20,9 @@ internal data class ReportRow(
     @SerialName("category_id") val categoryId: String? = null,
     @SerialName("photo_url") val photoUrl: String? = null,
     @SerialName("last_seen_location") val lastSeenLocation: String = "",
+    /** Titik GPS opsional; null untuk laporan lama atau tanpa penanda peta. */
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val status: String = "DILAPORKAN",
     @SerialName("is_archived") val isArchived: Boolean = false,
     @SerialName("created_at") val createdAt: String? = null,

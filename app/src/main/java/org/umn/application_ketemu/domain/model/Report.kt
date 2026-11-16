@@ -27,5 +27,13 @@ data class Report(
     val createdAt: Long,
     val updatedAt: Long = createdAt,
     /** `true` bila laporan disembunyikan moderator (tidak tampil di Beranda). */
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    /**
+     * Titik GPS tempat barang terakhir terlihat/ditemukan.
+     *
+     * Opsional: `null` untuk laporan lama atau saat pengguna hanya mengisi
+     * deskripsi teks [lastSeenLocation]. Kolom teks tetap dipertahankan karena
+     * GPS tidak selalu tersedia (dalam gedung, izin ditolak, perangkat tanpa GPS).
+     */
+    val coordinates: GeoPoint? = null
 )

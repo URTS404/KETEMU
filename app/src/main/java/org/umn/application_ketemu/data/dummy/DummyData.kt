@@ -4,6 +4,7 @@ import org.umn.application_ketemu.domain.model.ChatMessage
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.ConversationThread
+import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
@@ -72,6 +73,7 @@ object DummyData {
                 description = "Tumbler stainless hitam, ada stiker UMN di badan botol dan nama 'Budi' di bagian bawah.",
                 category = ReportCategory.AKSESORIS,
                 lastSeenLocation = "Gedung B, ruang B-301",
+                coordinates = GeoPoint(latitude = -6.256900, longitude = 106.618600),
                 status = ReportStatus.DILAPORKAN,
                 syncStatus = SyncStatus.SYNCED,
                 createdAt = now - 2 * hour
@@ -85,6 +87,7 @@ object DummyData {
                 description = "Kartu tanda mahasiswa ditemukan di kursi lobby, diserahkan ke pos untuk pengambilan.",
                 category = ReportCategory.DOKUMEN,
                 lastSeenLocation = "Lobby Gedung B",
+                coordinates = GeoPoint(latitude = -6.257100, longitude = 106.618300),
                 pos = posGedungB,
                 status = ReportStatus.DISERAHKAN_KE_POS,
                 syncStatus = SyncStatus.SYNCED,
@@ -99,6 +102,7 @@ object DummyData {
                 description = "Earbuds putih di dalam case, ditemukan di meja perpustakaan lantai 4.",
                 category = ReportCategory.ELEKTRONIK,
                 lastSeenLocation = "Perpustakaan, Lt. 4",
+                coordinates = GeoPoint(latitude = -6.257500, longitude = 106.617900),
                 pos = posBasement,
                 status = ReportStatus.SIAP_DIAMBIL,
                 syncStatus = SyncStatus.SYNCED,

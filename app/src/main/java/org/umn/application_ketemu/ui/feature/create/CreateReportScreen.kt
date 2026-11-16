@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
+import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.ReportCategory
 
@@ -46,6 +47,8 @@ data class ReportDraft(
     val description: String,
     val category: ReportCategory,
     val location: String,
+    /** Titik peta opsional; kolom teks [location] tetap wajib dan bisa diubah. */
+    val coordinates: GeoPoint? = null,
     val photoUri: String?
 )
 
@@ -114,6 +117,7 @@ fun CreateReportScreen(
                     description = draft.description,
                     category = draft.category,
                     location = draft.location,
+                    coordinates = draft.coordinates,
                     photoUri = draft.photoUri
                 )
             }
@@ -137,7 +141,15 @@ private fun ReportForm(
     var description by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf(ReportCategory.LAINNYA) }
     var location by rememberSaveable { mutableStateOf("") }
+    // Titik peta disimpan sebagai dua Double (bukan objek GeoPoint) agar tetap
+    // bertahan saat rotasi layar lewat rememberSaveable.
+    var latitude by rememberSaveable { mutableStateOf<Double?>(null) }
+    var longitude by rememberSaveable { mutableStateOf<Double?>(null) }
     var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val coordinates = latitude?.let { lat ->
+        longitude?.let { lng -> GeoPoint(latitude = lat, longitude = lng) }
+    }
 
     // Baru di-set true setelah pengguna menekan "Simpan Laporan"; memicu
     // tampilnya pesan error per-field (isError + supportingText).
@@ -226,6 +238,19 @@ private fun ReportForm(
             }
         )
 
+        LocationPickerField(
+            point = coordinates,
+            onPointChange = { point ->
+                latitude = point?.latitude
+                longitude = point?.longitude
+                // Kolom teks tetap bisa diedit bebas. Isi otomatis hanya bila
+                // masih kosong supaya deskripsi yang sudah ditulis tidak hilang.
+                if (point != null && location.isBlank()) {
+                    location = point.toCoordinateText()
+                }
+            }
+        )
+
         Button(
             onClick = {
                 // Submission diblokir sampai field wajib valid; bila belum,
@@ -240,6 +265,7 @@ private fun ReportForm(
                             description = description,
                             category = category,
                             location = location,
+                            coordinates = coordinates,
                             photoUri = photoUri
                         )
                     )
