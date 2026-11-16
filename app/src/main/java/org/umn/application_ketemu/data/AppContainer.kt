@@ -6,6 +6,8 @@ import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
+import org.umn.application_ketemu.data.remote.SupabaseAuditLogRepository
+import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
@@ -49,10 +51,18 @@ class AppContainer(context: Context) {
     )
 
     /** Pengajuan klaim + antrean keputusan moderator. */
-    val claimRepository: ClaimRepository = InMemoryClaimRepository(DummyData.claims())
+    val claimRepository: ClaimRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseClaimRepository(SupabaseProvider.client)
+    } else {
+        InMemoryClaimRepository(DummyData.claims())
+    }
 
     /** Log aktivitas moderator (append-only). */
-    val auditLogRepository: AuditLogRepository = InMemoryAuditLogRepository()
+    val auditLogRepository: AuditLogRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseAuditLogRepository(SupabaseProvider.client)
+    } else {
+        InMemoryAuditLogRepository()
+    }
 
     val networkMonitor: NetworkMonitor = NetworkMonitor(context)
 

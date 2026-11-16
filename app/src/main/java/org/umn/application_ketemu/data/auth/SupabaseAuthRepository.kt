@@ -4,11 +4,15 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import org.umn.application_ketemu.data.remote.ProfileDto
 import org.umn.application_ketemu.domain.model.UserProfile
 import org.umn.application_ketemu.domain.model.UserRole
 import org.umn.application_ketemu.domain.repository.AuthErrorReason
@@ -32,7 +36,7 @@ class SupabaseAuthRepository(
             this.email = email
             this.password = password
         }
-        val user = client.auth.currentUserOrNull()?.toUserProfile()
+        val user = client.auth.currentUserOrNull()?.let { resolveProfile(it) }
         if (user == null) {
             AuthResult.Failure(AuthErrorReason.INVALID_CREDENTIALS)
         } else {
@@ -66,11 +70,46 @@ class SupabaseAuthRepository(
             // Confirm email aktif -> pengguna harus klik tautan dulu.
             AuthResult.Success(null)
         } else {
-            AuthResult.Success(client.auth.currentUserOrNull()?.toUserProfile())
+            AuthResult.Success(client.auth.currentUserOrNull()?.let { resolveProfile(it) })
         }
     } catch (e: Exception) {
         android.util.Log.e("SupabaseAuth", "signUp gagal: ${e.javaClass.simpleName}: ${e.message}", e)
         AuthResult.Failure(e.toAuthErrorReason())
+    }
+
+    /**
+     * Profil akhir = metadata auth sebagai cadangan + baris `profiles` sebagai
+     * sumber kebenaran. Peran dibaca dari tabel supaya perubahan peran oleh
+     * admin (mis. USER -> STAFF) langsung berlaku pada login berikutnya.
+     */
+    private suspend fun resolveProfile(user: UserInfo): UserProfile {
+        val fallback = user.metadataUserProfile()
+        val row = runCatching {
+            client.postgrest
+                .from(TABLE_PROFILES)
+                .select(columns = Columns.raw("id,email,full_name,nim_nidn,phone,role,is_verified")) {
+                    filter { eq("id", user.id) }
+                }
+                .decodeSingleOrNull<ProfileDto>()
+        }.onFailure {
+            android.util.Log.e("SupabaseAuth", "profil gagal dimuat: ${it.javaClass.simpleName}: ${it.message}")
+        }.getOrNull()
+
+        if (row == null) {
+            android.util.Log.w("SupabaseAuth", "profil tidak ditemukan untuk id=${user.id}; pakai metadata")
+            return fallback
+        }
+        android.util.Log.i("SupabaseAuth", "profil dimuat: role=${row.role} verified=${row.isVerified}")
+
+        return UserProfile(
+            id = row.id.ifBlank { fallback.id },
+            fullName = row.fullName?.ifBlank { null } ?: fallback.fullName,
+            email = row.email?.ifBlank { null } ?: fallback.email,
+            nimNidn = row.nimNidn.orEmpty(),
+            phone = row.phone?.ifBlank { null } ?: fallback.phone,
+            role = runCatching { UserRole.valueOf(row.role) }.getOrDefault(UserRole.USER),
+            isVerified = row.isVerified
+        )
     }
 
     override suspend fun sendPasswordReset(email: String): AuthResult = try {
@@ -86,6 +125,10 @@ class SupabaseAuthRepository(
         } catch (_: Exception) {
             // Best-effort; sesi lokal tetap dibersihkan oleh SessionStore.
         }
+    }
+
+    private companion object {
+        const val TABLE_PROFILES = "profiles"
     }
 }
 
@@ -105,7 +148,7 @@ private fun Exception.toAuthErrorReason(): AuthErrorReason {
 }
 
 /** Memetakan [UserInfo] Supabase ke [UserProfile] yang dipakai seluruh aplikasi. */
-private fun UserInfo.toUserProfile(): UserProfile {
+private fun UserInfo.metadataUserProfile(): UserProfile {
     val metadata = userMetadata
     val fullName = metadata?.stringValue("full_name")
         ?: email?.substringBefore('@')?.toDisplayName()
