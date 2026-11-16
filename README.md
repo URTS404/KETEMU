@@ -9,8 +9,8 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 
 - **Autentikasi email kampus** — login, daftar akun, lupa kata sandi dengan validasi domain `@student.umn.ac.id` / `@umn.ac.id`.
 - **Beranda** — statistik laporan, kartu pengumuman, pencarian, dan filter Hilang/Ditemukan.
-- **Lapor barang** — formulir hilang/temuan dengan validasi, pemilih kategori, dan kamera (foto barang).
-- **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim).
+- **Lapor barang** — formulir hilang/temuan dengan validasi, pemilih kategori, kamera (foto barang), serta penanda titik lokasi di peta OpenStreetMap (GPS atau ketuk peta).
+- **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
 - **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
 - **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
@@ -23,8 +23,9 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 | UI | Jetpack Compose + Material 3 (BOM 2026.09), Compose Navigation |
 | Arsitektur | MVVM, `StateFlow`, repository + container manual (tanpa Hilt) |
 | Gambar | Coil |
+| Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
 | Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (28 unit test) |
+| Test | JUnit4 + `kotlinx-coroutines-test` (55 unit test) |
 
 ## Menjalankan
 
@@ -39,6 +40,32 @@ gradlew.bat assembleDebug
 
 Hasil: `app/build/outputs/apk/debug/app-debug.apk`, atau pasang langsung dengan `gradlew.bat installDebug`.
 Berkas `local.properties` (lokasi SDK) dibuat otomatis oleh Android Studio dan tidak disertakan di repo.
+
+### Build dari terminal (Windows)
+
+Gradle wrapper memerlukan JDK yang bisa ditemukan. Bila muncul pesan
+`JAVA_HOME is not set and no 'java' command could be found`, arahkan ke JDK
+bawaan Android Studio lalu jalankan build pada terminal yang sama:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+gradlew.bat assembleDebug
+```
+
+### Jika Clean/Rebuild gagal di Windows
+
+Folder output build yang disalin dari OneDrive/arsip bisa membawa atribut
+`ReadOnly`, sehingga Gradle gagal menghapusnya (`Unable to delete directory`).
+Proyek ini melepas atribut tersebut otomatis sebelum `clean` dan `preBuild`.
+
+Bila masih gagal, pastikan tidak ada build lain yang sedang berjalan di Android
+Studio, lalu hentikan daemon Gradle dan ulangi:
+
+```powershell
+gradlew.bat --stop
+gradlew.bat clean assembleDebug
+```
 
 ## Akun uji
 
