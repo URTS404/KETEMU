@@ -130,7 +130,8 @@ class RegisterViewModel(
     private fun AuthErrorReason.toRegisterError(): RegisterError = when (this) {
         AuthErrorReason.USER_ALREADY_EXISTS -> RegisterError.EMAIL_TAKEN
         AuthErrorReason.RATE_LIMITED -> RegisterError.RATE_LIMITED
-        AuthErrorReason.INVALID_CREDENTIALS, AuthErrorReason.NETWORK -> RegisterError.NETWORK
+        AuthErrorReason.INVALID_CREDENTIALS, AuthErrorReason.NETWORK,
+        AuthErrorReason.ACCOUNT_BLOCKED -> RegisterError.NETWORK
     }
 
     companion object {

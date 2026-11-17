@@ -262,4 +262,5 @@ private fun errorMessage(error: LoginError): String = when (error) {
     LoginError.INVALID_CREDENTIALS -> stringResource(R.string.login_error_invalid_credentials)
     LoginError.RATE_LIMITED -> stringResource(R.string.login_error_rate_limited)
     LoginError.NETWORK -> stringResource(R.string.login_error_network)
+    LoginError.ACCOUNT_BLOCKED -> stringResource(R.string.login_error_blocked)
 }

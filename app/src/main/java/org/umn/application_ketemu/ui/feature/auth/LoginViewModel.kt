@@ -26,7 +26,10 @@ enum class LoginError {
     NOT_CAMPUS_EMAIL,
     INVALID_CREDENTIALS,
     RATE_LIMITED,
-    NETWORK
+    NETWORK,
+
+    /** Akun diblokir oleh admin — bukan salah kata sandi. */
+    ACCOUNT_BLOCKED
 }
 
 /**
@@ -125,6 +128,7 @@ class LoginViewModel(
     }
 
     private fun AuthErrorReason.toLoginError(): LoginError = when (this) {
+        AuthErrorReason.ACCOUNT_BLOCKED -> LoginError.ACCOUNT_BLOCKED
         AuthErrorReason.INVALID_CREDENTIALS, AuthErrorReason.USER_ALREADY_EXISTS ->
             LoginError.INVALID_CREDENTIALS
         AuthErrorReason.RATE_LIMITED -> LoginError.RATE_LIMITED

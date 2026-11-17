@@ -7,7 +7,10 @@ enum class AuthErrorReason {
     INVALID_CREDENTIALS,
     USER_ALREADY_EXISTS,
     RATE_LIMITED,
-    NETWORK
+    NETWORK,
+
+    /** Akun diblokir admin; kredensial benar tetapi akses ditutup. */
+    ACCOUNT_BLOCKED
 }
 
 /** Hasil operasi autentikasi. */

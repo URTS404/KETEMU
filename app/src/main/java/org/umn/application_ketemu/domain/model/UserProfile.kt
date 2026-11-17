@@ -11,7 +11,12 @@ data class UserProfile(
     val phone: String = "",
     val role: UserRole = UserRole.USER,
     val isVerified: Boolean = false,
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    /**
+     * Akun yang diblokir tidak boleh masuk sama sekali. Nilainya hanya boleh
+     * diubah ADMIN, baik di aplikasi maupun lewat RLS di Supabase.
+     */
+    val isBanned: Boolean = false
 ) {
     /** Email harus memakai domain kampus, mis. @umn.ac.id (staf) atau @student.umn.ac.id (mahasiswa). */
     fun isCampusEmail(domain: String): Boolean {

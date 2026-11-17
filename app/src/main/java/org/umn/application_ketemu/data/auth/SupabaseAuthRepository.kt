@@ -37,10 +37,15 @@ class SupabaseAuthRepository(
             this.password = password
         }
         val user = client.auth.currentUserOrNull()?.let { resolveProfile(it) }
-        if (user == null) {
-            AuthResult.Failure(AuthErrorReason.INVALID_CREDENTIALS)
-        } else {
-            AuthResult.Success(user)
+        when {
+            user == null -> AuthResult.Failure(AuthErrorReason.INVALID_CREDENTIALS)
+            user.isBanned -> {
+                // Akun diblokir admin: tutup sesi lagi supaya token tidak
+                // tertinggal di perangkat, lalu laporkan alasannya ke layar.
+                runCatching { client.auth.signOut() }
+                AuthResult.Failure(AuthErrorReason.ACCOUNT_BLOCKED)
+            }
+            else -> AuthResult.Success(user)
         }
     } catch (e: Exception) {
         AuthResult.Failure(e.toAuthErrorReason())

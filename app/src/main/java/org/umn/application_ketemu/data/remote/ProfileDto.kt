@@ -22,5 +22,6 @@ internal data class ProfileDto(
     @SerialName("nim_nidn") val nimNidn: String? = null,
     val phone: String? = null,
     val role: String = "USER",
-    @SerialName("is_verified") val isVerified: Boolean = false
+    @SerialName("is_verified") val isVerified: Boolean = false,
+    @SerialName("is_banned") val isBanned: Boolean = false
 )

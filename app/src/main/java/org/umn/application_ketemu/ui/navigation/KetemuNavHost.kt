@@ -63,6 +63,7 @@ import org.umn.application_ketemu.ui.di.adminAuditViewModelFactory
 import org.umn.application_ketemu.ui.di.adminClaimsViewModelFactory
 import org.umn.application_ketemu.ui.di.adminDashboardViewModelFactory
 import org.umn.application_ketemu.ui.di.adminModerationViewModelFactory
+import org.umn.application_ketemu.ui.di.adminUsersViewModelFactory
 import org.umn.application_ketemu.ui.di.conversationViewModelFactory
 import org.umn.application_ketemu.ui.di.createReportViewModelFactory
 import org.umn.application_ketemu.ui.di.homeViewModelFactory
@@ -79,6 +80,7 @@ import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationScreen
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminUsersScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminUsersViewModel
 import org.umn.application_ketemu.ui.feature.create.CreateReportScreen
 import org.umn.application_ketemu.ui.feature.create.CreateReportViewModel
 import org.umn.application_ketemu.ui.feature.detail.ReportDetailScreen
@@ -391,8 +393,11 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     popEnterTransition = { pushPopEnter },
                     popExitTransition = { pushPopExit }
                 ) {
+                    val viewModel: AdminUsersViewModel = viewModel(
+                        factory = adminUsersViewModelFactory(container)
+                    )
                     AdminUsersScreen(
-                        accounts = listOf(DummyData.student, DummyData.staff),
+                        viewModel = viewModel,
                         onBack = { navController.popBackStack() }
                     )
                 }

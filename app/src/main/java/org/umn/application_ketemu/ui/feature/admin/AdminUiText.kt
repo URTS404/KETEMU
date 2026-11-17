@@ -10,6 +10,7 @@ internal object AdminUiText {
     const val ACCESS_DENIED = "Akses ditolak: panel ini hanya untuk peran STAFF/ADMIN."
     const val REPORT_NOT_FOUND = "Laporan tidak ditemukan."
     const val CLAIM_NOT_FOUND = "Klaim tidak ditemukan."
+    const val USER_NOT_FOUND = "Akun tidak ditemukan."
 
     /**
      * Kegagalan jaringan/server. Tanpa pesan ini, pengecualian PostgREST akan

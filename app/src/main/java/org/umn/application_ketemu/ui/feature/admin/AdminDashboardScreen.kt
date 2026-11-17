@@ -172,15 +172,19 @@ fun AdminDashboardScreen(
                     onClick = onOpenAudit
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            AdminReveal(index = 8) {
-                AdminMenuRow(
-                    title = stringResource(R.string.admin_menu_users),
-                    subtitle = stringResource(R.string.admin_menu_users_desc),
-                    iconRes = R.drawable.ic_admin_users,
-                    tone = tones.violet,
-                    onClick = onOpenUsers
-                )
+            // Menu Pengguna adalah wilayah ADMIN: STAFF bekerja pada barang,
+            // ADMIN bekerja pada sistem (peran, verifikasi, blokir akun).
+            if (role.canManageUsers) {
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminReveal(index = 8) {
+                    AdminMenuRow(
+                        title = stringResource(R.string.admin_menu_users),
+                        subtitle = stringResource(R.string.admin_menu_users_desc),
+                        iconRes = R.drawable.ic_admin_users,
+                        tone = tones.violet,
+                        onClick = onOpenUsers
+                    )
+                }
             }
 
             // Aktivitas terakhir tetap dipertahankan sebagai kertas kerja cepat;

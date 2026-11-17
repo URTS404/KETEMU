@@ -10,16 +10,19 @@ import org.umn.application_ketemu.data.remote.SupabaseAuditLogRepository
 import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
+import org.umn.application_ketemu.data.remote.SupabaseUserRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
+import org.umn.application_ketemu.data.repository.InMemoryUserRepository
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.AuthRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ConversationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
+import org.umn.application_ketemu.domain.repository.UserRepository
 
 /**
  * Wadah dependensi aplikasi (pengganti sementara Dependency Injection).
@@ -62,6 +65,18 @@ class AppContainer(context: Context) {
         SupabaseAuditLogRepository(SupabaseProvider.client)
     } else {
         InMemoryAuditLogRepository()
+    }
+
+    /**
+     * Manajemen akun (khusus ADMIN): ubah peran, verifikasi, blokir.
+     *
+     * Tanpa Supabase, daftar akun diisi akun contoh supaya alur kerja admin
+     * tetap bisa diperagakan di kelas.
+     */
+    val userRepository: UserRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseUserRepository(SupabaseProvider.client)
+    } else {
+        InMemoryUserRepository(listOf(DummyData.student, DummyData.staff))
     }
 
     val networkMonitor: NetworkMonitor = NetworkMonitor(context)

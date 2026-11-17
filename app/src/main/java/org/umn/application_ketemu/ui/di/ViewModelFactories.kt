@@ -9,6 +9,7 @@ import org.umn.application_ketemu.ui.feature.admin.AdminAuditViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminClaimsViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminUsersViewModel
 import org.umn.application_ketemu.ui.feature.auth.ForgotPasswordViewModel
 import org.umn.application_ketemu.ui.feature.auth.LoginViewModel
 import org.umn.application_ketemu.ui.feature.auth.RegisterViewModel
@@ -175,6 +176,17 @@ fun adminAuditViewModelFactory(container: AppContainer): ViewModelProvider.Facto
         initializer {
             AdminAuditViewModel(
                 auditLogRepository = container.auditLogRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Panel admin: daftar & manajemen akun (aksi tulis hanya untuk ADMIN). */
+fun adminUsersViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminUsersViewModel(
+                userRepository = container.userRepository,
                 session = container.session
             )
         }

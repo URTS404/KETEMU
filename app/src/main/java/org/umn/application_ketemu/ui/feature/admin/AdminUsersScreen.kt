@@ -12,51 +12,67 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.domain.model.UserProfile
 import org.umn.application_ketemu.domain.model.UserRole
 import org.umn.application_ketemu.ui.components.InitialsAvatar
 
 /**
- * Daftar pengguna (read-only pada tahap 1).
+ * Daftar pengguna: dua wajah dalam satu layar.
  *
- * Layar ini menunjukkan kerangka "manajemen pengguna" tanpa berpura-pura punya
- * data server. Setelah Supabase aktif (tahap 2), isinya diganti tabel
- * `profiles` beserta aksi aktif/nonaktifkan akun.
- *
- * Susunannya mengikuti layar kerja admin lain: header besar, kartu ringkasan
- * bergradasi, lalu daftar kartu putih. Chip peran tetap dipertahankan supaya
- * STAFF dan ADMIN langsung terbedakan tanpa harus membaca email.
- *
- * Animasi: tiap bagian masuk bergiliran (memudar + naik halus) lewat
- * [AdminReveal], dan kartu akun memakai `Modifier.animateItem()` sehingga daftar
- * bergeser halus bila isinya berubah.
+ * STAFF membuka layar ini dalam mode baca — mereka perlu tahu siapa saja yang
+ * terdaftar (mis. memastikan pengklaim benar mahasiswa aktif), tetapi tidak
+ * boleh mengubah peran siapa pun. ADMIN mendapat aksi ubah peran, verifikasi,
+ * dan blokir. Pemisahan ini bukan sekadar kosmetik: RLS di Supabase juga
+ * menolak UPDATE `profiles` dari peran selain admin, jadi tombol yang dipaksa
+ * muncul tetap gagal di server.
  */
 @Composable
 fun AdminUsersScreen(
-    accounts: List<UserProfile>,
+    viewModel: AdminUsersViewModel,
     onBack: () -> Unit
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tones = rememberAdminTones()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearMessage()
+    }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -79,7 +95,7 @@ fun AdminUsersScreen(
                 AdminReveal(index = 1) {
                     AdminSummaryCard(
                         label = stringResource(R.string.admin_users_summary_label),
-                        count = accounts.size,
+                        count = state.accounts.size,
                         unit = stringResource(R.string.admin_users_summary_unit),
                         iconRes = R.drawable.ic_admin_users,
                         tone = tones.violet,
@@ -97,7 +113,7 @@ fun AdminUsersScreen(
                             Text(
                                 // Sama dengan isi kartu ringkasan di atas agar
                                 // angka tidak pernah berbeda antar keduanya.
-                                text = stringResource(R.string.admin_users_count, accounts.size),
+                                text = stringResource(R.string.admin_users_count, state.accounts.size),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -106,24 +122,31 @@ fun AdminUsersScreen(
                 }
             }
 
-            if (accounts.isEmpty()) {
+            if (state.accounts.isEmpty()) {
                 item(key = "empty") {
                     AdminReveal(index = 3) { UsersEmptyCard() }
                 }
             } else {
-                itemsIndexed(items = accounts, key = { _, user -> user.id }) { index, user ->
+                itemsIndexed(items = state.accounts, key = { _, user -> user.id }) { index, user ->
                     // Nomor 0-2 sudah dipakai header, ringkasan, dan judul bagian.
                     AdminReveal(
                         index = index + 3,
                         modifier = Modifier.animateItem()
                     ) {
-                        UserCard(user = user)
+                        UserCard(
+                            user = user,
+                            canManage = state.canManage,
+                            isSelf = user.id == state.currentUserId,
+                            onRoleChange = { viewModel.changeRole(user.id, it) },
+                            onToggleVerified = { viewModel.toggleVerified(user.id) },
+                            onToggleBanned = { viewModel.toggleBanned(user.id) }
+                        )
                     }
                 }
             }
 
             item(key = "hint") {
-                AdminReveal(index = accounts.size + 3) {
+                AdminReveal(index = state.accounts.size + 3) {
                     AdminHintCard(
                         title = stringResource(R.string.admin_users_hint_title),
                         text = stringResource(R.string.admin_users_desc),
@@ -140,16 +163,25 @@ fun AdminUsersScreen(
  * Satu akun pada daftar pengguna.
  *
  * Identitas ditaruh di baris atas (avatar, nama, chip peran) dan email di baris
- * bawah yang dipisahkan garis tipis. Pemisahan ini membuat email terbaca sebagai
- * data sekunder, bukan bagian dari nama.
+ * bawah yang dipisahkan garis tipis. Baris aksi hanya muncul untuk ADMIN; pada
+ * mode baca kartu berhenti di email agar daftar tidak penuh tombol mati.
  */
 @Composable
 private fun UserCard(
     user: UserProfile,
+    canManage: Boolean,
+    isSelf: Boolean,
+    onRoleChange: (UserRole) -> Unit,
+    onToggleVerified: () -> Unit,
+    onToggleBanned: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val tones = rememberAdminTones()
-    val roleTone = if (user.role == UserRole.ADMIN) tones.violet else tones.mint
+    val roleTone = when (user.role) {
+        UserRole.ADMIN -> tones.violet
+        UserRole.STAFF -> tones.amber
+        UserRole.USER -> tones.mint
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -169,29 +201,40 @@ private fun UserCard(
                 InitialsAvatar(
                     name = user.fullName,
                     size = 44.dp,
-                    containerColor = tones.mint.container,
-                    contentColor = tones.mint.content
+                    containerColor = roleTone.container,
+                    contentColor = roleTone.content
                 )
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
                         text = user.fullName,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Surface(
-                        shape = CircleShape,
-                        color = roleTone.container
-                    ) {
-                        Text(
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        StatusChip(
                             text = adminRoleLabel(user.role),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = roleTone.content
+                            container = roleTone.container,
+                            content = roleTone.content
                         )
+                        StatusChip(
+                            text = if (user.isVerified) {
+                                stringResource(R.string.admin_users_status_verified)
+                            } else {
+                                stringResource(R.string.admin_users_status_unverified)
+                            },
+                            container = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            content = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (user.isBanned) {
+                            StatusChip(
+                                text = stringResource(R.string.admin_users_status_banned),
+                                container = MaterialTheme.colorScheme.errorContainer,
+                                content = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
                     }
                 }
             }
@@ -223,7 +266,103 @@ private fun UserCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
+            if (canManage) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RoleMenuButton(currentRole = user.role, onRoleChange = onRoleChange)
+                    TextButton(onClick = onToggleVerified) {
+                        Text(
+                            text = if (user.isVerified) {
+                                stringResource(R.string.admin_users_action_unverify)
+                            } else {
+                                stringResource(R.string.admin_users_action_verify)
+                            },
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    TextButton(onClick = onToggleBanned, enabled = !isSelf) {
+                        Text(
+                            text = if (user.isBanned) {
+                                stringResource(R.string.admin_users_action_unban)
+                            } else {
+                                stringResource(R.string.admin_users_action_ban)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isSelf) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+/** Tombol "Ubah peran" dengan menu tiga pilihan; peran aktif ditandai centang. */
+@Composable
+private fun RoleMenuButton(
+    currentRole: UserRole,
+    onRoleChange: (UserRole) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        TextButton(onClick = { expanded = true }) {
+            Text(
+                text = stringResource(R.string.admin_users_action_role),
+                style = MaterialTheme.typography.labelMedium
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            UserRole.entries.forEach { role ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = adminRoleLabel(role),
+                            fontWeight = if (role == currentRole) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        if (role != currentRole) onRoleChange(role)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(
+    text: String,
+    container: androidx.compose.ui.graphics.Color,
+    content: androidx.compose.ui.graphics.Color
+) {
+    Surface(shape = CircleShape, color = container) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = content
+        )
     }
 }
 
