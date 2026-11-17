@@ -2,12 +2,16 @@ package org.umn.application_ketemu.data
 
 import android.content.Context
 import org.umn.application_ketemu.core.network.NetworkMonitor
+import org.umn.application_ketemu.core.notification.AndroidSystemNotifier
+import org.umn.application_ketemu.core.notification.NotificationTapRequests
+import org.umn.application_ketemu.core.notification.SystemNotifier
 import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.remote.SupabaseAuditLogRepository
 import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
+import org.umn.application_ketemu.data.remote.SupabaseNotificationRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
 import org.umn.application_ketemu.data.remote.SupabaseStaffKeyRepository
@@ -15,14 +19,17 @@ import org.umn.application_ketemu.data.remote.SupabaseUserRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
+import org.umn.application_ketemu.data.repository.InMemoryNotificationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
 import org.umn.application_ketemu.data.repository.InMemoryStaffKeyRepository
 import org.umn.application_ketemu.data.repository.InMemoryUserRepository
+import org.umn.application_ketemu.data.repository.SystemNotifyingNotificationRepository
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.AuthRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ConversationRepository
+import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 import org.umn.application_ketemu.domain.repository.StaffKeyRepository
 import org.umn.application_ketemu.domain.repository.UserRepository
@@ -35,6 +42,28 @@ import org.umn.application_ketemu.domain.repository.UserRepository
  * disusun sama seperti rencana versi Hilt agar perpindahannya murni mekanis.
  */
 class AppContainer(context: Context) {
+
+    /**
+     * Sesi pengguna aktif.
+     *
+     * Diletakkan paling atas karena dipakai dekorator notifikasi di bawah
+     * (urutan inisialisasi properti Kotlin mengikuti urutan penulisan).
+     */
+    val session: SessionStore = SessionStore()
+
+    /**
+     * Pengirim notifikasi panel sistem (di luar aplikasi).
+     *
+     * Kabar in-app tetap disimpan oleh [notificationRepository]; kelas ini
+     * memunculkan salinannya di notification tray Android.
+     */
+    val systemNotifier: SystemNotifier = AndroidSystemNotifier(context)
+
+    /**
+     * Permintaan membuka kotak masuk dari ketukan kartu notifikasi panel sistem.
+     * Diisi MainActivity, dikonsumsi KetemuNavHost.
+     */
+    val notificationTapRequests: NotificationTapRequests = NotificationTapRequests()
 
     /**
      * Sumber data laporan.
@@ -54,6 +83,27 @@ class AppContainer(context: Context) {
     val conversationRepository: ConversationRepository = InMemoryConversationRepository(
         initialThreads = DummyData.conversations(),
         initialMessages = DummyData.messages()
+    )
+
+    /**
+     * Kotak masuk notifikasi (lonceng Beranda + layar Notifikasi).
+     *
+     * Tanpa Supabase, notifikasi contoh disemai agar badge langsung terlihat
+     * saat demo. Dengan Supabase, baris dibaca dari tabel `notifications`
+     * (db/0016) dan RLS menentukan milik siapa notifikasi itu.
+     *
+     * Dibungkus [SystemNotifyingNotificationRepository] supaya kabar baru juga
+     * tampil di panel sistem Android (di luar aplikasi), dengan aturan yang sama
+     * seperti kotak masuk: hanya milik pengguna aktif dan belum dibaca.
+     */
+    val notificationRepository: NotificationRepository = SystemNotifyingNotificationRepository(
+        delegate = if (SupabaseProvider.isConfigured) {
+            SupabaseNotificationRepository(SupabaseProvider.client)
+        } else {
+            InMemoryNotificationRepository(DummyData.notifications())
+        },
+        session = session,
+        notifier = systemNotifier
     )
 
     /** Pengajuan klaim + antrean keputusan moderator. */
@@ -82,7 +132,7 @@ class AppContainer(context: Context) {
         InMemoryUserRepository(listOf(DummyData.student, DummyData.staff))
     }
 
-    /** Kunci staf (undangan sekali pakai) — dibaca penuh hanya oleh ADMIN. */
+    /** Kunci staf (undangan sekali pakai) â€” dibaca penuh hanya oleh ADMIN. */
     val staffKeyRepository: StaffKeyRepository = if (SupabaseProvider.isConfigured) {
         SupabaseStaffKeyRepository(SupabaseProvider.client)
     } else {
@@ -107,8 +157,6 @@ class AppContainer(context: Context) {
     } else {
         LocalAuthRepository()
     }
-
-    val session: SessionStore = SessionStore()
 
     /** Apakah project Supabase sudah dikonfigurasi pada build ini. */
     fun supabaseConfigured(): Boolean = SupabaseProvider.isConfigured

@@ -14,6 +14,7 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0008_selfcheck.sql` | Query pemeriksaan cepat setelah setup |
 | `0009_fix_audit_enum_cast.sql` | Perbaikan cast enum pada trigger audit |
 | `0010_report_coordinates.sql` | Kolom `latitude`/`longitude` untuk titik peta |
+| `0016_notifications.sql` | Tabel `notifications`, RLS, dan trigger `reports_notify_found` (konfirmasi barang temuan + siaran barang temuan baru) |
 
 ## 1. Buat project
 

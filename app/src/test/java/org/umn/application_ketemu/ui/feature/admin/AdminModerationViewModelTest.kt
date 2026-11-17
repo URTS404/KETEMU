@@ -14,8 +14,10 @@ import org.junit.Before
 import org.junit.Test
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
+import org.umn.application_ketemu.data.repository.InMemoryNotificationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.model.UserRole
 
@@ -33,12 +35,14 @@ class AdminModerationViewModelTest {
     private data class Fixture(
         val viewModel: AdminModerationViewModel,
         val reports: InMemoryReportRepository,
-        val audit: InMemoryAuditLogRepository
+        val audit: InMemoryAuditLogRepository,
+        val notifications: InMemoryNotificationRepository
     )
 
     private fun fixtureAs(role: UserRole): Fixture {
         val reports = InMemoryReportRepository(DummyData.reports())
         val audit = InMemoryAuditLogRepository()
+        val notifications = InMemoryNotificationRepository()
         val session = SessionStore()
         val user = when (role) {
             UserRole.USER -> DummyData.student
@@ -46,7 +50,12 @@ class AdminModerationViewModelTest {
             UserRole.ADMIN -> DummyData.staff.copy(role = UserRole.ADMIN)
         }
         session.signIn(user)
-        return Fixture(AdminModerationViewModel(reports, audit, session), reports, audit)
+        return Fixture(
+            AdminModerationViewModel(reports, audit, notifications, session),
+            reports,
+            audit,
+            notifications
+        )
     }
 
     @Test
@@ -60,6 +69,12 @@ class AdminModerationViewModelTest {
             fixture.reports.getReport("rpt-006")?.status
         )
         assertEquals(1, fixture.audit.observeEntries().first().size)
+
+        val notification = fixture.notifications.observeNotifications().first().single()
+        assertEquals(AppNotificationType.REPORT_STATUS_CHANGED, notification.type)
+        assertEquals(DummyData.student.id, notification.recipientId)
+        assertEquals("rpt-006", notification.reportId)
+        assertTrue(!notification.isRead)
     }
 
     @Test
@@ -81,6 +96,7 @@ class AdminModerationViewModelTest {
 
         assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
         assertTrue(fixture.audit.observeEntries().first().isEmpty())
+        assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
         assertEquals(AdminUiText.ACCESS_DENIED, fixture.viewModel.message.value)
     }
 }

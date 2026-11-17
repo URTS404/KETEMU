@@ -3,6 +3,7 @@ package org.umn.application_ketemu.ui.feature.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,10 +14,13 @@ import kotlinx.coroutines.launch
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.AuditAction
 import org.umn.application_ketemu.domain.model.AuditLogEntry
+import org.umn.application_ketemu.domain.model.AppNotification
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
+import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 
 /** Hasil terakhir keputusan klaim, dipakai layar untuk menampilkan kode pengambilan. */
@@ -37,6 +41,7 @@ class AdminClaimsViewModel(
     private val claimRepository: ClaimRepository,
     private val reportRepository: ReportRepository,
     private val auditLogRepository: AuditLogRepository,
+    private val notificationRepository: NotificationRepository,
     private val session: SessionStore
 ) : ViewModel() {
 
@@ -100,6 +105,8 @@ class AdminClaimsViewModel(
                 )
             )
 
+            notifyClaimant(claim, approve, actor.id)
+
             _lastDecision.value = ClaimDecision(
                 claimTitle = claim.reportTitle,
                 approved = approve,
@@ -119,5 +126,60 @@ class AdminClaimsViewModel(
     fun clearFeedback() {
         _message.value = null
         _lastDecision.value = null
+    }
+
+    /**
+     * Mengabari pengaju klaim tentang keputusannya. Kode pengambilan hanya
+     * disertakan bila klaim disetujui. Notifikasi bersifat pelengkap sehingga
+     * kegagalannya tidak membatalkan keputusan yang sudah tersimpan.
+     */
+    private suspend fun notifyClaimant(claim: Claim, approve: Boolean, actorId: String) {
+        val note = claim.decisionNote?.takeIf { it.isNotBlank() }
+        val message = if (approve) {
+            buildString {
+                append("Klaim Anda untuk \"")
+                append(claim.reportTitle)
+                append("\" disetujui.")
+                claim.pickupCode?.let { code ->
+                    append(" Kode pengambilan: ")
+                    append(code)
+                    append('.')
+                }
+                append(" Bawa KTM ke pos untuk mengambil barang.")
+            }
+        } else {
+            buildString {
+                append("Klaim Anda untuk \"")
+                append(claim.reportTitle)
+                append("\" belum bisa disetujui.")
+                if (note != null) {
+                    append(" Catatan petugas: ")
+                    append(note)
+                }
+            }
+        }
+
+        try {
+            notificationRepository.publish(
+                AppNotification(
+                    id = UUID.randomUUID().toString(),
+                    type = if (approve) {
+                        AppNotificationType.CLAIM_APPROVED
+                    } else {
+                        AppNotificationType.CLAIM_REJECTED
+                    },
+                    title = if (approve) "Klaim disetujui" else "Klaim belum disetujui",
+                    message = message,
+                    createdAt = System.currentTimeMillis(),
+                    reportId = claim.reportId,
+                    recipientId = claim.claimantId,
+                    actorId = actorId
+                )
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            android.util.Log.w("AdminClaims", "notifikasi klaim gagal: ${e.message}")
+        }
     }
 }

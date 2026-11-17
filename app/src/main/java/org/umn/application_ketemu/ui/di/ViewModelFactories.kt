@@ -21,6 +21,7 @@ import org.umn.application_ketemu.ui.feature.home.HomeViewModel
 import org.umn.application_ketemu.ui.feature.message.ConversationViewModel
 import org.umn.application_ketemu.ui.feature.message.MessagesViewModel
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsViewModel
+import org.umn.application_ketemu.ui.feature.notification.NotificationsViewModel
 
 /**
  * Kumpulan factory ViewModel (penyediaan dependensi manual).
@@ -77,7 +78,7 @@ fun homeViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
                 reportRepository = container.reportRepository,
                 networkMonitor = container.networkMonitor,
                 session = container.session,
-                conversationRepository = container.conversationRepository
+                notificationRepository = container.notificationRepository
             )
         }
     }
@@ -98,7 +99,8 @@ fun createReportViewModelFactory(container: AppContainer): ViewModelProvider.Fac
             CreateReportViewModel(
                 reportRepository = container.reportRepository,
                 networkMonitor = container.networkMonitor,
-                session = container.session
+                session = container.session,
+                notificationRepository = container.notificationRepository
             )
         }
     }
@@ -154,6 +156,7 @@ fun adminModerationViewModelFactory(container: AppContainer): ViewModelProvider.
             AdminModerationViewModel(
                 reportRepository = container.reportRepository,
                 auditLogRepository = container.auditLogRepository,
+                notificationRepository = container.notificationRepository,
                 session = container.session
             )
         }
@@ -167,6 +170,18 @@ fun adminClaimsViewModelFactory(container: AppContainer): ViewModelProvider.Fact
                 claimRepository = container.claimRepository,
                 reportRepository = container.reportRepository,
                 auditLogRepository = container.auditLogRepository,
+                notificationRepository = container.notificationRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Kotak masuk notifikasi (Beranda -> lonceng). */
+fun notificationsViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            NotificationsViewModel(
+                notificationRepository = container.notificationRepository,
                 session = container.session
             )
         }

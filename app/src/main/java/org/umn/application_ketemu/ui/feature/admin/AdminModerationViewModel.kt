@@ -3,6 +3,7 @@ package org.umn.application_ketemu.ui.feature.admin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,9 +14,12 @@ import kotlinx.coroutines.launch
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.AuditAction
 import org.umn.application_ketemu.domain.model.AuditLogEntry
+import org.umn.application_ketemu.domain.model.AppNotification
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
+import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 
 /**
@@ -28,6 +32,7 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
 class AdminModerationViewModel(
     private val reportRepository: ReportRepository,
     private val auditLogRepository: AuditLogRepository,
+    private val notificationRepository: NotificationRepository,
     private val session: SessionStore
 ) : ViewModel() {
 
@@ -64,6 +69,13 @@ class AdminModerationViewModel(
         try {
             reportRepository.updateStatus(reportId, ReportStatus.DISERAHKAN_KE_POS)
             record(actor.id, actor.fullName, AuditAction.VERIFIKASI_LAPORAN, report.id, report.title)
+            notifyOwner(
+                report = report,
+                actorId = actor.id,
+                title = "Laporan Anda diverifikasi: ${report.title}",
+                message = "Laporan \"${report.title}\" sudah diverifikasi petugas dan " +
+                    "diteruskan ke pos. Bawa bukti kepemilikan saat mengambil."
+            )
             _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke pos."
         } catch (e: Exception) {
             android.util.Log.e("AdminModeration", "verifikasi gagal: ${e.message}", e)
@@ -85,6 +97,13 @@ class AdminModerationViewModel(
         try {
             reportRepository.setArchived(reportId, archived = true)
             record(actor.id, actor.fullName, AuditAction.ARSIP_LAPORAN, report.id, report.title)
+            notifyOwner(
+                report = report,
+                actorId = actor.id,
+                title = "Laporan Anda diarsipkan",
+                message = "Laporan \"${report.title}\" disembunyikan dari Beranda. " +
+                    "Hubungi Pos Barang Temuan bila Anda butuh penjelasan."
+            )
             _message.value = "\"${report.title}\" diarsipkan dari Beranda."
         } catch (e: Exception) {
             android.util.Log.e("AdminModeration", "arsip gagal: ${e.message}", e)
@@ -115,5 +134,36 @@ class AdminModerationViewModel(
                 createdAt = System.currentTimeMillis()
             )
         )
+    }
+
+    /**
+     * Memberi tahu pemilik laporan bahwa statusnya berubah karena tindakan
+     * petugas. Kegagalan notifikasi tidak boleh menggagalkan aksi moderasi,
+     * jadi error-nya hanya dicatat pada log.
+     */
+    private suspend fun notifyOwner(
+        report: Report,
+        actorId: String,
+        title: String,
+        message: String
+    ) {
+        try {
+            notificationRepository.publish(
+                AppNotification(
+                    id = UUID.randomUUID().toString(),
+                    type = AppNotificationType.REPORT_STATUS_CHANGED,
+                    title = title,
+                    message = message,
+                    createdAt = System.currentTimeMillis(),
+                    reportId = report.id,
+                    recipientId = report.ownerId,
+                    actorId = actorId
+                )
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            android.util.Log.w("AdminModeration", "notifikasi status gagal: ${e.message}")
+        }
     }
 }

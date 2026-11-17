@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -59,6 +60,7 @@ import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.ui.LocalAppContainer
 import org.umn.application_ketemu.ui.MainViewModel
 import org.umn.application_ketemu.ui.components.OfflineBanner
+import org.umn.application_ketemu.ui.components.NotificationPermissionEffect
 import org.umn.application_ketemu.ui.di.adminAuditViewModelFactory
 import org.umn.application_ketemu.ui.di.adminClaimsViewModelFactory
 import org.umn.application_ketemu.ui.di.adminDashboardViewModelFactory
@@ -72,6 +74,7 @@ import org.umn.application_ketemu.ui.di.homeViewModelFactory
 import org.umn.application_ketemu.ui.di.mainViewModelFactory
 import org.umn.application_ketemu.ui.di.messagesViewModelFactory
 import org.umn.application_ketemu.ui.di.myReportsViewModelFactory
+import org.umn.application_ketemu.ui.di.notificationsViewModelFactory
 import org.umn.application_ketemu.ui.di.reportDetailViewModelFactory
 import org.umn.application_ketemu.ui.feature.admin.AdminAuditScreen
 import org.umn.application_ketemu.ui.feature.admin.AdminAuditViewModel
@@ -97,6 +100,8 @@ import org.umn.application_ketemu.ui.feature.message.MessageScreen
 import org.umn.application_ketemu.ui.feature.message.MessagesViewModel
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsScreen
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsViewModel
+import org.umn.application_ketemu.ui.feature.notification.NotificationsScreen
+import org.umn.application_ketemu.ui.feature.notification.NotificationsViewModel
 import org.umn.application_ketemu.ui.feature.profile.ProfileScreen
 import org.umn.application_ketemu.ui.feature.profile.StaffKeyScreen
 import org.umn.application_ketemu.ui.feature.profile.StaffKeyViewModel
@@ -164,6 +169,21 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
     val pendingCount by mainViewModel.pendingCount.collectAsStateWithLifecycle()
     val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
+    // Ketukan pada kartu notifikasi panel sistem membuka kotak masuk. Permintaan
+    // disimpan di container sehingga tidak hilang bila aplikasi baru dibuka dari
+    // keadaan mati; setelah navigasi dijalankan, permintaan dikonsumsi.
+    val notificationTapPending by container.notificationTapRequests.pending
+        .collectAsStateWithLifecycle()
+    LaunchedEffect(notificationTapPending) {
+        if (notificationTapPending) {
+            navController.navigate(KetemuRoutes.NOTIFICATIONS) { launchSingleTop = true }
+            container.notificationTapRequests.consume()
+        }
+    }
+
+    // Izin POST_NOTIFICATIONS (Android 13+) diminta sekali setelah pengguna masuk.
+    NotificationPermissionEffect()
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val topLevelRoutes = listOf(
@@ -211,8 +231,28 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         onCreateReportClick = {
                             navController.navigate(KetemuRoutes.CREATE_REPORT)
                         },
-                        onOpenMessages = {
-                            navController.navigateToTopLevel(KetemuRoutes.MESSAGE)
+                        onOpenNotifications = {
+                            navController.navigate(KetemuRoutes.NOTIFICATIONS)
+                        }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.NOTIFICATIONS,
+                    // Pola "push": kotak masuk dibuka di atas Beranda.
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: NotificationsViewModel = viewModel(
+                        factory = notificationsViewModelFactory(container)
+                    )
+                    NotificationsScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() },
+                        onOpenReport = { reportId ->
+                            navController.navigate(KetemuRoutes.reportDetail(reportId))
                         }
                     )
                 }

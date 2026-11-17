@@ -13,12 +13,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.model.AppNotification
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.model.SyncStatus
+import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 import java.util.UUID
 
@@ -69,6 +72,7 @@ private data class PendingReport(
  */
 class CreateReportViewModel(
     private val reportRepository: ReportRepository,
+    private val notificationRepository: NotificationRepository,
     networkMonitor: NetworkMonitor,
     private val session: SessionStore
 ) : ViewModel() {
@@ -163,6 +167,7 @@ class CreateReportViewModel(
                 )
 
                 reportRepository.addReport(report)
+                notifyReportCreated(report, savedOffline = !online)
                 waitForMinimumFeedback(startedAt)
 
                 pendingReport = null
@@ -182,6 +187,78 @@ class CreateReportViewModel(
                 _saveState.value = SaveUiState.Error
             }
         }
+    }
+
+    /**
+     * Menerbitkan notifikasi konfirmasi untuk pelapor, plus siaran "barang
+     * temuan baru" bagi pengguna lain ketika yang diunggah adalah barang temuan.
+     *
+     * Notifikasi bersifat pelengkap: kegagalannya tidak boleh membatalkan
+     * laporan yang sudah tersimpan, sehingga error-nya hanya dicatat di log.
+     */
+    private suspend fun notifyReportCreated(report: Report, savedOffline: Boolean) {
+        val now = System.currentTimeMillis()
+        val isFound = report.type == ItemType.FOUND
+
+        try {
+            notificationRepository.publish(
+                AppNotification(
+                    id = UUID.randomUUID().toString(),
+                    type = if (isFound) {
+                        AppNotificationType.FOUND_REPORT_CREATED
+                    } else {
+                        AppNotificationType.LOST_REPORT_CREATED
+                    },
+                    title = if (isFound) {
+                        "Barang temuan Anda sudah diunggah"
+                    } else {
+                        "Laporan barang hilang terkirim"
+                    },
+                    message = confirmationMessage(report, savedOffline),
+                    createdAt = now,
+                    reportId = report.id,
+                    recipientId = report.ownerId,
+                    actorId = report.ownerId
+                )
+            )
+
+            // Siaran lintas pengguna hanya untuk barang temuan. Pada mode
+            // Supabase, baris ini dibangkitkan trigger server (db/0016) agar
+            // semua pengguna menerimanya; implementasi remote mengabaikannya.
+            if (isFound) {
+                notificationRepository.publish(
+                    AppNotification(
+                        id = UUID.randomUUID().toString(),
+                        type = AppNotificationType.NEW_FOUND_ITEM,
+                        title = "Barang temuan baru: ${report.title}",
+                        message = "Ditemukan di ${report.lastSeenLocation}. Buka detail " +
+                            "untuk memeriksa apakah ini barang Anda.",
+                        createdAt = now,
+                        reportId = report.id,
+                        actorId = report.ownerId
+                    )
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            android.util.Log.w("CreateReport", "notifikasi laporan gagal: ${e.message}")
+        }
+    }
+
+    /** Pesan konfirmasi mengikuti kondisi jaringan dan jenis laporan. */
+    private fun confirmationMessage(report: Report, savedOffline: Boolean): String = when {
+        savedOffline ->
+            "Laporan \"${report.title}\" aman di HP Anda dan akan dikirim otomatis " +
+                "saat internet tersedia."
+
+        report.type == ItemType.FOUND ->
+            "Laporan \"${report.title}\" tercatat. Serahkan barang ke pos terdekat agar " +
+                "bisa diklaim pemiliknya."
+
+        else ->
+            "Laporan \"${report.title}\" sudah masuk sistem. Petugas pos akan " +
+                "mencocokkannya dengan barang temuan."
     }
 
     /**

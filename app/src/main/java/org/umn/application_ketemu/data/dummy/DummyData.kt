@@ -1,5 +1,7 @@
 package org.umn.application_ketemu.data.dummy
 
+import org.umn.application_ketemu.domain.model.AppNotification
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.ChatMessage
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ClaimStatus
@@ -199,6 +201,57 @@ object DummyData {
                 decidedAt = now - day,
                 decidedBy = staff.fullName,
                 pickupCode = "K7M2QP"
+            )
+        )
+    }
+
+    /**
+     * Notifikasi contoh agar lonceng Beranda langsung berbadge dan layar
+     * Notifikasi punya isi sejak demo pertama.
+     *
+     * Isinya sengaja konsisten dengan [reports]: dua konfirmasi untuk laporan
+     * milik mahasiswa dan satu siaran "barang temuan baru" dari pengguna lain.
+     * Notifikasi perubahan status & keputusan klaim baru muncul saat petugas
+     * benar-benar memproses sesuatu.
+     */
+    fun notifications(): List<AppNotification> {
+        val now = System.currentTimeMillis()
+        val minute = 60_000L
+        val hour = 60 * minute
+
+        return listOf(
+            AppNotification(
+                id = "ntf-001",
+                type = AppNotificationType.LOST_REPORT_CREATED,
+                title = "Laporan tersimpan, menunggu sinkron",
+                message = "Laporan \"Laptop Sleeve Abu-abu\" aman di HP Anda dan akan " +
+                    "dikirim otomatis saat internet tersedia.",
+                createdAt = now - 12 * minute,
+                reportId = "rpt-006",
+                recipientId = student.id,
+                actorId = student.id
+            ),
+            AppNotification(
+                id = "ntf-002",
+                type = AppNotificationType.NEW_FOUND_ITEM,
+                title = "Barang temuan baru: KTM atas nama Andi Wijaya",
+                message = "Ditemukan di Lobby Gedung B. Buka detail untuk memeriksa " +
+                    "apakah ini barang Anda.",
+                createdAt = now - 2 * hour,
+                reportId = "rpt-002",
+                actorId = "user-lain-02"
+            ),
+            AppNotification(
+                id = "ntf-003",
+                type = AppNotificationType.LOST_REPORT_CREATED,
+                title = "Laporan barang hilang terkirim",
+                message = "Laporan \"Tumbler Hitam Tumbler Angsa\" kami terima. Petugas pos " +
+                    "akan mencocokkannya dengan barang temuan.",
+                createdAt = now - 115 * minute,
+                reportId = "rpt-001",
+                recipientId = student.id,
+                actorId = student.id,
+                isRead = true
             )
         )
     }

@@ -28,11 +28,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,7 +61,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -100,16 +96,14 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onReportClick: (String) -> Unit,
     onCreateReportClick: () -> Unit,
-    onOpenMessages: () -> Unit,
+    onOpenNotifications: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
-    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val unreadNotifications by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-
-    var showNotifications by remember { mutableStateOf(false) }
 
     var query by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf<ItemType?>(null) }
@@ -145,8 +139,8 @@ fun HomeScreen(
                 ),
                 actions = {
                     NotificationButton(
-                        count = notifications.sumOf { it.count },
-                        onClick = { showNotifications = true }
+                        count = unreadNotifications,
+                        onClick = onOpenNotifications
                     )
                 }
             )
@@ -263,21 +257,6 @@ fun HomeScreen(
                 }
             }
         }
-    }
-
-    if (showNotifications) {
-        NotificationSheet(
-            notifications = notifications,
-            onOpenMessages = {
-                showNotifications = false
-                onOpenMessages()
-            },
-            onOpenReport = { reportId ->
-                showNotifications = false
-                onReportClick(reportId)
-            },
-            onDismiss = { showNotifications = false }
-        )
     }
 }
 
@@ -510,121 +489,6 @@ private fun NotificationButton(
                     color = MaterialTheme.colorScheme.onTertiary
                 )
             }
-        }
-    }
-}
-
-/**
- * Lembar notifikasi Beranda: daftar hal baru (pesan belum dibaca & barang yang
- * sudah siap diambil). Menekan satu baris langsung membuka tujuannya.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NotificationSheet(
-    notifications: List<HomeNotification>,
-    onOpenMessages: () -> Unit,
-    onOpenReport: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.home_notification_title),
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            if (notifications.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.home_notification_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                notifications.forEach { notification ->
-                    when (notification.kind) {
-                        NotificationKind.UNREAD_MESSAGES -> NotificationRow(
-                            icon = Icons.Default.Email,
-                            title = stringResource(
-                                R.string.home_notification_messages,
-                                notification.count
-                            ),
-                            subtitle = stringResource(R.string.home_notification_messages_hint),
-                            onClick = onOpenMessages
-                        )
-
-                        NotificationKind.READY_FOR_PICKUP -> NotificationRow(
-                            icon = Icons.Default.Place,
-                            title = stringResource(
-                                R.string.home_notification_ready,
-                                notification.count
-                            ),
-                            subtitle = stringResource(R.string.home_notification_ready_hint),
-                            onClick = { notification.reportId?.let(onOpenReport) }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Satu baris notifikasi: ikon, judul, keterangan, panah. */
-@Composable
-private fun NotificationRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .size(18.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

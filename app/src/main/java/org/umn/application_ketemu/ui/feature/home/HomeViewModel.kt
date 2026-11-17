@@ -20,7 +20,8 @@ import org.umn.application_ketemu.domain.model.ReportCategory
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.model.SyncStatus
 import org.umn.application_ketemu.domain.model.UserProfile
-import org.umn.application_ketemu.domain.repository.ConversationRepository
+import org.umn.application_ketemu.domain.model.visibleTo
+import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 
 /** Angka ringkas yang ditampilkan pada kartu sapaan di Beranda. */
@@ -28,24 +29,6 @@ data class HomeStats(
     val total: Int = 0,
     val readyForPickup: Int = 0,
     val pendingSync: Int = 0
-)
-
-/** Jenis hal "baru" yang layak diberi tanda notifikasi di Beranda. */
-enum class NotificationKind {
-    UNREAD_MESSAGES,
-    READY_FOR_PICKUP
-}
-
-/**
- * Satu baris notifikasi Beranda.
- *
- * @param reportId diisi bila notifikasi menunjuk ke satu laporan, sehingga
- *   menekannya bisa langsung membuka halaman Detail laporan tersebut.
- */
-data class HomeNotification(
-    val kind: NotificationKind,
-    val count: Int,
-    val reportId: String? = null
 )
 
 /**
@@ -59,7 +42,7 @@ class HomeViewModel(
     reportRepository: ReportRepository,
     networkMonitor: NetworkMonitor,
     session: SessionStore,
-    conversationRepository: ConversationRepository
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -95,38 +78,18 @@ class HomeViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeStats())
 
-    /**
-     * Daftar hal "baru" untuk tanda notifikasi di Beranda:
-     *  - pesan yang belum dibaca pada layar Pesan,
-     *  - laporan berstatus SIAP_DIAMBIL (barang sudah bisa diambil di pos).
-     *
-     * Dihitung di ViewModel agar layar hanya bertugas menggambar.
-     */
-    val notifications: StateFlow<List<HomeNotification>> = combine(
-        conversationRepository.observeThreads(),
-        reportRepository.observeReports()
-    ) { threads, reports ->
-        buildList {
-            val unreadMessages = threads.sumOf { it.unreadCount }
-            if (unreadMessages > 0) {
-                add(HomeNotification(NotificationKind.UNREAD_MESSAGES, unreadMessages))
-            }
-
-            val ready = reports.filter { it.status == ReportStatus.SIAP_DIAMBIL }
-            if (ready.isNotEmpty()) {
-                add(
-                    HomeNotification(
-                        kind = NotificationKind.READY_FOR_PICKUP,
-                        count = ready.size,
-                        reportId = ready.first().id
-                    )
-                )
-            }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    /**
+     * Jumlah notifikasi tersimpan yang belum dibaca. Dipakai oleh badge lonceng
+     * di Beranda, sehingga angkanya selalu sama dengan layar Notifikasi.
+     */
+    val unreadNotificationCount: StateFlow<Int> = combine(
+        currentUser,
+        notificationRepository.observeNotifications()
+    ) { user, all -> all.visibleTo(user.id).count { !it.isRead } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     /**
      * Memuat ulang data Beranda. Pada prototipe ini hanya memberi jeda singkat

@@ -16,8 +16,10 @@ import org.junit.Test
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
+import org.umn.application_ketemu.data.repository.InMemoryNotificationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.model.UserRole
@@ -37,13 +39,15 @@ class AdminClaimsViewModelTest {
         val viewModel: AdminClaimsViewModel,
         val claims: InMemoryClaimRepository,
         val reports: InMemoryReportRepository,
-        val audit: InMemoryAuditLogRepository
+        val audit: InMemoryAuditLogRepository,
+        val notifications: InMemoryNotificationRepository
     )
 
     private fun fixtureAs(role: UserRole): Fixture {
         val claims = InMemoryClaimRepository(DummyData.claims())
         val reports = InMemoryReportRepository(DummyData.reports())
         val audit = InMemoryAuditLogRepository()
+        val notifications = InMemoryNotificationRepository()
         val session = SessionStore()
         session.signIn(
             when (role) {
@@ -53,10 +57,11 @@ class AdminClaimsViewModelTest {
             }
         )
         return Fixture(
-            AdminClaimsViewModel(claims, reports, audit, session),
+            AdminClaimsViewModel(claims, reports, audit, notifications, session),
             claims,
             reports,
-            audit
+            audit,
+            notifications
         )
     }
 
@@ -72,6 +77,13 @@ class AdminClaimsViewModelTest {
         assertEquals(ReportStatus.SIAP_DIAMBIL, fixture.reports.getReport("rpt-002")?.status)
         assertEquals(1, fixture.audit.observeEntries().first().size)
         assertEquals("KTM atas nama Andi Wijaya", fixture.viewModel.lastDecision.value?.claimTitle)
+
+        val approval = fixture.notifications.observeNotifications().first()
+            .single { it.type == AppNotificationType.CLAIM_APPROVED }
+        assertEquals("user-lain-03", approval.recipientId)
+        assertEquals("rpt-002", approval.reportId)
+        assertTrue(approval.message.contains(claim?.pickupCode!!))
+        assertTrue(!approval.isRead)
     }
 
     @Test
@@ -85,6 +97,11 @@ class AdminClaimsViewModelTest {
             ReportStatus.DISERAHKAN_KE_POS,
             fixture.reports.getReport("rpt-005")?.status
         )
+
+        val rejection = fixture.notifications.observeNotifications().first()
+            .single { it.type == AppNotificationType.CLAIM_REJECTED }
+        assertEquals("user-lain-06", rejection.recipientId)
+        assertTrue(rejection.message.contains("Ciri barang tidak cocok"))
     }
 
     @Test
@@ -95,6 +112,7 @@ class AdminClaimsViewModelTest {
 
         assertEquals(ClaimStatus.MENUNGGU, fixture.claims.getClaim("clm-001")?.status)
         assertTrue(fixture.audit.observeEntries().first().isEmpty())
+        assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
         assertEquals(AdminUiText.ACCESS_DENIED, fixture.viewModel.message.value)
     }
 }

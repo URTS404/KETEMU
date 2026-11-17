@@ -12,6 +12,7 @@ object KetemuRoutes {
     const val MY_REPORTS = "my_reports"
     const val PROFILE = "profile"
     const val MESSAGE = "message"
+    const val NOTIFICATIONS = "notifications"
     const val CREATE_REPORT = "create_report"
     const val REPORT_DETAIL = "report_detail/{reportId}"
     const val CONVERSATION = "conversation/{threadId}"

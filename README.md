@@ -13,6 +13,8 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 - **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
 - **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
+- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim.
+
 - **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
 
 ## Tech stack
@@ -25,7 +27,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 | Gambar | Coil |
 | Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
 | Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (55 unit test) |
+| Test | JUnit4 + `kotlinx-coroutines-test` (73 unit test) |
 
 ## Menjalankan
 
@@ -88,6 +90,21 @@ Masuk sebagai staf (`rahmat@umn.ac.id` / `STAFF-001`), buka tab **Akun**, lalu t
 - **Log aktivitas** — jejak keputusan moderator yang tidak bisa diubah.
 
 Panel ini hanya dirender untuk peran STAFF/ADMIN, dan setiap aksi diperiksa ulang di ViewModel. Data masih in-memory pada tahap ini; rencana Supabase + Room ada di [docs/v2-roadmap.md](docs/v2-roadmap.md).
+
+## Notifikasi (in-app + panel sistem)
+
+Kabar Ketemu tampil di dua tempat dengan isi yang sama:
+
+- **Kotak masuk in-app** - lonceng di Beranda membuka layar Notifikasi (tandai dibaca, buka laporan terkait).
+- **Panel notifikasi Android** - kartu di luar aplikasi untuk konfirmasi unggahan, barang temuan baru, perubahan status laporan, dan keputusan klaim.
+
+Aturan yang diuji di `SystemNotifyingNotificationRepositoryTest`:
+
+1. Hanya kabar milik pengguna aktif (staf yang memutuskan klaim tidak menerima kartu milik pengklaim di perangkatnya).
+2. Hanya kabar yang belum dibaca; menandai dibaca tidak memunculkan kartu ganda.
+3. Riwayat lama (data demo atau baris Supabase saat aplikasi dibuka) tidak dikirim ulang.
+
+Ketuk kartu untuk membuka layar Notifikasi (`launchMode="singleTop"` + extra intent). Di Android 13+ izin `POST_NOTIFICATIONS` diminta sekali setelah login; bila ditolak, kotak masuk in-app tetap berfungsi. Kanal notifikasi bernama **Kabar Ketemu** dan bisa dimatikan dari Pengaturan Android.
 
 ## Struktur proyek
 

@@ -2,6 +2,7 @@ package org.umn.application_ketemu
 
 import android.app.Application
 
+import org.umn.application_ketemu.core.notification.KetemuNotificationChannels
 import org.umn.application_ketemu.data.AppContainer
 
 /**
@@ -20,6 +21,9 @@ class KetemuApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Kanal panel sistem dibuat di awal: Android 8+ membuang notifikasi yang
+        // kanalnya belum terdaftar, jadi jangan menunggu sampai kabar pertama.
+        KetemuNotificationChannels.ensure(this)
         container = AppContainer(applicationContext)
     }
 

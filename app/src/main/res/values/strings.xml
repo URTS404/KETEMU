@@ -48,12 +48,20 @@
 
     <!-- ===== Notifikasi Beranda ===== -->
     <string name="home_notification_bell">Notifikasi</string>
-    <string name="home_notification_title">Notifikasi</string>
-    <string name="home_notification_empty">Belum ada hal baru.</string>
-    <string name="home_notification_messages">%1$d pesan belum dibaca</string>
-    <string name="home_notification_messages_hint">Buka layar Pesan untuk membalas.</string>
-    <string name="home_notification_ready">%1$d barang siap diambil</string>
-    <string name="home_notification_ready_hint">Sudah dititipkan di pos, bawa KTM saat mengambil.</string>
+
+    <!-- ===== Notifikasi panel sistem (Android notification tray) ===== -->
+    <string name="notification_channel_name">Kabar Ketemu</string>
+    <string name="notification_channel_description">Konfirmasi unggahan, barang temuan baru, perubahan status laporan, dan keputusan klaim.</string>
+
+    <!-- ===== Kotak masuk notifikasi ===== -->
+    <string name="notifications_title">Notifikasi</string>
+    <string name="notifications_mark_all">Tandai dibaca</string>
+    <string name="notifications_summary">%1$d dari %2$d notifikasi belum dibaca</string>
+    <string name="notifications_all_read">Semua notifikasi sudah dibaca.</string>
+    <string name="notifications_empty_title">Belum ada notifikasi</string>
+    <string name="notifications_empty_desc">Kabar tentang laporan dan klaim Anda akan muncul di sini.</string>
+    <string name="notifications_hint">Temuan baru dari pengguna lain juga tampil di sini, kecuali unggahan Anda sendiri.</string>
+    <string name="notifications_loading">Memuat notifikasi…</string>
     <string name="home_search_hint">Cari nama barang…</string>
     <string name="home_filter_title">Filter</string>
     <string name="home_filter_type">Jenis</string>
