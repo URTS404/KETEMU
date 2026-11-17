@@ -1,7 +1,9 @@
 package org.umn.application_ketemu.ui.feature.admin
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,13 +36,18 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,16 +57,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.util.RelativeTime
+import org.umn.application_ketemu.domain.model.ItemType
+import org.umn.application_ketemu.domain.model.PosCatalog
+import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
 import org.umn.application_ketemu.domain.model.ReportStatus
+import org.umn.application_ketemu.ui.components.label
 import org.umn.application_ketemu.ui.components.reportStatusLabel
 
 /**
  * Antrean moderasi: laporan baru yang belum diverifikasi petugas.
  *
- * Aksi utama meneruskan laporan ke Pos Barang Temuan (status berikutnya pada
- * timeline), aksi kedua mengarsipkan laporan yang tidak relevan.
+ * Aksi utama membuka dialog serah-terima: satpam memilih Pos tujuan yang
+ * benar-benar menerima barang, lalu status naik ke [ReportStatus.DISERAHKAN_KE_POS].
+ * Aksi kedua mengarsipkan laporan yang tidak relevan.
  *
  * Tampilan mengikuti referensi desain ruang admin: header besar, satu kartu
  * ringkasan mint ("perlu ditinjau"), lalu kartu laporan putih berisi ikon
@@ -69,6 +86,11 @@ fun AdminModerationScreen(
     val allowed by viewModel.isAllowed.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Laporan yang menunggu konfirmasi serah-terima. Dialog baru muncul setelah
+    // satpam menekan "Verifikasi", sehingga tidak ada status yang berubah tanpa
+    // persetujuan eksplisit.
+    var handoverTarget by remember { mutableStateOf<Report?>(null) }
 
     LaunchedEffect(message) {
         val text = message ?: return@LaunchedEffect
@@ -147,7 +169,7 @@ fun AdminModerationScreen(
                     AdminReveal(index = index + 3, modifier = Modifier.animateItem()) {
                         ModerationCard(
                             report = report,
-                            onVerify = { viewModel.verifyAndForward(report.id) },
+                            onVerify = { handoverTarget = report },
                             onArchive = { viewModel.archive(report.id) }
                         )
                     }
@@ -163,6 +185,18 @@ fun AdminModerationScreen(
                 }
             }
         }
+    }
+
+    // Dialog konfirmasi: satpam memilih pos tujuan, baru status laporan berubah.
+    handoverTarget?.let { report ->
+        HandoverDialog(
+            report = report,
+            onDismiss = { handoverTarget = null },
+            onConfirm = { posId ->
+                handoverTarget = null
+                viewModel.verifyAndForward(report.id, posId)
+            }
+        )
     }
 }
 
@@ -320,6 +354,189 @@ private fun ReportMetaRow(icon: ImageVector, text: String) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+/**
+ * Dialog konfirmasi serah-terima.
+ *
+ * Satpam melihat ringkasan barang lalu memilih pos tempat barang benar-benar
+ * dititipkan. Pos sengaja dipilih di sini (bukan oleh pelapor) karena hanya
+ * petugas yang tahu ke pos mana barang akhirnya dibawa.
+ *
+ * @param onConfirm menerima id pos terpilih; dipanggil hanya setelah satpam
+ *   menekan tombol konfirmasi.
+ */
+@Composable
+private fun HandoverDialog(
+    report: Report,
+    onDismiss: () -> Unit,
+    onConfirm: (posId: String) -> Unit
+) {
+    val tones = rememberAdminTones()
+    val categoryTone = adminCategoryTone(report.category, tones)
+    // Pos yang sudah tercatat (mis. laporan temuan lama) jadi pilihan awal;
+    // kalau belum ada, pakai pos pertama sebagai default netral.
+    var selectedPosId by rememberSaveable(report.id) {
+        mutableStateOf(report.pos?.id ?: PosCatalog.default.id)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.admin_handover_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 380.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(categoryTone.container),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = adminCategoryIcon(report.category)),
+                            contentDescription = null,
+                            tint = categoryTone.content,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = report.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = stringResource(
+                                if (report.type == ItemType.LOST) {
+                                    R.string.filter_lost
+                                } else {
+                                    R.string.filter_found
+                                }
+                            ) + " · " + report.category.label(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                ReportMetaRow(icon = Icons.Default.Person, text = report.ownerName)
+                ReportMetaRow(icon = Icons.Default.Place, text = report.lastSeenLocation)
+
+                Text(
+                    text = stringResource(R.string.admin_handover_pos_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PosCatalog.all.forEach { pos ->
+                        PosOptionRow(
+                            pos = pos,
+                            selected = pos.id == selectedPosId,
+                            onClick = { selectedPosId = pos.id }
+                        )
+                    }
+                }
+
+                AdminHintRow(text = stringResource(R.string.admin_handover_hint))
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(selectedPosId) }) {
+                Text(text = stringResource(R.string.admin_handover_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.admin_handover_cancel))
+            }
+        }
+    )
+}
+
+/** Satu pilihan pos pada dialog; bentuknya mengikuti tone pastel panel admin. */
+@Composable
+private fun PosOptionRow(
+    pos: PosLocation,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val tone = rememberAdminTones().mint
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) tone.container else MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) tone.content else MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) tone.content else Color.Transparent)
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) tone.content else MaterialTheme.colorScheme.outline,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = tone.container,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = pos.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (selected) tone.content else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = pos.building,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

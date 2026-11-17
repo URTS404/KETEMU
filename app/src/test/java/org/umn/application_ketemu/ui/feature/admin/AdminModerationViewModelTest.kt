@@ -59,22 +59,39 @@ class AdminModerationViewModelTest {
     }
 
     @Test
-    fun `verifikasi memindahkan status laporan dan mencatat audit`() = runTest {
+    fun `verifikasi menyimpan pos tujuan dan mencatat audit`() = runTest {
         val fixture = fixtureAs(UserRole.STAFF)
 
-        fixture.viewModel.verifyAndForward("rpt-006")
+        fixture.viewModel.verifyAndForward("rpt-006", "pos-gedung-b")
 
-        assertEquals(
-            ReportStatus.DISERAHKAN_KE_POS,
-            fixture.reports.getReport("rpt-006")?.status
-        )
-        assertEquals(1, fixture.audit.observeEntries().first().size)
+        val report = fixture.reports.getReport("rpt-006")
+        assertEquals(ReportStatus.DISERAHKAN_KE_POS, report?.status)
+        // Pos dipilih satpam, bukan pelapor: harus ikut tersimpan di laporan.
+        assertEquals("pos-gedung-b", report?.pos?.id)
+        assertEquals("Pos Gedung B", report?.pos?.name)
+
+        val audit = fixture.audit.observeEntries().first().single()
+        assertTrue(audit.note.orEmpty().contains("Pos Gedung B"))
 
         val notification = fixture.notifications.observeNotifications().first().single()
         assertEquals(AppNotificationType.REPORT_STATUS_CHANGED, notification.type)
         assertEquals(DummyData.student.id, notification.recipientId)
         assertEquals("rpt-006", notification.reportId)
+        assertTrue(notification.message.contains("Pos Gedung B"))
         assertTrue(!notification.isRead)
+    }
+
+    @Test
+    fun `pos tidak dikenal menolak verifikasi tanpa mengubah data`() = runTest {
+        val fixture = fixtureAs(UserRole.STAFF)
+
+        fixture.viewModel.verifyAndForward("rpt-006", "pos-tidak-ada")
+
+        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
+        assertEquals(null, fixture.reports.getReport("rpt-006")?.pos)
+        assertTrue(fixture.audit.observeEntries().first().isEmpty())
+        assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
+        assertEquals(AdminUiText.POS_REQUIRED, fixture.viewModel.message.value)
     }
 
     @Test
@@ -92,7 +109,7 @@ class AdminModerationViewModelTest {
     fun `peran user tidak boleh memverifikasi`() = runTest {
         val fixture = fixtureAs(UserRole.USER)
 
-        fixture.viewModel.verifyAndForward("rpt-006")
+        fixture.viewModel.verifyAndForward("rpt-006", "pos-gedung-c")
 
         assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
         assertTrue(fixture.audit.observeEntries().first().isEmpty())

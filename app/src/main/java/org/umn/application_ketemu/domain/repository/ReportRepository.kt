@@ -1,6 +1,7 @@
 package org.umn.application_ketemu.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 
@@ -56,4 +57,17 @@ interface ReportRepository {
      * antrean (outbox), sehingga perubahan status tetap tersimpan walau offline.
      */
     suspend fun updateStatus(reportId: String, status: ReportStatus)
+
+    /**
+     * Menyimpan hasil serah-terima fisik barang ke pos.
+     *
+     * Status berpindah ke [ReportStatus.DISERAHKAN_KE_POS] sekaligus mencatat
+     * [pos] tujuan yang dikonfirmasi satpam. Pos sengaja TIDAK dipilih pelapor
+     * saat membuat laporan: hanya petugas yang tahu barang benar-benar
+     * dititipkan di pos mana.
+     *
+     * Dipisah dari [updateStatus] agar pemanggil lama (klaim, dsb.) tidak perlu
+     * menyertakan pos dan tetap kompatibel.
+     */
+    suspend fun confirmHandover(reportId: String, pos: PosLocation)
 }

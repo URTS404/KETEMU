@@ -8,6 +8,7 @@ import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.ConversationThread
 import org.umn.application_ketemu.domain.model.GeoPoint
 import org.umn.application_ketemu.domain.model.ItemType
+import org.umn.application_ketemu.domain.model.PosCatalog
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
@@ -29,13 +30,8 @@ import org.umn.application_ketemu.domain.model.UserRole
  */
 object DummyData {
 
-    /** Master 4 pos fisik sesuai PRD (3 pos gedung + basement). */
-    val positions: List<PosLocation> = listOf(
-        PosLocation(id = "pos-basement", name = "Pos Basement", building = "Basement Gedung Utama"),
-        PosLocation(id = "pos-gedung-b", name = "Pos Gedung B", building = "Lobby Gedung B, Lt. 1"),
-        PosLocation(id = "pos-gedung-c", name = "Pos Gedung C", building = "Pintu Utama Gedung C"),
-        PosLocation(id = "pos-gedung-d", name = "Pos Gedung D", building = "Lobby Gedung D, Lt. 1")
-    )
+    /** Master 4 pos fisik; katalognya dipakai bersama oleh panel staf. */
+    val positions: List<PosLocation> = PosCatalog.all
 
     val student: UserProfile = UserProfile(
         id = "user-mahasiswa-01",

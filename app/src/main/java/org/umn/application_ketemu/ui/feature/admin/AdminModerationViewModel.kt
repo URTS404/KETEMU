@@ -16,6 +16,7 @@ import org.umn.application_ketemu.domain.model.AuditAction
 import org.umn.application_ketemu.domain.model.AuditLogEntry
 import org.umn.application_ketemu.domain.model.AppNotification
 import org.umn.application_ketemu.domain.model.AppNotificationType
+import org.umn.application_ketemu.domain.model.PosCatalog
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
@@ -26,8 +27,10 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
  * ViewModel antrean moderasi laporan.
  *
  * Dua aksi: meneruskan laporan ke pos (status [ReportStatus.DISERAHKAN_KE_POS])
- * dan mengarsipkan laporan. Setiap aksi tercatat pada audit log dan diperiksa
- * ulang terhadap peran aktif (bukan hanya menyembunyikan tombol di UI).
+ * dan mengarsipkan laporan. Pos tujuan wajib dipilih satpam saat serah-terima
+ * dan divalidasi terhadap [PosCatalog] sebelum data diubah. Setiap aksi tercatat
+ * pada audit log dan diperiksa ulang terhadap peran aktif (bukan hanya
+ * menyembunyikan tombol di UI).
  */
 class AdminModerationViewModel(
     private val reportRepository: ReportRepository,
@@ -54,7 +57,7 @@ class AdminModerationViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
-    fun verifyAndForward(reportId: String) = viewModelScope.launch {
+    fun verifyAndForward(reportId: String, posId: String) = viewModelScope.launch {
         val actor = session.currentUser.value
         if (!actor.role.canModerate) {
             _message.value = AdminUiText.ACCESS_DENIED
@@ -66,17 +69,32 @@ class AdminModerationViewModel(
             return@launch
         }
 
+        // Pos ditentukan satpam saat barang benar-benar diterima; pelapor tidak
+        // pernah memilih pos. Validasi ulang di sini agar aksi tetap aman walau
+        // fungsi ini dipanggil di luar dialog.
+        val pos = PosCatalog.byId(posId)
+        if (pos == null) {
+            _message.value = AdminUiText.POS_REQUIRED
+            return@launch
+        }
+
         try {
-            reportRepository.updateStatus(reportId, ReportStatus.DISERAHKAN_KE_POS)
-            record(actor.id, actor.fullName, AuditAction.VERIFIKASI_LAPORAN, report.id, report.title)
+            reportRepository.confirmHandover(reportId, pos)
+            record(
+                actorId = actor.id,
+                actorName = actor.fullName,
+                action = AuditAction.VERIFIKASI_LAPORAN,
+                targetId = report.id,
+                note = "${report.title} → ${pos.name}"
+            )
             notifyOwner(
                 report = report,
                 actorId = actor.id,
                 title = "Laporan Anda diverifikasi: ${report.title}",
                 message = "Laporan \"${report.title}\" sudah diverifikasi petugas dan " +
-                    "diteruskan ke pos. Bawa bukti kepemilikan saat mengambil."
+                    "diteruskan ke ${pos.name}. Bawa bukti kepemilikan saat mengambil."
             )
-            _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke pos."
+            _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke ${pos.name}."
         } catch (e: Exception) {
             android.util.Log.e("AdminModeration", "verifikasi gagal: ${e.message}", e)
             _message.value = AdminUiText.ACTION_FAILED

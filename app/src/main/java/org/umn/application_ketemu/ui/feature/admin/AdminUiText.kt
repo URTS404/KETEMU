@@ -12,6 +12,9 @@ internal object AdminUiText {
     const val CLAIM_NOT_FOUND = "Klaim tidak ditemukan."
     const val USER_NOT_FOUND = "Akun tidak ditemukan."
 
+    /** Satpam menekan konfirmasi tanpa memilih pos tujuan. */
+    const val POS_REQUIRED = "Pilih pos tujuan sebelum meneruskan laporan."
+
     /**
      * Kegagalan jaringan/server. Tanpa pesan ini, pengecualian PostgREST akan
      * naik ke `viewModelScope.launch` dan mematikan aplikasi (FATAL EXCEPTION),

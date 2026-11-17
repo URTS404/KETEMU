@@ -3,6 +3,7 @@ package org.umn.application_ketemu.data.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.ReportRepository
@@ -57,6 +58,20 @@ class InMemoryReportRepository(
             if (report.id == reportId) {
                 report.copy(
                     status = status,
+                    updatedAt = System.currentTimeMillis()
+                )
+            } else {
+                report
+            }
+        }
+    }
+
+    override suspend fun confirmHandover(reportId: String, pos: PosLocation) {
+        reports.value = reports.value.map { report ->
+            if (report.id == reportId) {
+                report.copy(
+                    status = ReportStatus.DISERAHKAN_KE_POS,
+                    pos = pos,
                     updatedAt = System.currentTimeMillis()
                 )
             } else {

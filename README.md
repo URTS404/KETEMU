@@ -87,7 +87,7 @@ Akun uji juga ditampilkan langsung pada layar Login agar mudah dipakai saat demo
 Masuk sebagai staf (`rahmat@umn.ac.id` / `STAFF-001`), buka tab **Akun**, lalu tekan **Buka Panel Admin**:
 
 - **Dashboard** — antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
-- **Moderasi laporan** — verifikasi laporan baru (status naik ke *Diserahkan ke Pos*) atau arsipkan laporan yang tidak relevan.
+- **Moderasi laporan** — tekan **Verifikasi** untuk memilih Pos tujuan pada dialog serah-terima (status naik ke *Diserahkan ke Pos* dan pos tersimpan di laporan), atau arsipkan laporan yang tidak relevan.
 - **Verifikasi klaim** — tinjau jawaban verifikasi pengklaim, lalu setujui (kode pengambilan diterbitkan, laporan menjadi *Siap Diambil*) atau tolak.
 - **Log aktivitas** — jejak keputusan moderator yang tidak bisa diubah.
 

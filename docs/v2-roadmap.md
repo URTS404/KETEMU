@@ -8,7 +8,7 @@ didemokan; tahap 2–4 masih direncanakan.
 Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 
 - Dashboard ringkasan: antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
-- Moderasi laporan: verifikasi (status → *Diserahkan ke Pos*) dan arsip (hilang dari Beranda, tetap tersimpan).
+- Moderasi laporan: tombol verifikasi membuka dialog serah-terima — satpam memilih Pos tujuan (pelapor tidak pernah memilih pos), status → *Diserahkan ke Pos*, dan `reports.pos_id` ikut tersimpan; arsip menyembunyikan laporan dari Beranda tetapi datanya tetap tersimpan.
 - Verifikasi klaim: jawaban verifikasi pengklaim ditinjau, setuju/tolak; persetujuan menerbitkan kode pengambilan 6 karakter dan memindahkan laporan ke *Siap Diambil*.
 - Log aktivitas: append-only, mencatat aktor, aksi, target, dan waktu.
 - Penjagaan akses dua lapis: tombol hanya muncul untuk STAFF/ADMIN dan ViewModel menolak aksi bila peran tidak berhak.

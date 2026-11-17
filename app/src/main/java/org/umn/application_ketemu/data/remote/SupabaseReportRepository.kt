@@ -114,6 +114,18 @@ class SupabaseReportRepository(
         refresh()
     }
 
+    override suspend fun confirmHandover(reportId: String, pos: PosLocation) {
+        // Satu update: status & pos tujuan harus berpindah bersamaan agar
+        // laporan tidak pernah berstatus "diserahkan" tanpa pos yang jelas.
+        client.postgrest.from(TABLE).update({
+            set("status", ReportStatus.DISERAHKAN_KE_POS.name)
+            set("pos_id", pos.id)
+        }) {
+            filter { eq("id", reportId) }
+        }
+        refresh()
+    }
+
     override suspend fun addReport(report: Report) {
         client.postgrest.from(TABLE).insert(
             ReportInsert(
