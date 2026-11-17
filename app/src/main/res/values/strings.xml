@@ -306,13 +306,13 @@
     <string name="admin_keys_summary_label">Ringkasan kunci</string>
     <string name="admin_keys_summary_unit">kunci tersedia</string>
     <string name="admin_keys_section">Daftar kunci</string>
-    <string name="admin_keys_count">%1 kunci</string>
+    <string name="admin_keys_count">%1$d kunci</string>
     <string name="admin_keys_regenerate">Buat 10 kunci baru</string>
     <string name="admin_keys_status_free">Tersedia</string>
     <string name="admin_keys_status_used">Terpakai</string>
-    <string name="admin_keys_created_at">Dibuat %1app\src\main\res\values\strings.xml</string>
-    <string name="admin_keys_used_at">Dipakai %1app\src\main\res\values\strings.xml</string>
-    <string name="admin_keys_reserved">khusus %1app\src\main\res\values\strings.xml</string>
+    <string name="admin_keys_created_at">Dibuat %1$s</string>
+    <string name="admin_keys_used_at">Dipakai %1$s</string>
+    <string name="admin_keys_reserved">khusus %1$s</string>
     <string name="admin_keys_copy">Salin kode</string>
     <string name="admin_keys_empty">Belum ada kunci</string>
     <string name="admin_keys_empty_desc">Tekan tombol di atas untuk membuat 10 kunci baru.</string>
@@ -330,7 +330,7 @@
     <string name="profile_staff_key_hint">Masukkan kunci dari pengelola Pos untuk membuka panel staf.</string>
 
     <string name="admin_users_promote_title">Angkat menjadi staf</string>
-    <string name="admin_users_promote_desc">Masukkan salah satu kunci staf untuk mengangkat %1app\src\main\res\values\strings.xml. Kunci langsung hangus setelah dipakai.</string>
+    <string name="admin_users_promote_desc">Masukkan salah satu kunci staf untuk mengangkat %1$s. Kunci langsung hangus setelah dipakai.</string>
     <string name="admin_users_promote_confirm">Angkat</string>
 
     <string name="admin_role_label">Peran</string>
