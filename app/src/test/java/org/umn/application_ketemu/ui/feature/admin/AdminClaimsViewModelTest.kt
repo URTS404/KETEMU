@@ -87,6 +87,37 @@ class AdminClaimsViewModelTest {
     }
 
     @Test
+    fun `setujui klaim botol menerbitkan kode untuk pengklaim botol`() = runTest {
+        val fixture = fixtureAs(UserRole.STAFF)
+
+        fixture.viewModel.approve("clm-004")
+
+        val claim = fixture.claims.getClaim("clm-004")
+        assertEquals(ClaimStatus.DISETUJUI, claim?.status)
+        assertNotNull(claim?.pickupCode)
+        assertEquals(ReportStatus.SIAP_DIAMBIL, fixture.reports.getReport("rpt-007")?.status)
+
+        val approval = fixture.notifications.observeNotifications().first()
+            .single { it.type == AppNotificationType.CLAIM_APPROVED }
+        assertEquals(DummyData.student.id, approval.recipientId)
+        assertEquals("rpt-007", approval.reportId)
+        assertTrue(approval.message.contains(claim?.pickupCode!!))
+    }
+
+    @Test
+    fun `antrean klaim membawa detail barang dan pos untuk dialog tinjauan`() = runTest {
+        val fixture = fixtureAs(UserRole.STAFF)
+
+        val details = fixture.viewModel.reportsById.first { it.isNotEmpty() }
+        val bottle = DummyData.reports().first { it.id == "rpt-007" }
+
+        assertEquals(bottle.pos?.name, details["rpt-007"]?.pos?.name)
+
+        val queued = fixture.viewModel.pendingClaims.first { it.isNotEmpty() }
+        assertTrue(queued.any { it.id == "clm-004" })
+    }
+
+    @Test
     fun `tolak klaim tidak mengubah status laporan`() = runTest {
         val fixture = fixtureAs(UserRole.STAFF)
 

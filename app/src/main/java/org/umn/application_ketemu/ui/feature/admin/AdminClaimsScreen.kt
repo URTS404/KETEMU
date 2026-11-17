@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
@@ -22,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -45,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.util.RelativeTime
 import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.Report
 
 /**
  * Antrean klaim untuk moderator.
@@ -64,6 +68,7 @@ fun AdminClaimsScreen(
     onBack: () -> Unit
 ) {
     val claims by viewModel.pendingClaims.collectAsStateWithLifecycle()
+    val reportsById by viewModel.reportsById.collectAsStateWithLifecycle()
     val allowed by viewModel.isAllowed.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -149,6 +154,7 @@ fun AdminClaimsScreen(
                     AdminReveal(index = index + 3, modifier = Modifier.animateItem()) {
                         ClaimCard(
                             claim = claim,
+                            posName = reportsById[claim.reportId]?.pos?.name,
                             onReview = { selected = claim }
                         )
                     }
@@ -169,12 +175,13 @@ fun AdminClaimsScreen(
     selected?.let { claim ->
         ClaimReviewDialog(
             claim = claim,
+            report = reportsById[claim.reportId],
             onApprove = {
                 viewModel.approve(claim.id)
                 selected = null
             },
-            onReject = {
-                viewModel.reject(claim.id, note = "Bukti belum cukup")
+            onReject = { note ->
+                viewModel.reject(claim.id, note = note)
                 selected = null
             },
             onDismiss = { selected = null }
@@ -228,6 +235,7 @@ private fun ClaimsEmptyCard() {
 @Composable
 private fun ClaimCard(
     claim: Claim,
+    posName: String?,
     onReview: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -306,6 +314,14 @@ private fun ClaimCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
+                posName?.let { name ->
+                    Text(
+                        text = stringResource(R.string.admin_claims_card_pos, name),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = tones.amber.content
+                    )
+                }
             }
 
             Button(
@@ -328,33 +344,63 @@ private fun ClaimCard(
 /**
  * Dialog keputusan klaim.
  *
- * Jawaban verifikasi ditampilkan utuh karena itulah bukti yang dinilai; tanpa
- * membacanya moderator tidak punya dasar untuk menyetujui pengambilan.
+ * Isinya mengikuti urutan kerja satpam di meja pos: barang apa yang sedang
+ * dipegang (judul, deskripsi, pos penitipan), siapa pengklaimnya, lalu jawaban
+ * ciri barang yang ia tulis. Kolom alasan penolakan opsional dikirim ke
+ * pengklaim lewat notifikasi, sehingga keputusan tidak pernah "bisu".
  */
 @Composable
 private fun ClaimReviewDialog(
     claim: Claim,
+    report: Report?,
     onApprove: () -> Unit,
-    onReject: () -> Unit,
+    onReject: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var rejectNote by remember(claim.id) { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = claim.reportTitle) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "${stringResource(R.string.admin_claim_claimant)}: ${claim.claimantName}",
-                    style = MaterialTheme.typography.bodyMedium
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ClaimInfoRow(
+                    label = stringResource(R.string.admin_claim_item_label),
+                    value = report?.description ?: claim.reportTitle
                 )
-                Text(
-                    text = stringResource(R.string.admin_claim_answer_label),
-                    style = MaterialTheme.typography.labelLarge
+                report?.pos?.let { pos ->
+                    ClaimInfoRow(
+                        label = stringResource(R.string.admin_claim_pos_label),
+                        value = "${pos.name} (${pos.building})"
+                    )
+                }
+                report?.ownerName?.let { owner ->
+                    ClaimInfoRow(
+                        label = stringResource(R.string.admin_claim_owner_label),
+                        value = owner
+                    )
+                }
+                ClaimInfoRow(
+                    label = stringResource(R.string.admin_claim_claimant),
+                    value = "${claim.claimantName} · ${claim.claimantEmail}"
                 )
-                Text(
-                    text = claim.answer,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ClaimInfoRow(
+                    label = stringResource(R.string.admin_claim_answer_label),
+                    value = claim.answer
+                )
+                OutlinedTextField(
+                    value = rejectNote,
+                    onValueChange = { rejectNote = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.admin_claim_reject_note_label)) },
+                    supportingText = {
+                        Text(stringResource(R.string.admin_claim_reject_note_hint))
+                    },
+                    minLines = 2,
+                    maxLines = 3
                 )
             }
         },
@@ -365,7 +411,9 @@ private fun ClaimReviewDialog(
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = onReject) {
+                TextButton(
+                    onClick = { onReject(rejectNote.trim().ifBlank { null }) }
+                ) {
                     Text(text = stringResource(R.string.admin_action_reject))
                 }
                 TextButton(onClick = onDismiss) {
@@ -374,4 +422,28 @@ private fun ClaimReviewDialog(
             }
         }
     )
+}
+
+/**
+ * Satu baris label-nilai di dialog tinjauan klaim.
+ *
+ * Label memakai gaya kecil dan nilai memakai gaya isi supaya mata satpam
+ * langsung jatuh ke isi (deskripsi barang, jawaban pengklaim).
+ */
+@Composable
+private fun ClaimInfoRow(
+    label: String,
+    value: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
 }

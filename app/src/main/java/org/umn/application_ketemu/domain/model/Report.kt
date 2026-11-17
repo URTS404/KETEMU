@@ -36,4 +36,21 @@ data class Report(
      * GPS tidak selalu tersedia (dalam gedung, izin ditolak, perangkat tanpa GPS).
      */
     val coordinates: GeoPoint? = null
-)
+) {
+    /**
+     * Apakah laporan ini layak tampil di Beranda publik.
+     *
+     * Aturan visibilitas yang disepakati:
+     * - Laporan **kehilangan** langsung tampil; pemilik butuh bantuan secepatnya
+     *   dan tidak ada barang fisik yang perlu diverifikasi.
+     * - Laporan **temuan** baru tampil setelah petugas memverifikasi barangnya.
+     *   Selama statusnya masih [ReportStatus.DILAPORKAN] barang belum dipastikan
+     *   ada di Pos, jadi belum dipublikasikan.
+     * - Laporan yang diarsipkan moderator selalu disembunyikan.
+     *
+     * Dipakai oleh Beranda ([org.umn.application_ketemu.ui.feature.home.HomeViewModel])
+     * dan daftar "Mungkin barangmu" di halaman detail.
+     */
+    fun isPublished(): Boolean =
+        !isArchived && (type == ItemType.LOST || status != ReportStatus.DILAPORKAN)
+}

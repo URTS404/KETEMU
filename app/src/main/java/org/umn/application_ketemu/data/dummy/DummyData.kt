@@ -165,6 +165,24 @@ object DummyData {
                 status = ReportStatus.DISERAHKAN_KE_POS,
                 syncStatus = SyncStatus.SYNCED,
                 createdAt = now - 35 * minute
+            ),
+            // Barang temuan baru yang belum diverifikasi: muncul di antrean
+            // moderasi, TIDAK tampil di Beranda sampai petugas memverifikasinya.
+            // Dipakai juga oleh uji alur "verifikasi temuan -> publik".
+            Report(
+                id = "rpt-008",
+                ownerId = student.id,
+                ownerName = student.fullName,
+                type = ItemType.FOUND,
+                title = "Kunci Motor Bergantungan Merah",
+                description = "Kunci motor dengan gantungan karet merah, ditemukan di " +
+                    "parkiran Gedung C dan belum sempat diserahkan ke Pos.",
+                category = ReportCategory.LAINNYA,
+                lastSeenLocation = "Parkiran Gedung C",
+                coordinates = GeoPoint(latitude = -6.257300, longitude = 106.618100),
+                status = ReportStatus.DILAPORKAN,
+                syncStatus = SyncStatus.SYNCED,
+                createdAt = now - 8 * minute
             )
         )
     }
@@ -196,9 +214,11 @@ object DummyData {
     /**
      * Klaim contoh untuk antrean admin.
      *
-     * Dua klaim menunggu keputusan (menempel pada laporan temuan yang sudah
-     * diserahkan ke pos) dan satu klaim yang sudah disetujui sebagai riwayat.
-     * Dengan begitu layar admin punya isi sejak demo pertama.
+     * Tiga klaim menunggu keputusan (KTM, payung, dan botol tumbler yang cocok
+     * dengan laporan hilang milik mahasiswa) serta satu klaim yang sudah
+     * disetujui sebagai riwayat. Dengan begitu layar admin — khususnya
+     * "Verifikasi klaim" — punya isi sejak demo pertama, termasuk botol yang
+     * muncul dari pencocokan otomatis (rpt-007).
      */
     fun claims(): List<Claim> {
         val now = System.currentTimeMillis()
@@ -226,6 +246,17 @@ object DummyData {
                 claimantName = "Rani Kusuma",
                 answer = "Gagang kayunya ada tulisan nama saya dengan spidol hitam.",
                 createdAt = now - 3 * hour
+            ),
+            Claim(
+                id = "clm-004",
+                reportId = "rpt-007",
+                reportTitle = "Tumbler Hitam Berstiker UMN",
+                claimantId = student.id,
+                claimantName = student.fullName,
+                claimantEmail = student.email,
+                answer = "Di bagian bawah botol ada nama 'Budi' tulisan spidol, " +
+                    "dan tutupnya penyok sedikit di pinggir.",
+                createdAt = now - 12 * minute
             ),
             Claim(
                 id = "clm-003",

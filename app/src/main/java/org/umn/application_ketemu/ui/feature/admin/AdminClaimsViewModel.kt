@@ -17,6 +17,7 @@ import org.umn.application_ketemu.domain.model.AuditLogEntry
 import org.umn.application_ketemu.domain.model.AppNotification
 import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
@@ -58,6 +59,21 @@ class AdminClaimsViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
+        )
+
+    /**
+     * Detail barang per id.
+     *
+     * Dialog tinjauan memakai peta ini untuk menampilkan deskripsi barang dan
+     * pos penitipan — dua hal yang dicocokkan satpam dengan benda fisik di meja
+     * pos sebelum menekan "Setujui klaim".
+     */
+    val reportsById: StateFlow<Map<String, Report>> = reportRepository.observeReports()
+        .map { reports -> reports.associateBy { it.id } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyMap()
         )
 
     private val _lastDecision = MutableStateFlow<ClaimDecision?>(null)

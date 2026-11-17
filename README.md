@@ -8,13 +8,14 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 ## Fitur
 
 - **Autentikasi email kampus** — login, daftar akun, lupa kata sandi dengan validasi domain `@student.umn.ac.id` / `@umn.ac.id`.
-- **Beranda** — statistik laporan, kartu pengumuman, pencarian, dan filter Hilang/Ditemukan.
+- **Beranda** — statistik laporan, kartu pengumuman, pencarian, dan filter Hilang/Ditemukan. Laporan **hilang** tampil langsung; laporan **temuan** baru tampil setelah diverifikasi petugas.
 - **Lapor barang** — formulir hilang/temuan dengan validasi, pemilih kategori, kamera (foto barang), serta penanda titik lokasi di peta OpenStreetMap (GPS atau ketuk peta).
 - **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
 - **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
 - **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**. Kabar baru dikirim **Supabase Realtime** (langganan `INSERT` tabel `notifications`) sehingga muncul seketika, dengan polling 30 detik sebagai cadangan.
 - **Pencocokan otomatis** - begitu laporan masuk, trigger server (`db/0018_auto_match.sql`) mencocokkannya dengan laporan sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mengirim notifikasi `POSSIBLE_MATCH`, dan mengisi bagian "Mungkin barangmu" di halaman detail.
+- **Klaim barang** - pada laporan temuan yang sudah dititipkan di pos, pemilik menekan **Ini Barang Saya**, menuliskan ciri yang hanya diketahui pemilik, lalu memantau status klaim (menunggu/disetujui beserta kode pengambilan/ditolak beserta alasannya) di halaman detail yang sama.
 
 - **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
 
@@ -87,8 +88,8 @@ Akun uji juga ditampilkan langsung pada layar Login agar mudah dipakai saat demo
 Masuk sebagai staf (`rahmat@umn.ac.id` / `STAFF-001`), buka tab **Akun**, lalu tekan **Buka Panel Admin**:
 
 - **Dashboard** — antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
-- **Moderasi laporan** — tekan **Verifikasi** untuk memilih Pos tujuan pada dialog serah-terima (status naik ke *Diserahkan ke Pos* dan pos tersimpan di laporan), atau arsipkan laporan yang tidak relevan.
-- **Verifikasi klaim** — tinjau jawaban verifikasi pengklaim, lalu setujui (kode pengambilan diterbitkan, laporan menjadi *Siap Diambil*) atau tolak.
+- **Moderasi laporan** — barang **temuan** baru tampil di Beranda **setelah** diverifikasi: tekan **Verifikasi** untuk memilih Pos tujuan pada dialog serah-terima (status naik ke *Diserahkan ke Pos*, pos tersimpan, dan laporan langsung muncul di Beranda). Laporan **hilang** tampil langsung tanpa verifikasi; baik laporan hilang maupun temuan yang tidak relevan/bercanda dapat **diarsipkan** sehingga hilang dari Beranda tetapi datanya tetap tersimpan (tidak dihapus permanen).
+- **Verifikasi klaim** — dialog tinjauan menampilkan deskripsi barang, pos penitipan, pelapor temuan, identitas pengklaim, dan jawaban ciri barang; setujui (kode pengambilan diterbitkan, laporan menjadi *Siap Diambil*) atau tolak dengan alasan yang dikirim ke pengklaim.
 - **Log aktivitas** — jejak keputusan moderator yang tidak bisa diubah.
 
 Panel ini hanya dirender untuk peran STAFF/ADMIN, dan setiap aksi diperiksa ulang di ViewModel. Data masih in-memory pada tahap ini; rencana Supabase + Room ada di [docs/v2-roadmap.md](docs/v2-roadmap.md).
@@ -125,9 +126,21 @@ Pencocokan dihitung **di server**, bukan di perangkat, supaya tetap berjalan wal
 1. Setiap laporan baru memicu trigger `reports_auto_match` (`db/0018_auto_match.sql`).
 2. Kandidat = laporan aktif berjenis sebaliknya, kategori sama, pemilik berbeda, dan judulnya berbagi kata kunci (minimal 4 huruf) **atau** titik GPS-nya berjarak <= 250 m.
 3. Pasangan dicatat di tabel `matches` (unik per pasangan, tanpa policy tulis untuk klien) dan pemilik laporan lama menerima notifikasi `POSSIBLE_MATCH` yang ikut terkirim lewat Realtime.
-4. Halaman detail menampilkan bagian **"Mungkin barangmu"** (atau "Mungkin pemiliknya" pada laporan temuan) berisi kartu kandidat; ketuk untuk membuka detailnya. Tombol klaim belum ada pada tahap ini (menyusul Tahap 4).
+4. Halaman detail menampilkan bagian **"Mungkin barangmu"** (atau "Mungkin pemiliknya" pada laporan temuan) berisi kartu kandidat; ketuk untuk membuka detailnya, lalu ajukan klaim dari sana (lihat bagian berikut).
 
 Pada mode demo offline, `DummyData.matches()` menyediakan satu pasangan contoh agar bagian tersebut langsung terlihat saat demo.
+
+## Klaim barang (tahap 4 UAS)
+
+Alur klaim sengaja lewat petugas pos supaya barang tidak diserahkan ke orang yang salah:
+
+1. Pemilik membuka laporan **temuan** yang barangnya sudah *Diserahkan ke Pos* (atau *Siap Diambil*) — misalnya `Tumbler Hitam Berstiker UMN` dari bagian "Mungkin barangmu" pada laporan botol yang hilang.
+2. Tekan **Ini Barang Saya**, tulis ciri yang hanya diketahui pemilik (mis. nama di bagian bawah botol), minimal 15 karakter, lalu **Kirim klaim**.
+3. Klaim masuk sebagai `MENUNGGU`; halaman detail mengganti tombol dengan kartu **Status klaim Anda** sehingga klaim tidak bisa dikirim dua kali.
+4. Satpam membuka **Panel Admin > Verifikasi klaim**, mencocokkan deskripsi barang + pos + jawaban ciri dengan benda fisik di meja pos, lalu **Setujui klaim** (kode pengambilan 6 karakter diterbitkan, laporan menjadi *Siap Diambil*) atau tolak dengan alasan.
+5. Keputusan dikirim sebagai notifikasi ke pengklaim; kode pengambilan juga tampil pada kartu status di halaman detail.
+
+Syarat yang diperiksa di ViewModel (`ReportDetailViewModel`), bukan hanya di UI: barang harus bertipe temuan, sudah ada di pos, bukan laporan pengguna sendiri, pengguna bukan STAFF/ADMIN, dan belum pernah ada klaim atas barang tersebut. Pada mode demo offline, klaim botol contoh sudah tersedia sebagai `clm-004` sehingga antrean "Verifikasi klaim" langsung berisi tiga klaim (KTM, payung, botol).
 
 ## Struktur proyek
 

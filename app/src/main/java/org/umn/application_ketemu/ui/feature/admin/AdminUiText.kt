@@ -16,6 +16,14 @@ internal object AdminUiText {
     const val POS_REQUIRED = "Pilih pos tujuan sebelum meneruskan laporan."
 
     /**
+     * Laporan kehilangan tidak punya barang fisik yang bisa dititipkan, jadi
+     * tidak boleh diserahkan ke Pos. Petugas hanya boleh mengarsipkannya bila
+     * laporan tidak pantas ditampilkan.
+     */
+    const val LOST_NOT_FORWARDABLE =
+        "Laporan kehilangan tidak perlu diserahkan ke Pos. Gunakan Arsipkan bila laporan tidak pantas."
+
+    /**
      * Kegagalan jaringan/server. Tanpa pesan ini, pengecualian PostgREST akan
      * naik ke `viewModelScope.launch` dan mematikan aplikasi (FATAL EXCEPTION),
      * bukan sekadar menampilkan snackbar.

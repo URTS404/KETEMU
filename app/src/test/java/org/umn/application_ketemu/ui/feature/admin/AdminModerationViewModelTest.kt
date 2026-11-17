@@ -62,9 +62,10 @@ class AdminModerationViewModelTest {
     fun `verifikasi menyimpan pos tujuan dan mencatat audit`() = runTest {
         val fixture = fixtureAs(UserRole.STAFF)
 
-        fixture.viewModel.verifyAndForward("rpt-006", "pos-gedung-b")
+        // rpt-008 adalah barang temuan yang belum diverifikasi (masih DILAPORKAN).
+        fixture.viewModel.verifyAndForward("rpt-008", "pos-gedung-b")
 
-        val report = fixture.reports.getReport("rpt-006")
+        val report = fixture.reports.getReport("rpt-008")
         assertEquals(ReportStatus.DISERAHKAN_KE_POS, report?.status)
         // Pos dipilih satpam, bukan pelapor: harus ikut tersimpan di laporan.
         assertEquals("pos-gedung-b", report?.pos?.id)
@@ -76,19 +77,52 @@ class AdminModerationViewModelTest {
         val notification = fixture.notifications.observeNotifications().first().single()
         assertEquals(AppNotificationType.REPORT_STATUS_CHANGED, notification.type)
         assertEquals(DummyData.student.id, notification.recipientId)
-        assertEquals("rpt-006", notification.reportId)
+        assertEquals("rpt-008", notification.reportId)
         assertTrue(notification.message.contains("Pos Gedung B"))
+        // Penerimanya penemu, bukan pemilik barang: jangan sampai pesannya
+        // menyuruh membawa bukti kepemilikan seperti pada alur klaim.
+        assertTrue(!notification.message.contains("bukti kepemilikan"))
+        assertTrue(notification.message.contains("Beranda"))
         assertTrue(!notification.isRead)
+    }
+
+    @Test
+    fun `laporan kehilangan tidak bisa diserahkan ke pos`() = runTest {
+        val fixture = fixtureAs(UserRole.STAFF)
+
+        // rpt-006 adalah laporan kehilangan: jalurnya Arsipkan, bukan serah-terima.
+        fixture.viewModel.verifyAndForward("rpt-006", "pos-gedung-b")
+
+        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
+        assertEquals(null, fixture.reports.getReport("rpt-006")?.pos)
+        assertTrue(fixture.audit.observeEntries().first().isEmpty())
+        assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
+        assertEquals(AdminUiText.LOST_NOT_FORWARDABLE, fixture.viewModel.message.value)
+    }
+
+    @Test
+    fun `antrean memuat laporan hilang maupun temuan yang belum diverifikasi`() = runTest {
+        val fixture = fixtureAs(UserRole.STAFF)
+
+        val queue = fixture.reports.observeModerationQueue().first().associateBy { it.id }
+
+        // Laporan hilang tetap ditinjau agar bisa diarsipkan bila tidak pantas.
+        assertTrue(queue.containsKey("rpt-001"))
+        assertTrue(queue.containsKey("rpt-006"))
+        // Barang temuan baru menunggu verifikasi sebelum tampil di Beranda.
+        assertTrue(queue.containsKey("rpt-008"))
+        // Laporan yang sudah diproses tidak lagi masuk antrean.
+        assertTrue(!queue.containsKey("rpt-007"))
     }
 
     @Test
     fun `pos tidak dikenal menolak verifikasi tanpa mengubah data`() = runTest {
         val fixture = fixtureAs(UserRole.STAFF)
 
-        fixture.viewModel.verifyAndForward("rpt-006", "pos-tidak-ada")
+        fixture.viewModel.verifyAndForward("rpt-008", "pos-tidak-ada")
 
-        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
-        assertEquals(null, fixture.reports.getReport("rpt-006")?.pos)
+        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-008")?.status)
+        assertEquals(null, fixture.reports.getReport("rpt-008")?.pos)
         assertTrue(fixture.audit.observeEntries().first().isEmpty())
         assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
         assertEquals(AdminUiText.POS_REQUIRED, fixture.viewModel.message.value)
@@ -109,9 +143,9 @@ class AdminModerationViewModelTest {
     fun `peran user tidak boleh memverifikasi`() = runTest {
         val fixture = fixtureAs(UserRole.USER)
 
-        fixture.viewModel.verifyAndForward("rpt-006", "pos-gedung-c")
+        fixture.viewModel.verifyAndForward("rpt-008", "pos-gedung-c")
 
-        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-006")?.status)
+        assertEquals(ReportStatus.DILAPORKAN, fixture.reports.getReport("rpt-008")?.status)
         assertTrue(fixture.audit.observeEntries().first().isEmpty())
         assertTrue(fixture.notifications.observeNotifications().first().isEmpty())
         assertEquals(AdminUiText.ACCESS_DENIED, fixture.viewModel.message.value)

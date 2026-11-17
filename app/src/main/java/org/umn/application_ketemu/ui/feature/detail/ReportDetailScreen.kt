@@ -18,16 +18,22 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,9 +50,10 @@ import coil3.compose.AsyncImage
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.common.UiState
 import org.umn.application_ketemu.core.util.RelativeTime
+import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.Report
-import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.ui.components.EmptyState
 import org.umn.application_ketemu.ui.components.LoadingSkeletonList
 import org.umn.application_ketemu.ui.components.ReportCard
@@ -65,18 +72,38 @@ fun ReportDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val candidates by viewModel.candidates.collectAsStateWithLifecycle()
+    val myClaim by viewModel.myClaim.collectAsStateWithLifecycle()
+    val canClaim by viewModel.canClaim.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Prosedur pengambilan dijelaskan di depan supaya tidak ada kejutan di pos:
-    // barang hanya diserahkan setelah KTM dicocokkan oleh staff.
-    var showClaimProcedure by remember { mutableStateOf(false) }
+    // Formulir klaim: pemilik menuliskan ciri barang, lalu petugas pos yang
+    // memverifikasi. Prosedur pengambilan dijelaskan di dialog yang sama supaya
+    // tidak ada kejutan saat barang diambil.
+    var showClaimForm by remember { mutableStateOf(false) }
 
-    if (showClaimProcedure) {
-        ClaimProcedureDialog(onDismiss = { showClaimProcedure = false })
+    LaunchedEffect(message) {
+        val text = message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(text)
+        viewModel.clearMessage()
+    }
+
+    val loadedReport = (uiState as? UiState.Success)?.data
+    if (showClaimForm && loadedReport != null) {
+        ClaimRequestDialog(
+            report = loadedReport,
+            onDismiss = { showClaimForm = false },
+            onSubmit = { answer ->
+                viewModel.submitClaim(answer)
+                showClaimForm = false
+            }
+        )
     }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.report_detail_title)) },
@@ -109,7 +136,9 @@ fun ReportDetailScreen(
             is UiState.Success -> DetailContent(
                 report = state.data,
                 candidates = candidates,
-                onClaimClick = { showClaimProcedure = true },
+                myClaim = myClaim,
+                canClaim = canClaim,
+                onClaimClick = { showClaimForm = true },
                 onOpenReport = onOpenReport,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -117,25 +146,168 @@ fun ReportDetailScreen(
     }
 }
 
-/** Penjelasan langkah pengambilan barang di pos (pencegahan salah klaim). */
+/**
+ * Formulir pengajuan klaim.
+ *
+ * Petugas pos tidak bisa menilai kepemilikan tanpa bukti, jadi pengguna wajib
+ * menuliskan ciri yang hanya diketahui pemilik (nama di bagian bawah, isi tas,
+ * goresan, dsb.). Prosedur pengambilan tetap dijelaskan di dialog ini agar
+ * pengguna tahu bahwa barang baru diserahkan setelah KTM dicocokkan.
+ */
 @Composable
-private fun ClaimProcedureDialog(onDismiss: () -> Unit) {
+private fun ClaimRequestDialog(
+    report: Report,
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit
+) {
+    var answer by remember(report.id) { mutableStateOf("") }
+    val isValid = answer.trim().length >= ClaimUiText.MIN_ANSWER_LENGTH
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.claim_info_title)) },
-        text = { Text(stringResource(R.string.claim_info_message)) },
+        title = { Text(stringResource(R.string.claim_form_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = stringResource(R.string.claim_info_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.claim_info_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = report.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = answer,
+                    onValueChange = { answer = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.claim_form_answer_label)) },
+                    placeholder = { Text(stringResource(R.string.claim_form_answer_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.claim_form_answer_hint)) },
+                    minLines = 3,
+                    maxLines = 5
+                )
+            }
+        },
         confirmButton = {
+            Button(
+                onClick = { onSubmit(answer) },
+                enabled = isValid
+            ) {
+                Text(text = stringResource(R.string.claim_form_submit))
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_understood))
+                Text(text = stringResource(R.string.claim_form_cancel))
             }
         }
     )
+}
+
+/**
+ * Kartu status klaim milik pengguna aktif pada barang ini.
+ *
+ * Setelah klaim dikirim, tombol "Ini Barang Saya" diganti kartu ini supaya
+ * pengguna tahu klaimnya sedang diperiksa; saat disetujui, kode pengambilan
+ * ditampilkan di sini (sumber yang sama dengan notifikasi).
+ */
+@Composable
+private fun MyClaimCard(
+    claim: Claim,
+    modifier: Modifier = Modifier
+) {
+    val (statusText, statusColor) = when (claim.status) {
+        ClaimStatus.MENUNGGU -> stringResource(R.string.claim_status_pending) to
+            MaterialTheme.colorScheme.tertiary
+        ClaimStatus.DISETUJUI -> stringResource(R.string.claim_status_approved) to
+            MaterialTheme.colorScheme.primary
+        ClaimStatus.DITOLAK -> stringResource(R.string.claim_status_rejected) to
+            MaterialTheme.colorScheme.error
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.claim_status_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = statusColor
+            )
+
+            when {
+                claim.status == ClaimStatus.DISETUJUI && claim.pickupCode != null -> {
+                    Text(
+                        text = stringResource(
+                            R.string.claim_status_pickup_code,
+                            claim.pickupCode
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.claim_status_pickup_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                claim.status == ClaimStatus.DITOLAK -> {
+                    Text(
+                        text = claim.decisionNote?.takeIf { it.isNotBlank() }
+                            ?.let { note ->
+                                stringResource(R.string.claim_status_rejected_note, note)
+                            }
+                            ?: stringResource(R.string.claim_status_rejected_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                else -> {
+                    Text(
+                        text = stringResource(R.string.claim_status_pending_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.claim_status_your_answer, claim.answer),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+    }
 }
 
 @Composable
 private fun DetailContent(
     report: Report,
     candidates: List<Report>,
+    myClaim: Claim?,
+    canClaim: Boolean,
     onClaimClick: () -> Unit,
     onOpenReport: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -210,17 +382,12 @@ private fun DetailContent(
 
             StatusTimeline(report = report, modifier = Modifier.fillMaxWidth())
 
-            if (candidates.isNotEmpty()) {
-                MatchSection(
-                    report = report,
-                    candidates = candidates,
-                    onOpenReport = onOpenReport
-                )
-            }
-
-            if (report.status == ReportStatus.DISERAHKAN_KE_POS ||
-                report.status == ReportStatus.SIAP_DIAMBIL
-            ) {
+            // Satu pengguna satu klaim per barang: setelah klaim dikirim (atau
+            // sudah diputuskan), tombol diganti kartu status supaya tidak ada
+            // pengajuan ganda dan kode pengambilan tetap terlihat.
+            if (myClaim != null) {
+                MyClaimCard(claim = myClaim)
+            } else if (canClaim) {
                 Button(
                     onClick = { onClaimClick() },
                     modifier = Modifier.fillMaxWidth(),
@@ -235,14 +402,23 @@ private fun DetailContent(
                     )
                 }
             }
+
+            if (candidates.isNotEmpty()) {
+                MatchSection(
+                    report = report,
+                    candidates = candidates,
+                    onOpenReport = onOpenReport
+                )
+            }
         }
     }
 }
 
 /**
  * Bagian "Mungkin barangmu": pasangan yang ditemukan server (db/0018) untuk
- * laporan ini. Kartu kandidat membuka detail laporan seberang; tombol klaim
- * sengaja belum ada karena alur klaim menyusul pada Tahap 4.
+ * laporan ini. Kartu kandidat membuka detail laporan seberang; klaim diajukan
+ * dari halaman detail barang temuan tersebut ("Ini Barang Saya"), sehingga
+ * bukti ciri barang dan lokasi pos yang dipakai petugas selalu satu sumber.
  */
 @Composable
 private fun MatchSection(

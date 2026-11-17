@@ -16,6 +16,7 @@ import org.umn.application_ketemu.domain.model.AuditAction
 import org.umn.application_ketemu.domain.model.AuditLogEntry
 import org.umn.application_ketemu.domain.model.AppNotification
 import org.umn.application_ketemu.domain.model.AppNotificationType
+import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosCatalog
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
@@ -26,11 +27,13 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
 /**
  * ViewModel antrean moderasi laporan.
  *
- * Dua aksi: meneruskan laporan ke pos (status [ReportStatus.DISERAHKAN_KE_POS])
- * dan mengarsipkan laporan. Pos tujuan wajib dipilih satpam saat serah-terima
- * dan divalidasi terhadap [PosCatalog] sebelum data diubah. Setiap aksi tercatat
- * pada audit log dan diperiksa ulang terhadap peran aktif (bukan hanya
- * menyembunyikan tombol di UI).
+ * Dua aksi: meneruskan barang temuan ke pos (status [ReportStatus.DISERAHKAN_KE_POS])
+ * dan mengarsipkan laporan. Laporan temuan baru tampil di Beranda setelah
+ * diverifikasi di sini; laporan hilang langsung tampil dan hanya bisa diarsipkan
+ * (tidak ada barang fisik untuk diserahkan). Pos tujuan wajib dipilih satpam saat
+ * serah-terima dan divalidasi terhadap [PosCatalog] sebelum data diubah. Setiap
+ * aksi tercatat pada audit log dan diperiksa ulang terhadap peran aktif (bukan
+ * hanya menyembunyikan tombol di UI).
  */
 class AdminModerationViewModel(
     private val reportRepository: ReportRepository,
@@ -69,6 +72,13 @@ class AdminModerationViewModel(
             return@launch
         }
 
+        // Hanya barang temuan yang punya wujud untuk dititipkan ke Pos. Laporan
+        // kehilangan tidak boleh "diserahkan"; jalurnya adalah Arsipkan.
+        if (report.type != ItemType.FOUND) {
+            _message.value = AdminUiText.LOST_NOT_FORWARDABLE
+            return@launch
+        }
+
         // Pos ditentukan satpam saat barang benar-benar diterima; pelapor tidak
         // pernah memilih pos. Validasi ulang di sini agar aksi tetap aman walau
         // fungsi ini dipanggil di luar dialog.
@@ -87,12 +97,17 @@ class AdminModerationViewModel(
                 targetId = report.id,
                 note = "${report.title} → ${pos.name}"
             )
+            // Penerima notifikasi ini adalah PENEMU (pembuat laporan temuan),
+            // bukan pemilik barang. Karena itu pesannya hanya menjelaskan bahwa
+            // temuan sudah dititipkan ke Pos dan kini tampil di Beranda; ajakan
+            // membawa bukti kepemilikan hanya relevan pada alur klaim pemilik asli.
             notifyOwner(
                 report = report,
                 actorId = actor.id,
-                title = "Laporan Anda diverifikasi: ${report.title}",
-                message = "Laporan \"${report.title}\" sudah diverifikasi petugas dan " +
-                    "diteruskan ke ${pos.name}. Bawa bukti kepemilikan saat mengambil."
+                title = "Laporan temuan Anda diverifikasi: ${report.title}",
+                message = "Laporan temuan \"${report.title}\" sudah diverifikasi petugas dan " +
+                    "diteruskan ke ${pos.name}. Laporan kini tampil di Beranda sehingga " +
+                    "pemilik barang dapat menemukan dan mengklaimnya."
             )
             _message.value = "\"${report.title}\" diverifikasi dan diteruskan ke ${pos.name}."
         } catch (e: Exception) {

@@ -67,9 +67,13 @@ class HomeViewModel(
      */
     val stats: StateFlow<HomeStats> = reportRepository.observeReports()
         .map { reports ->
+            // Angka "Laporan" mengikuti isi Beranda: temuan yang belum diverifikasi
+            // belum dihitung publik. "Menunggu sinkron" tetap dihitung dari semua
+            // laporan karena itu soal unggahan perangkat pengguna sendiri.
+            val published = reports.filter { it.isPublished() }
             HomeStats(
-                total = reports.size,
-                readyForPickup = reports.count {
+                total = published.size,
+                readyForPickup = published.count {
                     it.status == ReportStatus.SIAP_DIAMBIL ||
                         it.status == ReportStatus.DISERAHKAN_KE_POS
                 },
@@ -110,7 +114,10 @@ class HomeViewModel(
         typeFilter,
         categoryFilter
     ) { reports, query, type, category ->
-        applyFilter(reports, query, type, category)
+        // Beranda hanya menampilkan laporan yang sudah "publik": laporan hilang
+        // langsung tampil, sedangkan laporan temuan baru tampil setelah petugas
+        // memverifikasinya (lihat [Report.isPublished]).
+        applyFilter(reports.filter { it.isPublished() }, query, type, category)
     }
         .map { filtered ->
             if (filtered.isEmpty()) UiState.Empty else UiState.Success(filtered)

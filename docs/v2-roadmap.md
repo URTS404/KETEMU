@@ -8,7 +8,7 @@ didemokan; tahap 2–4 masih direncanakan.
 Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 
 - Dashboard ringkasan: antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
-- Moderasi laporan: tombol verifikasi membuka dialog serah-terima — satpam memilih Pos tujuan (pelapor tidak pernah memilih pos), status → *Diserahkan ke Pos*, dan `reports.pos_id` ikut tersimpan; arsip menyembunyikan laporan dari Beranda tetapi datanya tetap tersimpan.
+- Moderasi laporan: barang **temuan** baru tampil di Beranda setelah diverifikasi. Tombol verifikasi membuka dialog serah-terima — satpam memilih Pos tujuan (pelapor tidak pernah memilih pos), status → *Diserahkan ke Pos*, dan `reports.pos_id` ikut tersimpan; barulah laporan muncul di Beranda. Laporan **hilang** tampil langsung dan tidak bisa diserahkan ke Pos (ViewModel menolaknya), sehingga hanya bisa diarsipkan. Arsip menyembunyikan laporan (hilang maupun temuan) dari Beranda tetapi datanya tetap tersimpan.
 - Verifikasi klaim: jawaban verifikasi pengklaim ditinjau, setuju/tolak; persetujuan menerbitkan kode pengambilan 6 karakter dan memindahkan laporan ke *Siap Diambil*.
 - Log aktivitas: append-only, mencatat aktor, aksi, target, dan waktu.
 - Penjagaan akses dua lapis: tombol hanya muncul untuk STAFF/ADMIN dan ViewModel menolak aksi bila peran tidak berhak.
@@ -21,7 +21,7 @@ Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 - Auth Supabase menggantikan auth lokal bila `SUPABASE_URL` terisi; auth lokal tetap jadi mode demo offline.
 - Storage untuk foto barang.
 - **Realtime notifikasi (selesai)**: `SupabaseNotificationRepository` berlangganan `INSERT` tabel `notifications` lewat `db/0017_realtime.sql`, dengan polling 30 detik sebagai cadangan. Perubahan status laporan yang tampil seketika menyusul pada tahap 4.
-- **Pencocokan otomatis (selesai)**: trigger `reports_auto_match` (`db/0018_auto_match.sql`) mencocokkan laporan baru dengan laporan aktif berjenis sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mencatat pasangan di `matches`, dan mengirim notifikasi `POSSIBLE_MATCH` lewat Realtime. Halaman detail menampilkan bagian "Mungkin barangmu"; tombol klaim menyusul di tahap 4.
+- **Pencocokan otomatis (selesai)**: trigger `reports_auto_match` (`db/0018_auto_match.sql`) mencocokkan laporan baru dengan laporan aktif berjenis sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mencatat pasangan di `matches`, dan mengirim notifikasi `POSSIBLE_MATCH` lewat Realtime. Halaman detail menampilkan bagian "Mungkin barangmu" dan klaim diajukan dari detail barang temuan (lihat Tahap 4).
 
 
 ## Tahap 3 — Room offline-first (minggu 2)
@@ -33,7 +33,22 @@ Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 
 ## Tahap 4 — Klaim end-to-end, realtime, QR, deliverable (minggu 3–4)
 
-- Formulir klaim sisi pengguna + pertanyaan verifikasi pada laporan temuan.
+- **Formulir klaim sisi pengguna (selesai)**: pada laporan TEMUAN yang sudah
+  *Diserahkan ke Pos* / *Siap Diambil*, pemilik menekan "Ini Barang Saya",
+  menuliskan ciri yang hanya diketahui pemilik (minimal 15 karakter), lalu klaim
+  masuk ke antrean "Verifikasi klaim" sebagai `MENUNGGU`. Tombol berubah menjadi
+  kartu status klaim; saat disetujui kartu menampilkan kode pengambilan. Syarat
+  (bukan laporan sendiri, bukan petugas, satu klaim per barang, barang sudah di
+  pos) diperiksa di ViewModel, bukan hanya di UI. Data contoh: klaim botol
+  `clm-004` atas laporan temuan `rpt-007`.
+- Panel "Verifikasi klaim" kini menampilkan deskripsi barang, pos penitipan,
+  pelapor temuan, identitas pengklaim, dan jawaban ciri barang; penolakan memakai
+  alasan yang diketik petugas (dikirim ke pengklaim lewat notifikasi).
 - Unggah foto offline (simpan URI lokal, unggah saat online).
 - Kode pengambilan + QR, notifikasi in-app.
 - Deliverable: ERD, laporan uji, naskah video demo, APK rilis v2.0.0.
+
+Sisa Tahap 4: klaim juga bisa dimulai langsung dari kartu "Mungkin barangmu",
+penukaran kode pengambilan di pos (status → *Selesai Diklaim*), dan tombol klaim
+pada mode Supabase memerlukan `insert` ke `claims` (policy `claims_insert_own`
+sudah ada di `db/0002_rls.sql`).

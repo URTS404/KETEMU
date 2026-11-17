@@ -250,9 +250,11 @@ private fun ModerationCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 ModerationStatusChip(status = report.status)
+                ModerationTypeChip(type = report.type)
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = RelativeTime.format(report.createdAt),
@@ -299,26 +301,35 @@ private fun ModerationCard(
                     .padding(top = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Button(
-                    onClick = onVerify,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp)
-                ) {
-                    // Label panjang ("Verifikasi & teruskan ke Pos") dibatasi satu
-                    // baris agar tinggi kedua tombol tetap sejajar.
-                    Text(
-                        text = stringResource(R.string.admin_action_verify),
-                        style = MaterialTheme.typography.labelMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                // Hanya barang temuan yang punya wujud untuk diserahkan ke Pos.
+                // Laporan kehilangan tidak punya barang fisik, jadi cukup bisa
+                // diarsipkan bila isinya tidak pantas tampil di Beranda.
+                val isFound = report.type == ItemType.FOUND
+                if (isFound) {
+                    Button(
+                        onClick = onVerify,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 44.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp)
+                    ) {
+                        // Label panjang ("Verifikasi & teruskan ke Pos") dibatasi satu
+                        // baris agar tinggi kedua tombol tetap sejajar.
+                        Text(
+                            text = stringResource(R.string.admin_action_verify),
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 OutlinedButton(
                     onClick = onArchive,
-                    modifier = Modifier.heightIn(min = 44.dp),
+                    modifier = Modifier
+                        // Tanpa tombol Verifikasi, Arsipkan mengisi lebar penuh.
+                        .then(if (isFound) Modifier else Modifier.weight(1f))
+                        .heightIn(min = 44.dp),
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                 ) {
@@ -557,6 +568,33 @@ private fun ModerationStatusChip(status: ReportStatus) {
     ) {
         Text(
             text = stringResource(reportStatusLabel(status)),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = tone.content
+        )
+    }
+}
+
+/**
+ * Chip penanda jenis laporan (Hilang/Ditemukan).
+ *
+ * Penting sejak aksi berbeda per jenis: barang temuan bisa diverifikasi ke Pos,
+ * sedangkan laporan hilang hanya bisa diarsipkan. Warna netral dipakai agar
+ * tidak bersaing dengan chip status amber di sebelahnya.
+ */
+@Composable
+private fun ModerationTypeChip(type: ItemType) {
+    val tone = rememberAdminTones().slate
+
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = tone.container
+    ) {
+        Text(
+            text = stringResource(
+                if (type == ItemType.FOUND) R.string.report_type_found else R.string.report_type_lost
+            ),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,

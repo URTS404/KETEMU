@@ -113,6 +113,8 @@ fun reportDetailViewModelFactory(
         ReportDetailViewModel(
             reportRepository = container.reportRepository,
             matchRepository = container.matchRepository,
+            claimRepository = container.claimRepository,
+            session = container.session,
             reportId = reportId
         )
     }
