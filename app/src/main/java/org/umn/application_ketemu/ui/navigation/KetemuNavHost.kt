@@ -348,7 +348,10 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     )
                     ReportDetailScreen(
                         viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onOpenReport = { targetReportId ->
+                            navController.navigate(KetemuRoutes.reportDetail(targetReportId))
+                        }
                     )
                 }
 

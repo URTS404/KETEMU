@@ -49,6 +49,7 @@ import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.ui.components.EmptyState
 import org.umn.application_ketemu.ui.components.LoadingSkeletonList
+import org.umn.application_ketemu.ui.components.ReportCard
 import org.umn.application_ketemu.ui.components.ReportLocationSection
 import org.umn.application_ketemu.ui.components.StatusChipRow
 import org.umn.application_ketemu.ui.components.StatusTimeline
@@ -59,9 +60,11 @@ import org.umn.application_ketemu.ui.components.StatusTimeline
 fun ReportDetailScreen(
     viewModel: ReportDetailViewModel,
     onBack: () -> Unit,
+    onOpenReport: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val candidates by viewModel.candidates.collectAsStateWithLifecycle()
 
     // Prosedur pengambilan dijelaskan di depan supaya tidak ada kejutan di pos:
     // barang hanya diserahkan setelah KTM dicocokkan oleh staff.
@@ -105,7 +108,9 @@ fun ReportDetailScreen(
 
             is UiState.Success -> DetailContent(
                 report = state.data,
+                candidates = candidates,
                 onClaimClick = { showClaimProcedure = true },
+                onOpenReport = onOpenReport,
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -130,7 +135,9 @@ private fun ClaimProcedureDialog(onDismiss: () -> Unit) {
 @Composable
 private fun DetailContent(
     report: Report,
+    candidates: List<Report>,
     onClaimClick: () -> Unit,
+    onOpenReport: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -203,6 +210,14 @@ private fun DetailContent(
 
             StatusTimeline(report = report, modifier = Modifier.fillMaxWidth())
 
+            if (candidates.isNotEmpty()) {
+                MatchSection(
+                    report = report,
+                    candidates = candidates,
+                    onOpenReport = onOpenReport
+                )
+            }
+
             if (report.status == ReportStatus.DISERAHKAN_KE_POS ||
                 report.status == ReportStatus.SIAP_DIAMBIL
             ) {
@@ -220,6 +235,43 @@ private fun DetailContent(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Bagian "Mungkin barangmu": pasangan yang ditemukan server (db/0018) untuk
+ * laporan ini. Kartu kandidat membuka detail laporan seberang; tombol klaim
+ * sengaja belum ada karena alur klaim menyusul pada Tahap 4.
+ */
+@Composable
+private fun MatchSection(
+    report: Report,
+    candidates: List<Report>,
+    onOpenReport: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(
+                if (report.type == ItemType.LOST) R.string.match_section_title_lost
+                else R.string.match_section_title_found
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = stringResource(R.string.match_section_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        candidates.forEach { candidate ->
+            ReportCard(
+                report = candidate,
+                onClick = { onOpenReport(candidate.id) }
+            )
         }
     }
 }

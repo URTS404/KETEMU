@@ -59,7 +59,7 @@ class SupabaseReportRepository(
     suspend fun refresh() {
         val rows = client.postgrest
             .from(TABLE)
-            .select(columns = Columns.raw(SELECT_COLUMNS)) {
+            .select(columns = Columns.raw(REPORT_SELECT_COLUMNS)) {
                 order("created_at", Order.DESCENDING)
             }
             .decodeList<ReportRow>()
@@ -93,7 +93,7 @@ class SupabaseReportRepository(
     override suspend fun getReport(id: String): Report? {
         val row = client.postgrest
             .from(TABLE)
-            .select(columns = Columns.raw(SELECT_COLUMNS)) {
+            .select(columns = Columns.raw(REPORT_SELECT_COLUMNS)) {
                 filter { eq("id", id) }
             }
             .decodeSingleOrNull<ReportRow>()
@@ -137,15 +137,6 @@ class SupabaseReportRepository(
     private companion object {
         const val TABLE = "reports"
         const val REFRESH_INTERVAL_MS = 20_000L
-
-        /**
-         * Kolom yang dibutuhkan UI, ditambah relasi `pos_locations` dan `profiles`
-         * supaya nama pos & pelapor tidak perlu query tambahan (N+1).
-         */
-        const val SELECT_COLUMNS =
-            "id,owner_id,type,title,description,category_id,photo_url,last_seen_location," +
-                "latitude,longitude,status,is_archived,created_at,updated_at," +
-                "pos_locations(id,name,building),profiles(full_name)"
     }
 }
 

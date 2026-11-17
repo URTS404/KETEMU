@@ -112,6 +112,7 @@ fun reportDetailViewModelFactory(
     initializer {
         ReportDetailViewModel(
             reportRepository = container.reportRepository,
+            matchRepository = container.matchRepository,
             reportId = reportId
         )
     }

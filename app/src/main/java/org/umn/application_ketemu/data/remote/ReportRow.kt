@@ -42,3 +42,15 @@ internal data class PosRow(
 internal data class ProfileRow(
     @SerialName("full_name") val fullName: String = ""
 )
+
+/**
+ * Kolom PostgREST untuk [ReportRow], termasuk relasi pos & profil pelapor agar
+ * nama pos dan pelapor tidak perlu query tambahan (N+1).
+ *
+ * Dipakai bersama [SupabaseReportRepository] dan [SupabaseMatchRepository]
+ * supaya kedua jalur selalu membaca bentuk baris yang sama.
+ */
+internal const val REPORT_SELECT_COLUMNS =
+    "id,owner_id,type,title,description,category_id,photo_url,last_seen_location," +
+        "latitude,longitude,status,is_archived,created_at,updated_at," +
+        "pos_locations(id,name,building),profiles(full_name)"

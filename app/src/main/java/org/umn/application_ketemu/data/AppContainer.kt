@@ -13,6 +13,7 @@ import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.remote.SupabaseAuditLogRepository
 import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
+import org.umn.application_ketemu.data.remote.SupabaseMatchRepository
 import org.umn.application_ketemu.data.remote.SupabaseNotificationRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
@@ -21,6 +22,7 @@ import org.umn.application_ketemu.data.remote.SupabaseUserRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
+import org.umn.application_ketemu.data.repository.InMemoryMatchRepository
 import org.umn.application_ketemu.data.repository.InMemoryNotificationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
 import org.umn.application_ketemu.data.repository.InMemoryStaffKeyRepository
@@ -31,6 +33,7 @@ import org.umn.application_ketemu.domain.repository.AuditLogRepository
 import org.umn.application_ketemu.domain.repository.AuthRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ConversationRepository
+import org.umn.application_ketemu.domain.repository.MatchRepository
 import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
 import org.umn.application_ketemu.domain.repository.StaffKeyRepository
@@ -88,6 +91,21 @@ class AppContainer(context: Context) {
         SupabaseReportRepository(SupabaseProvider.client)
     } else {
         InMemoryReportRepository(DummyData.reports())
+    }
+
+    /**
+     * Pasangan laporan hilang <-> temuan (Tahap 2).
+     *
+     * Pencocokan dihitung server (`db/0018_auto_match.sql`): trigger mencatat
+     * pasangan sekaligus mengirim notifikasi POSSIBLE_MATCH. Aplikasi hanya
+     * membaca hasilnya untuk bagian "Mungkin barangmu" di halaman detail.
+     * Tanpa Supabase, pasangan contoh dari [DummyData.matches] dipakai agar
+     * bagian tersebut tetap bisa didemokan.
+     */
+    val matchRepository: MatchRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseMatchRepository(SupabaseProvider.client)
+    } else {
+        InMemoryMatchRepository(DummyData.matches())
     }
 
     /** Data percakapan (dummy) - sumber layar Pesan & layar Percakapan. */

@@ -55,6 +55,9 @@ import java.time.OffsetDateTime
  *  - Konfirmasi unggahan barang temuan dan siaran "barang temuan baru" dibuat
  *    oleh trigger `reports_notify_found` supaya SEMUA pengguna mendapatkannya,
  *    bukan hanya pengguna yang kebetulan sedang membuka aplikasi.
+ *  - Kandidat pasangan (`POSSIBLE_MATCH`) dibangkitkan trigger
+ *    `reports_auto_match` (db/0018) saat laporan baru mirip dengan laporan
+ *    sebaliknya, sehingga pencocokan tetap berjalan walau aplikasi tertutup.
  *  - Notifikasi lain (laporan hilang, perubahan status, keputusan klaim)
  *    dikirim dari perangkat karena hanya menyangkut satu penerima.
  */
@@ -97,10 +100,11 @@ class SupabaseNotificationRepository(
         cache.asStateFlow().onStart { runCatching { refresh() } }
 
     override suspend fun publish(notification: AppNotification) {
-        // Dua jenis ini dibangkitkan trigger server; mengirim dari klien akan
+        // Jenis-jenis ini dibangkitkan trigger server; mengirim dari klien akan
         // menggandakan baris untuk penerima.
         if (notification.type == AppNotificationType.NEW_FOUND_ITEM ||
-            notification.type == AppNotificationType.FOUND_REPORT_CREATED
+            notification.type == AppNotificationType.FOUND_REPORT_CREATED ||
+            notification.type == AppNotificationType.POSSIBLE_MATCH
         ) {
             return
         }

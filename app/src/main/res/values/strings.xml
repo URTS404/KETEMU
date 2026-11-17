@@ -36,6 +36,11 @@
     <string name="report_location_coordinates">Koordinat: %1$s</string>
     <string name="report_location_open_maps">Buka di aplikasi peta</string>
 
+    <!-- ===== Pencocokan otomatis (Tahap 2) ===== -->
+    <string name="match_section_title_lost">Mungkin barangmu</string>
+    <string name="match_section_title_found">Mungkin pemiliknya</string>
+    <string name="match_section_desc">Laporan berikut mirip dengan laporan ini. Ketuk untuk melihat detailnya.</string>
+
     <!-- ===== Beranda ===== -->
     <string name="home_title">Ketemu</string>
     <string name="home_greeting">Halo, %1$s</string>

@@ -21,6 +21,8 @@ Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 - Auth Supabase menggantikan auth lokal bila `SUPABASE_URL` terisi; auth lokal tetap jadi mode demo offline.
 - Storage untuk foto barang.
 - **Realtime notifikasi (selesai)**: `SupabaseNotificationRepository` berlangganan `INSERT` tabel `notifications` lewat `db/0017_realtime.sql`, dengan polling 30 detik sebagai cadangan. Perubahan status laporan yang tampil seketika menyusul pada tahap 4.
+- **Pencocokan otomatis (selesai)**: trigger `reports_auto_match` (`db/0018_auto_match.sql`) mencocokkan laporan baru dengan laporan aktif berjenis sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mencatat pasangan di `matches`, dan mengirim notifikasi `POSSIBLE_MATCH` lewat Realtime. Halaman detail menampilkan bagian "Mungkin barangmu"; tombol klaim menyusul di tahap 4.
+
 
 ## Tahap 3 — Room offline-first (minggu 2)
 

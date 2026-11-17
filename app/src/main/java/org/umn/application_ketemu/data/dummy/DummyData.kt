@@ -11,6 +11,7 @@ import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
+import org.umn.application_ketemu.domain.model.ReportMatch
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.model.SyncStatus
 import org.umn.application_ketemu.domain.model.UserProfile
@@ -150,6 +151,48 @@ object DummyData {
                 status = ReportStatus.DILAPORKAN,
                 syncStatus = SyncStatus.PENDING,
                 createdAt = now - 12 * minute
+            ),
+            // Barang temuan yang sengaja mirip dengan rpt-001: dipakai data
+            // contoh pasangan otomatis di [matches].
+            Report(
+                id = "rpt-007",
+                ownerId = "user-lain-07",
+                ownerName = "Maya Puspita",
+                type = ItemType.FOUND,
+                title = "Tumbler Hitam Berstiker UMN",
+                description = "Tumbler stainless hitam dengan stiker UMN di badan botol, " +
+                    "ditemukan di meja ruang B-301 dan sudah dititipkan ke pos.",
+                category = ReportCategory.AKSESORIS,
+                lastSeenLocation = "Gedung B, ruang B-301",
+                coordinates = GeoPoint(latitude = -6.256880, longitude = 106.618560),
+                pos = posBasement,
+                status = ReportStatus.DISERAHKAN_KE_POS,
+                syncStatus = SyncStatus.SYNCED,
+                createdAt = now - 35 * minute
+            )
+        )
+    }
+
+    /**
+     * Pasangan contoh hasil pencocokan otomatis (Tahap 2).
+     *
+     * Pada mode Supabase, pasangan dihitung server lewat trigger
+     * `reports_auto_match` (db/0018). Data contoh ini membuat bagian
+     * "Mungkin barangmu" di halaman detail langsung terisi saat demo offline:
+     * laporan hilang milik mahasiswa (rpt-001) berpasangan dengan barang
+     * temuan yang mirip (rpt-007).
+     */
+    fun matches(): List<ReportMatch> {
+        val reportsById = reports().associateBy { it.id }
+        val lost = reportsById["rpt-001"] ?: return emptyList()
+        val found = reportsById["rpt-007"] ?: return emptyList()
+
+        return listOf(
+            ReportMatch(
+                id = "match-001",
+                lostReport = lost,
+                foundReport = found,
+                matchedAt = System.currentTimeMillis() - 30 * 60_000L
             )
         )
     }
@@ -230,6 +273,17 @@ object DummyData {
                 reportId = "rpt-006",
                 recipientId = student.id,
                 actorId = student.id
+            ),
+            AppNotification(
+                id = "ntf-004",
+                type = AppNotificationType.POSSIBLE_MATCH,
+                title = "Mungkin barangmu sudah ditemukan",
+                message = "Ada laporan temuan \"Tumbler Hitam Berstiker UMN\" yang cocok " +
+                    "dengan laporan kehilangan Anda. Buka detail untuk memeriksa.",
+                createdAt = now - 30 * minute,
+                reportId = "rpt-007",
+                recipientId = student.id,
+                actorId = "user-lain-07"
             ),
             AppNotification(
                 id = "ntf-002",

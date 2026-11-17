@@ -17,6 +17,14 @@ enum class AppNotificationType {
     /** Pemberitahuan ke pengguna lain bahwa ada barang temuan baru. */
     NEW_FOUND_ITEM,
 
+    /**
+     * Server menemukan laporan seberang yang mirip dengan laporan pengguna
+     * (Tahap 2: pencocokan otomatis hilang <-> temuan).
+     *
+     * Dibangkitkan trigger `reports_auto_match` (db/0018), bukan dari perangkat.
+     */
+    POSSIBLE_MATCH,
+
     /** Status laporan berubah karena tindakan petugas pos. */
     REPORT_STATUS_CHANGED,
 

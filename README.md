@@ -14,6 +14,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI â
 - **Laporan saya & Pesan** â€” riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** â€” identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
 - **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**. Kabar baru dikirim **Supabase Realtime** (langganan `INSERT` tabel `notifications`) sehingga muncul seketika, dengan polling 30 detik sebagai cadangan.
+- **Pencocokan otomatis** - begitu laporan masuk, trigger server (`db/0018_auto_match.sql`) mencocokkannya dengan laporan sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mengirim notifikasi `POSSIBLE_MATCH`, dan mengisi bagian "Mungkin barangmu" di halaman detail.
 
 - **Tema terang/gelap** â€” palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
 
@@ -28,7 +29,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI â
 | Gambar | Coil |
 | Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
 | Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (80 unit test) |
+| Test | JUnit4 + `kotlinx-coroutines-test` (84 unit test) |
 
 ## Menjalankan
 
@@ -116,6 +117,17 @@ Aturan yang diuji di `SystemNotifyingNotificationRepositoryTest`:
 Ketuk kartu untuk membuka layar Notifikasi (`launchMode="singleTop"` + extra intent). Di Android 13+ izin `POST_NOTIFICATIONS` diminta sekali setelah login; bila ditolak, kotak masuk in-app tetap berfungsi. Kanal notifikasi bernama **Kabar Ketemu** dan bisa dimatikan dari Pengaturan Android.
 
 Sakelar ada di **Akun > Pengaturan > Notifikasi luar aplikasi**, aktif secara bawaan pada pemasangan baru dan pilihannya disimpan di `SharedPreferences` (`SharedPreferencesSystemNotificationSettings`). Menyalakannya meminta izin `POST_NOTIFICATIONS` bila belum ada; bila izin ditolak, sakelar kembali mati. Ketika izin sudah ada tetapi notifikasi aplikasi diblokir dari Pengaturan Android, layar Akun menampilkan petunjuk dan tombol **Buka pengaturan**. Mematikan sakelar tidak menghapus kotak masuk in-app - kabar tetap tersimpan di lonceng Beranda.
+
+## Pencocokan otomatis (hilang <-> temuan)
+
+Pencocokan dihitung **di server**, bukan di perangkat, supaya tetap berjalan walau aplikasi tertutup dan hasilnya sama untuk semua pengguna:
+
+1. Setiap laporan baru memicu trigger `reports_auto_match` (`db/0018_auto_match.sql`).
+2. Kandidat = laporan aktif berjenis sebaliknya, kategori sama, pemilik berbeda, dan judulnya berbagi kata kunci (minimal 4 huruf) **atau** titik GPS-nya berjarak <= 250 m.
+3. Pasangan dicatat di tabel `matches` (unik per pasangan, tanpa policy tulis untuk klien) dan pemilik laporan lama menerima notifikasi `POSSIBLE_MATCH` yang ikut terkirim lewat Realtime.
+4. Halaman detail menampilkan bagian **"Mungkin barangmu"** (atau "Mungkin pemiliknya" pada laporan temuan) berisi kartu kandidat; ketuk untuk membuka detailnya. Tombol klaim belum ada pada tahap ini (menyusul Tahap 4).
+
+Pada mode demo offline, `DummyData.matches()` menyediakan satu pasangan contoh agar bagian tersebut langsung terlihat saat demo.
 
 ## Struktur proyek
 
