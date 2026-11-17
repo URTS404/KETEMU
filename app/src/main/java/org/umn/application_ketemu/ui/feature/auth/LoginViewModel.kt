@@ -133,6 +133,7 @@ class LoginViewModel(
             LoginError.INVALID_CREDENTIALS
         AuthErrorReason.RATE_LIMITED -> LoginError.RATE_LIMITED
         AuthErrorReason.NETWORK -> LoginError.NETWORK
+        AuthErrorReason.CAMPUS_DOMAIN_REQUIRED -> LoginError.NETWORK
     }
 
     companion object {

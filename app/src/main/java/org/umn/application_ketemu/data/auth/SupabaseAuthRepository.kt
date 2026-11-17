@@ -164,6 +164,8 @@ private fun Exception.toAuthErrorReason(): AuthErrorReason {
             AuthErrorReason.INVALID_CREDENTIALS
         message.contains("User already registered", ignoreCase = true) ->
             AuthErrorReason.USER_ALREADY_EXISTS
+        message.contains("domain kampus", ignoreCase = true) ->
+            AuthErrorReason.CAMPUS_DOMAIN_REQUIRED
         message.contains("rate limit", ignoreCase = true) ||
             message.contains("rate_limit", ignoreCase = true) ->
             AuthErrorReason.RATE_LIMITED

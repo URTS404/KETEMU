@@ -10,7 +10,10 @@ enum class AuthErrorReason {
     NETWORK,
 
     /** Akun diblokir admin; kredensial benar tetapi akses ditutup. */
-    ACCOUNT_BLOCKED
+    ACCOUNT_BLOCKED,
+
+    /** Server menolak pendaftaran karena domain email di luar kampus. */
+    CAMPUS_DOMAIN_REQUIRED
 }
 
 /** Hasil operasi autentikasi. */
