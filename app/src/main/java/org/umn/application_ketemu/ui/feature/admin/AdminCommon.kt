@@ -679,6 +679,10 @@ fun auditActionLabel(action: AuditAction): String = stringResource(
         AuditAction.BUKA_ARSIP_LAPORAN -> R.string.admin_audit_action_unarchive
         AuditAction.SETUJUI_KLAIM -> R.string.admin_audit_action_approve_claim
         AuditAction.TOLAK_KLAIM -> R.string.admin_audit_action_reject_claim
+        AuditAction.UBAH_PERAN -> R.string.admin_audit_action_change_role
+        AuditAction.VERIFIKASI_AKUN -> R.string.admin_audit_action_verify_account
+        AuditAction.BLOKIR_AKUN -> R.string.admin_audit_action_block
+        AuditAction.BUKA_BLOKIR_AKUN -> R.string.admin_audit_action_unblock
     }
 )
 

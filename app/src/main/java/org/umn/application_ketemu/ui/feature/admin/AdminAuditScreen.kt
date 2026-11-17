@@ -497,6 +497,11 @@ private fun auditActionTone(action: AuditAction): AdminTone {
             container = MaterialTheme.colorScheme.errorContainer,
             content = MaterialTheme.colorScheme.onErrorContainer
         )
+        // Aksi admin pada akun: ungu, sama dengan menu Pengguna.
+        AuditAction.UBAH_PERAN,
+        AuditAction.VERIFIKASI_AKUN,
+        AuditAction.BLOKIR_AKUN,
+        AuditAction.BUKA_BLOKIR_AKUN -> tones.violet
     }
 }
 
@@ -507,6 +512,10 @@ private fun auditActionIcon(action: AuditAction): Int = when (action) {
     AuditAction.BUKA_ARSIP_LAPORAN -> R.drawable.ic_admin_unarchive
     AuditAction.SETUJUI_KLAIM -> R.drawable.ic_admin_check_circle
     AuditAction.TOLAK_KLAIM -> R.drawable.ic_admin_cancel
+    AuditAction.UBAH_PERAN,
+    AuditAction.VERIFIKASI_AKUN,
+    AuditAction.BLOKIR_AKUN,
+    AuditAction.BUKA_BLOKIR_AKUN -> R.drawable.ic_admin_users
 }
 
 /** Satu kelompok riwayat untuk satu tanggal. */

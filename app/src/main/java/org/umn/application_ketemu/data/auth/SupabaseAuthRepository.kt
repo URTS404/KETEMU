@@ -38,6 +38,12 @@ class SupabaseAuthRepository(
         }
         val user = client.auth.currentUserOrNull()?.let { resolveProfile(it) }
         when {
+            // RLS menyembunyikan baris profiles milik akun terblokir, sehingga
+            // status blokir ditanyakan lewat fungsi SECURITY DEFINER (0014).
+            isSelfBanned() -> {
+                runCatching { client.auth.signOut() }
+                AuthResult.Failure(AuthErrorReason.ACCOUNT_BLOCKED)
+            }
             user == null -> AuthResult.Failure(AuthErrorReason.INVALID_CREDENTIALS)
             user.isBanned -> {
                 // Akun diblokir admin: tutup sesi lagi supaya token tidak
@@ -87,6 +93,20 @@ class SupabaseAuthRepository(
      * sumber kebenaran. Peran dibaca dari tabel supaya perubahan peran oleh
      * admin (mis. USER -> STAFF) langsung berlaku pada login berikutnya.
      */
+    /**
+     * Apakah akun yang sedang login sedang diblokir.
+     *
+     * Tidak bisa dibaca lewat SELECT biasa: policy RESTRICTIVE 0011 menyembunyikan
+     * baris `profiles` milik akun terblokir (itu memang tujuannya). Fungsi
+     * SECURITY DEFINER `my_account_banned()` (0014) menjawab satu bit informasi
+     * tanpa membuka kolom lain.
+     */
+    private suspend fun isSelfBanned(): Boolean = runCatching {
+        client.postgrest.rpc("my_account_banned").decodeAs<Boolean>()
+    }.onFailure {
+        android.util.Log.w("SupabaseAuth", "cek blokir gagal: ${it.message}")
+    }.getOrDefault(false)
+
     private suspend fun resolveProfile(user: UserInfo): UserProfile {
         val fallback = user.metadataUserProfile()
         val row = runCatching {
@@ -124,8 +144,7 @@ class SupabaseAuthRepository(
         AuthResult.Failure(e.toAuthErrorReason())
     }
 
-    override suspend fun signOut() {
-        try {
+    override suspend fun signOut() {        try {
             client.auth.signOut()
         } catch (_: Exception) {
             // Best-effort; sesi lokal tetap dibersihkan oleh SessionStore.

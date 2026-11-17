@@ -297,6 +297,11 @@
     <string name="admin_audit_yesterday">Kemarin</string>
     <string name="admin_audit_hint">Log aktivitas bersifat permanen: tidak dapat diubah atau dihapus.</string>
 
+    <string name="admin_audit_action_change_role">Ubah peran akun</string>
+    <string name="admin_audit_action_verify_account">Verifikasi akun</string>
+    <string name="admin_audit_action_block">Blokir akun</string>
+    <string name="admin_audit_action_unblock">Buka blokir akun</string>
+
     <string name="admin_role_label">Peran</string>
     <string name="admin_close">Tutup</string>
 </resources>

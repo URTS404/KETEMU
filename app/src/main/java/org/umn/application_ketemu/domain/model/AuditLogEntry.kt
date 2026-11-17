@@ -6,7 +6,13 @@ enum class AuditAction {
     ARSIP_LAPORAN,
     BUKA_ARSIP_LAPORAN,
     SETUJUI_KLAIM,
-    TOLAK_KLAIM
+    TOLAK_KLAIM,
+
+    // Aksi ADMIN pada akun pengguna (ditulis trigger database, lihat db/0012).
+    UBAH_PERAN,
+    VERIFIKASI_AKUN,
+    BLOKIR_AKUN,
+    BUKA_BLOKIR_AKUN
 }
 
 /**
