@@ -19,7 +19,8 @@ Tujuan: moderator (STAFF/ADMIN) bekerja dari dalam aplikasi Android, tanpa web.
 - Project baru + skema SQL: `profiles`, `categories`, `pos_locations`, `reports`, `claims`, `audit_logs`.
 - Row Level Security: pengguna hanya mengubah laporannya sendiri; STAFF/ADMIN lewat `profiles.role`; audit hanya bisa ditambah, tidak diubah.
 - Auth Supabase menggantikan auth lokal bila `SUPABASE_URL` terisi; auth lokal tetap jadi mode demo offline.
-- Storage untuk foto barang, Realtime untuk perubahan status.
+- Storage untuk foto barang.
+- **Realtime notifikasi (selesai)**: `SupabaseNotificationRepository` berlangganan `INSERT` tabel `notifications` lewat `db/0017_realtime.sql`, dengan polling 30 detik sebagai cadangan. Perubahan status laporan yang tampil seketika menyusul pada tahap 4.
 
 ## Tahap 3 — Room offline-first (minggu 2)
 

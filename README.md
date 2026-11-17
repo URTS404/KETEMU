@@ -13,7 +13,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 - **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
 - **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
-- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**.
+- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**. Kabar baru dikirim **Supabase Realtime** (langganan `INSERT` tabel `notifications`) sehingga muncul seketika, dengan polling 30 detik sebagai cadangan.
 
 - **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
 
@@ -24,10 +24,11 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 | Bahasa | Kotlin 2.4 |
 | UI | Jetpack Compose + Material 3 (BOM 2026.09), Compose Navigation |
 | Arsitektur | MVVM, `StateFlow`, repository + container manual (tanpa Hilt) |
+| Backend | Supabase (Auth, PostgREST, Realtime) — mode demo in-memory bila `local.properties` kosong |
 | Gambar | Coil |
 | Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
 | Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (76 unit test) |
+| Test | JUnit4 + `kotlinx-coroutines-test` (80 unit test) |
 
 ## Menjalankan
 
@@ -97,6 +98,13 @@ Kabar Ketemu tampil di dua tempat dengan isi yang sama:
 
 - **Kotak masuk in-app** - lonceng di Beranda membuka layar Notifikasi (tandai dibaca, buka laporan terkait).
 - **Panel notifikasi Android** - kartu di luar aplikasi untuk konfirmasi unggahan, barang temuan baru, perubahan status laporan, dan keputusan klaim.
+
+Pengiriman kabar memakai dua jalur yang saling melengkapi:
+
+1. **Supabase Realtime** - `SupabaseNotificationRepository` berlangganan `INSERT` pada tabel `notifications`; kabar langsung masuk lonceng dan panel sistem tanpa menunggu. Langganan baru dibuka setelah pengguna terautentikasi agar Row Level Security mengirim baris yang benar, dan ditutup saat keluar.
+2. **Polling 30 detik** - cadangan bila Realtime tidak aktif (mis. publication belum didaftarkan) atau koneksi terputus. Baris yang sama tidak digandakan (dedupe berdasarkan `id`, terbaru lebih dahulu).
+
+Di sisi database jalankan `db/0016_notifications.sql` (tabel + trigger `reports_notify_found` untuk kabar "barang temuan baru") lalu `db/0017_realtime.sql` (mendaftarkan tabel ke publication `supabase_realtime`). Pada mode demo offline (tanpa `SUPABASE_URL`), notifikasi dibuat langsung di perangkat dan tetap tampil di kedua lapisan.
 
 Aturan yang diuji di `SystemNotifyingNotificationRepositoryTest`:
 

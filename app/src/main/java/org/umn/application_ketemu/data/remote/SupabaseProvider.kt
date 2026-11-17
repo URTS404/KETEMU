@@ -7,6 +7,7 @@ import io.github.jan.supabase.auth.SettingsCodeVerifierCache
 import io.github.jan.supabase.auth.SettingsSessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import org.umn.application_ketemu.BuildConfig
 
 /**
@@ -40,6 +41,9 @@ object SupabaseProvider {
                 codeVerifierCache = SettingsCodeVerifierCache(MapSettings())
             }
             install(Postgrest)
+            // Realtime dipakai SupabaseNotificationRepository untuk menerima
+            // INSERT tabel `notifications` seketika (push kabar ke panel sistem).
+            install(Realtime)
         }
     }
 

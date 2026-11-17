@@ -103,6 +103,8 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.auth.kt)
     implementation(libs.supabase.postgrest.kt)
+    // Realtime: langganan INSERT tabel `notifications` untuk kabar instan.
+    implementation(libs.supabase.realtime.kt)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.multiplatform.settings.test)
     implementation(libs.kotlinx.serialization.json)

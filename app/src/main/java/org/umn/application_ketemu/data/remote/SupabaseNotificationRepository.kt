@@ -1,22 +1,36 @@
 package org.umn.application_ketemu.data.remote
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.umn.application_ketemu.domain.model.AppNotification
 import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.repository.NotificationRepository
@@ -25,9 +39,17 @@ import java.time.OffsetDateTime
 /**
  * [NotificationRepository] di atas tabel `notifications` (db/0016).
  *
- * Pola sinkronisasinya sama dengan [SupabaseReportRepository]: cache di memori
- * yang di-refresh saat pertama dibaca dan setiap [REFRESH_INTERVAL_MS]. RLS
- * memastikan pengguna hanya menerima baris untuk dirinya.
+ * Sinkronisasi memakai dua jalur yang saling melengkapi:
+ *  - **Supabase Realtime** ([startRealtime]): langganan INSERT tabel
+ *    `notifications`; kabar baru langsung masuk cache sehingga lonceng Beranda
+ *    dan kartu panel sistem (melalui dekorator SystemNotifyingNotificationRepository)
+ *    bereaksi seketika, tanpa menunggu [REFRESH_INTERVAL_MS]. Kanal dibuat hanya
+ *    setelah pengguna terautentikasi agar RLS mengirim baris yang benar.
+ *  - **Polling** setiap [REFRESH_INTERVAL_MS] sebagai cadangan: menjaga data
+ *    tetap segar bila Realtime tidak aktif (mis. replication belum diaktifkan di
+ *    dashboard) atau koneksi terputus.
+ *
+ * RLS memastikan pengguna hanya menerima baris untuk dirinya.
  *
  * Pembagian tugas dengan server:
  *  - Konfirmasi unggahan barang temuan dan siaran "barang temuan baru" dibuat
@@ -43,11 +65,30 @@ class SupabaseNotificationRepository(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val cache = MutableStateFlow<List<AppNotification>>(emptyList())
 
+    /** Decoder longgar: payload Realtime memuat seluruh kolom tabel. */
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** Kanal Realtime aktif; `null` selama pengguna belum masuk. */
+    private var realtimeChannel: RealtimeChannel? = null
+    private var realtimeJob: Job? = null
+
     init {
+        // Jalur cadangan: cache tetap segar walau Realtime tidak aktif/terputus.
         scope.launch {
             while (isActive) {
                 runCatching { refresh() }
                 delay(REFRESH_INTERVAL_MS)
+            }
+        }
+        // Jalur utama: berlangganan hanya selama ada sesi login, supaya RLS
+        // mengirimkan baris milik pengguna yang sedang masuk.
+        scope.launch {
+            client.auth.sessionStatus.collect { status ->
+                if (status is SessionStatus.Authenticated) {
+                    runCatching { startRealtime() }
+                } else {
+                    runCatching { stopRealtime() }
+                }
             }
         }
     }
@@ -113,6 +154,45 @@ class SupabaseNotificationRepository(
         }
     }
 
+    /**
+     * Mulai berlangganan INSERT tabel `notifications`. Idempotent: aman dipanggil
+     * berulang selama kanal sudah aktif.
+     */
+    private suspend fun startRealtime() {
+        if (realtimeChannel != null) return
+        val channel = client.realtime.channel(CHANNEL_NAME)
+        realtimeJob = channel
+            .postgresChangeFlow<PostgresAction.Insert>(schema = SCHEMA) {
+                table = TABLE
+            }
+            .onEach { action ->
+                runCatching { action.record.toAppNotification() }
+                    .getOrNull()
+                    ?.let { notification -> cache.update { it.mergedWith(notification) } }
+            }
+            .launchIn(scope)
+        channel.subscribe()
+        realtimeChannel = channel
+    }
+
+    /** Berhenti berlangganan saat pengguna keluar. */
+    private suspend fun stopRealtime() {
+        realtimeJob?.cancel()
+        realtimeJob = null
+        realtimeChannel?.let { channel ->
+            // removeChannel = unsubscribe + hapus dari daftar langganan klien,
+            // sehingga login berikutnya memulai kanal yang bersih.
+            runCatching { client.realtime.removeChannel(channel) }
+        }
+        realtimeChannel = null
+    }
+
+    /** Baris Realtime (JSON) -> [AppNotification]; `null` bila tidak lengkap. */
+    private fun JsonObject.toAppNotification(): AppNotification? =
+        runCatching { json.decodeFromJsonElement<NotificationRow>(this) }
+            .getOrNull()
+            ?.toDomain()
+
     private suspend fun refresh() {
         cache.value = client.postgrest
             .from(TABLE)
@@ -144,6 +224,8 @@ class SupabaseNotificationRepository(
     private companion object {
         const val TAG = "SupabaseNotification"
         const val TABLE = "notifications"
+        const val SCHEMA = "public"
+        const val CHANNEL_NAME = "ketemu-notifications"
         const val REFRESH_INTERVAL_MS = 30_000L
         const val SELECT_COLUMNS =
             "id,recipient_id,actor_id,type,title,message,report_id,is_read,created_at"

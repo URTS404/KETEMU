@@ -15,6 +15,7 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0009_fix_audit_enum_cast.sql` | Perbaikan cast enum pada trigger audit |
 | `0010_report_coordinates.sql` | Kolom `latitude`/`longitude` untuk titik peta |
 | `0016_notifications.sql` | Tabel `notifications`, RLS, dan trigger `reports_notify_found` (konfirmasi barang temuan + siaran barang temuan baru) |
+| `0017_realtime.sql` | Mendaftarkan `notifications` ke publication `supabase_realtime` agar kabar baru dikirim seketika (Realtime) |
 
 ## 1. Buat project
 
@@ -38,6 +39,7 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 2. `db/0002_rls.sql`
 3. `db/0003_seed.sql`
 4. `db/0010_report_coordinates.sql` — wajib bila memakai fitur titik peta
+5. `db/0016_notifications.sql` lalu `db/0017_realtime.sql` — kotak masuk notifikasi dan pengiriman kabar seketika (Realtime)
 
 Berkas `0004`–`0009` hanya berisi data contoh dan perbaikan; jalankan bila
 project Anda berasal dari versi skema sebelumnya.
