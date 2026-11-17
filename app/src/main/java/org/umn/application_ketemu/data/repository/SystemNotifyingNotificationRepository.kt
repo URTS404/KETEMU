@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import org.umn.application_ketemu.core.notification.SystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotifier
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.AppNotification
@@ -29,11 +30,16 @@ import org.umn.application_ketemu.domain.repository.NotificationRepository
  *
  * Kegagalan mengirim ke panel sistem sengaja tidak dilempar: notifikasi in-app
  * tetap tersimpan dan aplikasi tetap berjalan (mis. izin ditolak pengguna).
+ *
+ * Sakelar pengguna ([SystemNotificationSettings]) diperiksa di sini, bukan di
+ * ViewModel: saat dimatikan, kartu yang sudah tampil dibersihkan dan kabar baru
+ * tidak dikirim, tetapi kotak masuk in-app tetap utuh.
  */
 class SystemNotifyingNotificationRepository(
     private val delegate: NotificationRepository,
     private val session: SessionStore,
     private val notifier: SystemNotifier,
+    private val settings: SystemNotificationSettings,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : NotificationRepository {
 
@@ -51,6 +57,13 @@ class SystemNotifyingNotificationRepository(
                 postNewNotifications(notifications)
             }
         }
+        // Mematikan sakelar langsung membersihkan kartu yang masih terpasang di
+        // panel sistem; menyalakannya kembali tidak mengirim ulang kabar lama.
+        scope.launch {
+            settings.enabled.collect { enabled ->
+                if (!enabled) runCatching { notifier.cancelAll() }
+            }
+        }
     }
 
     override fun observeNotifications(): Flow<List<AppNotification>> =
@@ -66,8 +79,11 @@ class SystemNotifyingNotificationRepository(
         delegate.markAllRead(userId)
 
     private fun postNewNotifications(notifications: List<AppNotification>) {
+        // Id tetap dicatat walau sakelar mati, supaya menyalakannya kembali tidak
+        // memunculkan deretan kabar yang tiba selama notifikasi luar dimatikan.
         val fresh = notifications.filter { observedIds.add(it.id) }
-        if (fresh.isEmpty() || !session.isLoggedIn.value) return
+        if (fresh.isEmpty() || !settings.enabled.value) return
+        if (!session.isLoggedIn.value) return
 
         val userId = session.currentUser.value.id
         fresh.asSequence()

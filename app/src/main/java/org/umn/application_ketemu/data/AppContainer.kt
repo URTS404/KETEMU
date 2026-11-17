@@ -4,6 +4,8 @@ import android.content.Context
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.core.notification.AndroidSystemNotifier
 import org.umn.application_ketemu.core.notification.NotificationTapRequests
+import org.umn.application_ketemu.core.notification.SharedPreferencesSystemNotificationSettings
+import org.umn.application_ketemu.core.notification.SystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotifier
 import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
@@ -50,6 +52,15 @@ class AppContainer(context: Context) {
      * (urutan inisialisasi properti Kotlin mengikuti urutan penulisan).
      */
     val session: SessionStore = SessionStore()
+
+    /**
+     * Sakelar "notifikasi luar aplikasi" yang diatur pengguna di halaman Akun.
+     *
+     * Bawaannya aktif; pilihan disimpan di SharedPreferences sehingga bertahan
+     * setelah aplikasi ditutup. Dekorator notifikasi di bawah membaca sakelar ini.
+     */
+    val systemNotificationSettings: SystemNotificationSettings =
+        SharedPreferencesSystemNotificationSettings(context)
 
     /**
      * Pengirim notifikasi panel sistem (di luar aplikasi).
@@ -103,7 +114,8 @@ class AppContainer(context: Context) {
             InMemoryNotificationRepository(DummyData.notifications())
         },
         session = session,
-        notifier = systemNotifier
+        notifier = systemNotifier,
+        settings = systemNotificationSettings
     )
 
     /** Pengajuan klaim + antrean keputusan moderator. */

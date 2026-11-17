@@ -182,7 +182,14 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
     }
 
     // Izin POST_NOTIFICATIONS (Android 13+) diminta sekali setelah pengguna masuk.
-    NotificationPermissionEffect()
+    NotificationPermissionEffect(
+        onPermissionResult = { granted ->
+            // Menolak izin berarti notifikasi luar efektif mati, jadi sakelar di
+            // halaman Akun diturunkan agar sesuai kenyataan. Persetujuan tidak
+            // memaksa menyalakan kembali sakelar yang sengaja dimatikan pengguna.
+            if (!granted) container.systemNotificationSettings.setEnabled(false)
+        }
+    )
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -282,8 +289,15 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                 }
 
                 composable(KetemuRoutes.PROFILE) {
+                    // Dibaca sebagai state: sakelar langsung berubah saat diketuk
+                    // dan tetap benar setelah aplikasi dibuka ulang.
+                    val systemNotificationsEnabled by container.systemNotificationSettings.enabled
+                        .collectAsStateWithLifecycle()
                     ProfileScreen(
                         user = currentUser,
+                        systemNotificationsEnabled = systemNotificationsEnabled,
+                        onSystemNotificationsEnabledChange =
+                            container.systemNotificationSettings::setEnabled,
                         onSwitchRole = { role -> container.session.switchRole(role) },
                         onOpenAdmin = { navController.navigate(KetemuRoutes.ADMIN) },
                         onOpenStaffKey = { navController.navigate(KetemuRoutes.STAFF_KEY) },

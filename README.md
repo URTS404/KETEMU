@@ -13,7 +13,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 - **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
 - **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
 - **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
-- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim.
+- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**.
 
 - **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
 
@@ -27,7 +27,7 @@ Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI �
 | Gambar | Coil |
 | Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
 | Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (73 unit test) |
+| Test | JUnit4 + `kotlinx-coroutines-test` (76 unit test) |
 
 ## Menjalankan
 
@@ -103,8 +103,11 @@ Aturan yang diuji di `SystemNotifyingNotificationRepositoryTest`:
 1. Hanya kabar milik pengguna aktif (staf yang memutuskan klaim tidak menerima kartu milik pengklaim di perangkatnya).
 2. Hanya kabar yang belum dibaca; menandai dibaca tidak memunculkan kartu ganda.
 3. Riwayat lama (data demo atau baris Supabase saat aplikasi dibuka) tidak dikirim ulang.
+4. Sakelar **Notifikasi luar aplikasi** di halaman Akun menghormati pilihan pengguna: saat mati tidak ada kartu baru, kartu yang sudah tampil dibersihkan, dan kabar yang tiba selama sakelar mati tidak menyusul ketika dinyalakan lagi.
 
 Ketuk kartu untuk membuka layar Notifikasi (`launchMode="singleTop"` + extra intent). Di Android 13+ izin `POST_NOTIFICATIONS` diminta sekali setelah login; bila ditolak, kotak masuk in-app tetap berfungsi. Kanal notifikasi bernama **Kabar Ketemu** dan bisa dimatikan dari Pengaturan Android.
+
+Sakelar ada di **Akun > Pengaturan > Notifikasi luar aplikasi**, aktif secara bawaan pada pemasangan baru dan pilihannya disimpan di `SharedPreferences` (`SharedPreferencesSystemNotificationSettings`). Menyalakannya meminta izin `POST_NOTIFICATIONS` bila belum ada; bila izin ditolak, sakelar kembali mati. Ketika izin sudah ada tetapi notifikasi aplikasi diblokir dari Pengaturan Android, layar Akun menampilkan petunjuk dan tombol **Buka pengaturan**. Mematikan sakelar tidak menghapus kotak masuk in-app - kabar tetap tersimpan di lonceng Beranda.
 
 ## Struktur proyek
 

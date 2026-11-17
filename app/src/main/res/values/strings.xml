@@ -197,6 +197,14 @@
     <!-- ===== Profil: sesi ===== -->
     <string name="profile_account_section">Akun</string>
     <string name="profile_logout">Keluar</string>
+
+    <!-- ===== Profil: pengaturan perangkat (notifikasi luar aplikasi) ===== -->
+    <string name="profile_settings_title">Pengaturan</string>
+    <string name="profile_settings_notifications">Notifikasi luar aplikasi</string>
+    <string name="profile_settings_notifications_desc">Tampilkan kabar Ketemu di panel notifikasi HP.</string>
+    <string name="profile_settings_notifications_hint">Kabar tetap tersimpan di lonceng Beranda meski sakelar ini mati.</string>
+    <string name="profile_settings_notifications_blocked">Notifikasi HP untuk Ketemu masih diblokir. Izinkan lewat Pengaturan Android.</string>
+    <string name="profile_settings_notifications_open">Buka pengaturan</string>
     <string name="profile_role_simulation_title">Simulasi peran (untuk demo pengujian akses)</string>
     <string name="profile_role_simulation_hint">Mengganti peran tidak mengubah akun Anda — hanya hak akses yang berubah.</string>
 

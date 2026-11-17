@@ -1,11 +1,14 @@
 package org.umn.application_ketemu.data.repository
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.umn.application_ketemu.core.notification.SystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotifier
 import org.umn.application_ketemu.data.dummy.DummyData
 import org.umn.application_ketemu.data.session.SessionStore
@@ -26,8 +29,31 @@ class SystemNotifyingNotificationRepositoryTest {
     private class RecordingSystemNotifier : SystemNotifier {
         val posted = mutableListOf<AppNotification>()
 
+        /** Berapa kali panel sistem dibersihkan (sakelar dimatikan). */
+        var cancelAllCount = 0
+            private set
+
         override fun notify(notification: AppNotification) {
             posted += notification
+        }
+
+        override fun cancelAll() {
+            cancelAllCount++
+            // Meniru NotificationManager.cancelAll(): kartu yang tampil hilang.
+            posted.clear()
+        }
+    }
+
+    /**
+     * Sakelar notifikasi luar dalam memori; bawaannya menyala, sama seperti
+     * implementasi SharedPreferences saat aplikasi baru dipasang.
+     */
+    private class FakeSettings(initial: Boolean = true) : SystemNotificationSettings {
+        private val _enabled = MutableStateFlow(initial)
+        override val enabled: StateFlow<Boolean> = _enabled
+
+        override fun setEnabled(enabled: Boolean) {
+            _enabled.value = enabled
         }
     }
 
@@ -57,6 +83,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -74,6 +101,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -93,6 +121,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -122,6 +151,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(history),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -137,6 +167,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -154,6 +185,7 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = session,
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
@@ -171,11 +203,80 @@ class SystemNotifyingNotificationRepositoryTest {
             delegate = InMemoryNotificationRepository(),
             session = SessionStore(),
             notifier = notifier,
+            settings = FakeSettings(),
             dispatcher = UnconfinedTestDispatcher(testScheduler)
         )
 
         repository.publish(notification())
 
         assertTrue(notifier.posted.isEmpty())
+    }
+
+    @Test
+    fun `sakelar notifikasi luar yang mati tidak memunculkan kartu`() = runTest {
+        val notifier = RecordingSystemNotifier()
+        val settings = FakeSettings(initial = false)
+        val session = SessionStore()
+        session.signIn(DummyData.student)
+        val repository = SystemNotifyingNotificationRepository(
+            delegate = InMemoryNotificationRepository(),
+            session = session,
+            notifier = notifier,
+            settings = settings,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+
+        repository.publish(notification())
+
+        // Kotak masuk in-app tetap berisi kabar; hanya panel sistem yang diam.
+        assertTrue(notifier.posted.isEmpty())
+    }
+
+    @Test
+    fun `mematikan sakelar membersihkan kartu yang sudah tampil`() = runTest {
+        val notifier = RecordingSystemNotifier()
+        val settings = FakeSettings()
+        val session = SessionStore()
+        session.signIn(DummyData.student)
+        val repository = SystemNotifyingNotificationRepository(
+            delegate = InMemoryNotificationRepository(),
+            session = session,
+            notifier = notifier,
+            settings = settings,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+
+        repository.publish(notification())
+        assertEquals(1, notifier.posted.size)
+
+        settings.setEnabled(false)
+
+        assertEquals(1, notifier.cancelAllCount)
+        assertTrue(notifier.posted.isEmpty())
+    }
+
+    @Test
+    fun `kabar yang tiba saat sakelar mati tidak menyusul setelah dinyalakan`() = runTest {
+        val notifier = RecordingSystemNotifier()
+        val settings = FakeSettings()
+        val session = SessionStore()
+        session.signIn(DummyData.student)
+        val repository = SystemNotifyingNotificationRepository(
+            delegate = InMemoryNotificationRepository(),
+            session = session,
+            notifier = notifier,
+            settings = settings,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+
+        settings.setEnabled(false)
+        repository.publish(notification(id = "saat-mati"))
+
+        settings.setEnabled(true)
+        repository.publish(notification(id = "setelah-nyala"))
+
+        // Hanya kabar yang benar-benar baru setelah sakelar menyala yang tampil;
+        // id yang lewat saat sakelar mati sudah dianggap "pernah dilihat".
+        assertEquals(listOf("setelah-nyala"), notifier.posted.map { it.id })
     }
 }

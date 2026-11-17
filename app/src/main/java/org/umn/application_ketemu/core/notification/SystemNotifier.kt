@@ -17,4 +17,12 @@ interface SystemNotifier {
 
     /** Menampilkan [notification] pada panel notifikasi perangkat. */
     fun notify(notification: AppNotification)
+
+    /**
+     * Menghapus seluruh kartu Ketemu dari panel notifikasi.
+     *
+     * Dipanggil saat pengguna mematikan sakelar "Notifikasi luar aplikasi" di
+     * halaman Akun, supaya kartu yang sudah telanjur tampil ikut hilang.
+     */
+    fun cancelAll()
 }

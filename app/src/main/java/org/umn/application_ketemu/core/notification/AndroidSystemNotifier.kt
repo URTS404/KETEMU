@@ -1,15 +1,11 @@
 package org.umn.application_ketemu.core.notification
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import org.umn.application_ketemu.MainActivity
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.domain.model.AppNotification
@@ -72,14 +68,18 @@ class AndroidSystemNotifier(context: Context) : SystemNotifier {
         manager.notify(notification.id, NOTIFICATION_ID, systemNotification)
     }
 
-    private fun canPostNotifications(): Boolean {
-        if (!manager.areNotificationsEnabled()) return false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
-        return ContextCompat.checkSelfPermission(
-            appContext,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
+    /**
+     * Membersihkan kartu Ketemu yang masih terpasang di panel sistem.
+     *
+     * Aman dipanggil tanpa izin POST_NOTIFICATIONS: `cancelAll` hanya menyentuh
+     * notifikasi milik aplikasi ini, sehingga pengguna yang mematikan sakelar
+     * tidak perlu memberi izin apa pun.
+     */
+    override fun cancelAll() {
+        manager.cancelAll()
     }
+
+    private fun canPostNotifications(): Boolean = SystemNotificationAccess.canPost(appContext)
 
     companion object {
         /**
