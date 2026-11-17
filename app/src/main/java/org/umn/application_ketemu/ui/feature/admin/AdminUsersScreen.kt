@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,6 +66,8 @@ fun AdminUsersScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tones = rememberAdminTones()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Akun yang sedang diangkat menjadi STAFF: butuh kunci sebelum dikirim.
+    var promotionTarget by remember { mutableStateOf<UserProfile?>(null) }
 
     LaunchedEffect(state.message) {
         val message = state.message ?: return@LaunchedEffect
@@ -137,7 +142,14 @@ fun AdminUsersScreen(
                             user = user,
                             canManage = state.canManage,
                             isSelf = user.id == state.currentUserId,
-                            onRoleChange = { viewModel.changeRole(user.id, it) },
+                            onRoleChange = { role ->
+                                if (role == UserRole.STAFF) {
+                                    // Kenaikan peran wajib memakai kunci staf.
+                                    promotionTarget = user
+                                } else {
+                                    viewModel.changeRole(user.id, role)
+                                }
+                            },
                             onToggleVerified = { viewModel.toggleVerified(user.id) },
                             onToggleBanned = { viewModel.toggleBanned(user.id) }
                         )
@@ -157,6 +169,69 @@ fun AdminUsersScreen(
             }
         }
     }
+
+    // Kenaikan peran hanya sah bila disertai kunci staf (jalur C).
+    promotionTarget?.let { target ->
+        PromoteStaffDialog(
+            user = target,
+            onDismiss = { promotionTarget = null },
+            onConfirm = { code ->
+                viewModel.promoteWithKey(target.id, code)
+                promotionTarget = null
+            }
+        )
+    }
+}
+
+/**
+ * Dialog meminta kunci staf sebelum akun dinaikkan menjadi STAFF.
+ *
+ * Admin tetap harus memegang salah satu dari 10 kunci, sehingga jalur "admin
+ * menaikkan peran" tidak menjadi celah untuk menambah staf tanpa batas.
+ */
+@Composable
+private fun PromoteStaffDialog(
+    user: UserProfile,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var code by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.admin_users_promote_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = stringResource(R.string.admin_users_promote_desc, user.fullName),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.uppercase() },
+                    label = { Text(stringResource(R.string.staff_key_field)) },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = FontFamily.Monospace
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(code) },
+                enabled = code.length >= 4
+            ) {
+                Text(stringResource(R.string.admin_users_promote_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.admin_close))
+            }
+        }
+    )
 }
 
 /**

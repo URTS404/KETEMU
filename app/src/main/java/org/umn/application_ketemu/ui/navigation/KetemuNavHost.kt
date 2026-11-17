@@ -62,7 +62,9 @@ import org.umn.application_ketemu.ui.components.OfflineBanner
 import org.umn.application_ketemu.ui.di.adminAuditViewModelFactory
 import org.umn.application_ketemu.ui.di.adminClaimsViewModelFactory
 import org.umn.application_ketemu.ui.di.adminDashboardViewModelFactory
+import org.umn.application_ketemu.ui.di.adminKeysViewModelFactory
 import org.umn.application_ketemu.ui.di.adminModerationViewModelFactory
+import org.umn.application_ketemu.ui.di.staffKeyViewModelFactory
 import org.umn.application_ketemu.ui.di.adminUsersViewModelFactory
 import org.umn.application_ketemu.ui.di.conversationViewModelFactory
 import org.umn.application_ketemu.ui.di.createReportViewModelFactory
@@ -77,6 +79,8 @@ import org.umn.application_ketemu.ui.feature.admin.AdminClaimsScreen
 import org.umn.application_ketemu.ui.feature.admin.AdminClaimsViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminDashboardScreen
 import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminKeysScreen
+import org.umn.application_ketemu.ui.feature.admin.AdminKeysViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationScreen
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminUsersScreen
@@ -94,6 +98,8 @@ import org.umn.application_ketemu.ui.feature.message.MessagesViewModel
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsScreen
 import org.umn.application_ketemu.ui.feature.myreports.MyReportsViewModel
 import org.umn.application_ketemu.ui.feature.profile.ProfileScreen
+import org.umn.application_ketemu.ui.feature.profile.StaffKeyScreen
+import org.umn.application_ketemu.ui.feature.profile.StaffKeyViewModel
 
 /*
  * ============================================================================
@@ -240,6 +246,7 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         user = currentUser,
                         onSwitchRole = { role -> container.session.switchRole(role) },
                         onOpenAdmin = { navController.navigate(KetemuRoutes.ADMIN) },
+                        onOpenStaffKey = { navController.navigate(KetemuRoutes.STAFF_KEY) },
                         onSignOut = {
                             container.session.signOut()
                             scope.launch { container.authRepository.signOut() }
@@ -334,7 +341,8 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         onOpenModeration = { navController.navigate(KetemuRoutes.ADMIN_MODERATION) },
                         onOpenClaims = { navController.navigate(KetemuRoutes.ADMIN_CLAIMS) },
                         onOpenAudit = { navController.navigate(KetemuRoutes.ADMIN_AUDIT) },
-                        onOpenUsers = { navController.navigate(KetemuRoutes.ADMIN_USERS) }
+                        onOpenUsers = { navController.navigate(KetemuRoutes.ADMIN_USERS) },
+                        onOpenKeys = { navController.navigate(KetemuRoutes.ADMIN_KEYS) }
                     )
                 }
 
@@ -397,6 +405,39 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         factory = adminUsersViewModelFactory(container)
                     )
                     AdminUsersScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = KetemuRoutes.ADMIN_KEYS,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: AdminKeysViewModel = viewModel(
+                        factory = adminKeysViewModelFactory(container)
+                    )
+                    AdminKeysScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                // Jalur B: pengguna biasa menebus kunci staf yang diberikan admin.
+                composable(
+                    route = KetemuRoutes.STAFF_KEY,
+                    enterTransition = { pushEnter },
+                    exitTransition = { pushExit },
+                    popEnterTransition = { pushPopEnter },
+                    popExitTransition = { pushPopExit }
+                ) {
+                    val viewModel: StaffKeyViewModel = viewModel(
+                        factory = staffKeyViewModelFactory(container)
+                    )
+                    StaffKeyScreen(
                         viewModel = viewModel,
                         onBack = { navController.popBackStack() }
                     )

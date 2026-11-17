@@ -45,6 +45,7 @@ fun ProfileScreen(
     user: UserProfile,
     onSwitchRole: (UserRole) -> Unit,
     onOpenAdmin: () -> Unit,
+    onOpenStaffKey: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -164,6 +165,24 @@ fun ProfileScreen(
                 }
                 Text(
                     text = stringResource(R.string.admin_open_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Jalur B: pengguna biasa yang memegang kunci dari pengelola Pos.
+            if (!user.role.canModerate) {
+                OutlinedButton(
+                    onClick = onOpenStaffKey,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.profile_staff_key_action),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.profile_staff_key_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

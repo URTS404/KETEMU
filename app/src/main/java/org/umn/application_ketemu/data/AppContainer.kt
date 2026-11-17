@@ -10,11 +10,13 @@ import org.umn.application_ketemu.data.remote.SupabaseAuditLogRepository
 import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
+import org.umn.application_ketemu.data.remote.SupabaseStaffKeyRepository
 import org.umn.application_ketemu.data.remote.SupabaseUserRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
 import org.umn.application_ketemu.data.repository.InMemoryClaimRepository
 import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
+import org.umn.application_ketemu.data.repository.InMemoryStaffKeyRepository
 import org.umn.application_ketemu.data.repository.InMemoryUserRepository
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
@@ -22,6 +24,7 @@ import org.umn.application_ketemu.domain.repository.AuthRepository
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import org.umn.application_ketemu.domain.repository.ConversationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
+import org.umn.application_ketemu.domain.repository.StaffKeyRepository
 import org.umn.application_ketemu.domain.repository.UserRepository
 
 /**
@@ -77,6 +80,13 @@ class AppContainer(context: Context) {
         SupabaseUserRepository(SupabaseProvider.client)
     } else {
         InMemoryUserRepository(listOf(DummyData.student, DummyData.staff))
+    }
+
+    /** Kunci staf (undangan sekali pakai) — dibaca penuh hanya oleh ADMIN. */
+    val staffKeyRepository: StaffKeyRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseStaffKeyRepository(SupabaseProvider.client)
+    } else {
+        InMemoryStaffKeyRepository()
     }
 
     val networkMonitor: NetworkMonitor = NetworkMonitor(context)

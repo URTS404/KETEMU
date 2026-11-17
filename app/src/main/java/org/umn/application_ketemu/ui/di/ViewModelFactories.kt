@@ -9,6 +9,8 @@ import org.umn.application_ketemu.ui.feature.admin.AdminAuditViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminClaimsViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminDashboardViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminModerationViewModel
+import org.umn.application_ketemu.ui.feature.admin.AdminKeysViewModel
+import org.umn.application_ketemu.ui.feature.profile.StaffKeyViewModel
 import org.umn.application_ketemu.ui.feature.admin.AdminUsersViewModel
 import org.umn.application_ketemu.ui.feature.auth.ForgotPasswordViewModel
 import org.umn.application_ketemu.ui.feature.auth.LoginViewModel
@@ -187,6 +189,29 @@ fun adminUsersViewModelFactory(container: AppContainer): ViewModelProvider.Facto
         initializer {
             AdminUsersViewModel(
                 userRepository = container.userRepository,
+                staffKeyRepository = container.staffKeyRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Panel admin: daftar kunci staf (undangan sekali pakai). */
+fun adminKeysViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            AdminKeysViewModel(
+                staffKeyRepository = container.staffKeyRepository,
+                session = container.session
+            )
+        }
+    }
+
+/** Layar Akun: penebusan kunci staf oleh pengguna biasa. */
+fun staffKeyViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            StaffKeyViewModel(
+                staffKeyRepository = container.staffKeyRepository,
                 session = container.session
             )
         }

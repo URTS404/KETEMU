@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.umn.application_ketemu.data.dummy.DummyData
+import org.umn.application_ketemu.data.repository.InMemoryStaffKeyRepository
 import org.umn.application_ketemu.data.repository.InMemoryUserRepository
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.UserRole
@@ -49,7 +50,10 @@ class AdminUsersViewModelTest {
                 UserRole.ADMIN -> DummyData.staff.copy(role = UserRole.ADMIN)
             }
         )
-        return Fixture(AdminUsersViewModel(users, session), users)
+        return Fixture(
+            AdminUsersViewModel(users, InMemoryStaffKeyRepository(), session),
+            users
+        )
     }
 
     @Test
@@ -73,15 +77,30 @@ class AdminUsersViewModelTest {
     }
 
     @Test
-    fun `admin dapat mengubah peran akun lain`() = runTest {
+    fun `admin dapat mengubah peran non-staf pada akun lain`() = runTest {
         val fixture = fixtureAs(UserRole.ADMIN)
 
         assertTrue(fixture.viewModel.uiState.value.canManage)
+        fixture.viewModel.changeRole(DummyData.student.id, UserRole.ADMIN)
+
+        val student = fixture.users.observeUsers().value
+            .first { it.id == DummyData.student.id }
+        assertEquals(UserRole.ADMIN, student.role)
+    }
+
+    @Test
+    fun `kenaikan menjadi STAFF wajib memakai kunci`() = runTest {
+        val fixture = fixtureAs(UserRole.ADMIN)
+
         fixture.viewModel.changeRole(DummyData.student.id, UserRole.STAFF)
 
         val student = fixture.users.observeUsers().value
             .first { it.id == DummyData.student.id }
-        assertEquals(UserRole.STAFF, student.role)
+        assertEquals(UserRole.USER, student.role)
+        assertEquals(
+            "Pakai kunci staf untuk mengangkat akun menjadi STAFF.",
+            fixture.viewModel.uiState.value.message
+        )
     }
 
     @Test

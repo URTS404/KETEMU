@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.umn.application_ketemu.data.session.SessionStore
 import org.umn.application_ketemu.domain.model.UserProfile
 import org.umn.application_ketemu.domain.model.UserRole
+import org.umn.application_ketemu.domain.repository.StaffKeyRepository
 import org.umn.application_ketemu.domain.repository.UserRepository
 
 /**
@@ -33,6 +34,7 @@ data class AdminUsersUiState(
  */
 class AdminUsersViewModel(
     private val userRepository: UserRepository,
+    private val staffKeyRepository: StaffKeyRepository,
     private val session: SessionStore
 ) : ViewModel() {
 
@@ -57,10 +59,39 @@ class AdminUsersViewModel(
         viewModelScope.launch { runCatching { userRepository.refresh() } }
     }
 
-    /** Ubah peran akun sasaran; hanya ADMIN yang boleh. */
+    /**
+     * Ubah peran akun sasaran; hanya ADMIN yang boleh.
+     *
+     * Kenaikan menjadi STAFF **wajib** lewat kunci (jalur C): itulah yang
+     * menjaga kuota 10 tetap berlaku, sehingga admin pun tidak bisa menambah
+     * staf tanpa batas. Penurunan peran tidak memerlukan kunci.
+     */
     fun changeRole(userId: String, role: UserRole) = manage {
+        if (role == UserRole.STAFF) {
+            _uiState.value = _uiState.value.copy(
+                message = "Pakai kunci staf untuk mengangkat akun menjadi STAFF."
+            )
+            return@manage
+        }
         val updated = userRepository.setRole(userId, role)
         messageFor(updated) { "Peran ${it.fullName} diubah menjadi ${roleLabel(it.role)}." }
+    }
+
+    /**
+     * Naikkan akun menjadi STAFF dengan menebus salah satu kunci (jalur C).
+     *
+     * Server yang memutuskan kunci sah atau tidak; aplikasi hanya meneruskan.
+     */
+    fun promoteWithKey(userId: String, code: String) = manage {
+        val ok = staffKeyRepository.redeem(code, userId)
+        val target = _uiState.value.accounts.firstOrNull { it.id == userId }
+        _uiState.value = _uiState.value.copy(
+            message = when {
+                !ok -> "Kunci tidak berlaku, sudah terpakai, atau bukan untuk akun ini."
+                target != null -> "${target.fullName} kini STAFF. Kunci sudah hangus."
+                else -> "Peran berhasil dinaikkan menjadi STAFF."
+            }
+        )
     }
 
     fun toggleVerified(userId: String) = manage {

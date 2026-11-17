@@ -23,6 +23,10 @@ object KetemuRoutes {
     const val ADMIN_CLAIMS = "admin/claims"
     const val ADMIN_AUDIT = "admin/audit"
     const val ADMIN_USERS = "admin/users"
+    const val ADMIN_KEYS = "admin/keys"
+
+    // Layar penebusan kunci staf untuk pengguna biasa.
+    const val STAFF_KEY = "staff_key"
 
     const val ARG_REPORT_ID = "reportId"
     const val ARG_THREAD_ID = "threadId"

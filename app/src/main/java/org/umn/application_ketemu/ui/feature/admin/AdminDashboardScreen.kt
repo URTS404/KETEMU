@@ -41,7 +41,8 @@ fun AdminDashboardScreen(
     onOpenModeration: () -> Unit,
     onOpenClaims: () -> Unit,
     onOpenAudit: () -> Unit,
-    onOpenUsers: () -> Unit
+    onOpenUsers: () -> Unit,
+    onOpenKeys: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val allowed by viewModel.isAllowed.collectAsStateWithLifecycle()
@@ -183,6 +184,16 @@ fun AdminDashboardScreen(
                         iconRes = R.drawable.ic_admin_users,
                         tone = tones.violet,
                         onClick = onOpenUsers
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminReveal(index = 9) {
+                    AdminMenuRow(
+                        title = stringResource(R.string.admin_menu_keys),
+                        subtitle = stringResource(R.string.admin_menu_keys_desc),
+                        iconRes = R.drawable.ic_admin_users,
+                        tone = tones.mint,
+                        onClick = onOpenKeys
                     )
                 }
             }
