@@ -11,6 +11,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import android.widget.Toast
@@ -219,7 +222,8 @@ fun ConversationScreen(
                 MessageBubble(
                     message = message,
                     onRetry = viewModel::onRetry,
-                    onLongPress = { hapusId = message.id }
+                    onLongPress = { hapusId = message.id },
+                    onDelete = { viewModel.onDelete(message.id) }
                 )
             }
 
@@ -234,6 +238,41 @@ fun ConversationScreen(
  * gelembung. Karena bentuknya memang khusus untuk chat, di sini memakai
  * RoundedCornerShape langsung - bukan MaterialTheme.shapes.
  */
+/**
+ * Menu titik-tiga pada gelembung milik sendiri.
+ *
+ * Dipakai sebagai jalur yang lebih pasti daripada tekan lama: ikonnya selalu
+ * terlihat, sehingga pengguna tidak perlu menebak bahwa gelembung bisa ditekan.
+ */
+@Composable
+private fun MenuPesan(onHapus: () -> Unit) {
+    var terbuka by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(
+            onClick = { terbuka = true },
+            modifier = Modifier.size(24.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.chat_menu),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        DropdownMenu(expanded = terbuka, onDismissRequest = { terbuka = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.chat_delete_action)) },
+                onClick = {
+                    terbuka = false
+                    onHapus()
+                }
+            )
+        }
+    }
+}
+
 @Composable
 private fun HapusPesanDialog(
     onHapus: () -> Unit,
@@ -260,7 +299,8 @@ private fun HapusPesanDialog(
 private fun MessageBubble(
     message: ChatMessage,
     onRetry: (String) -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val isMine = message.fromMe
 
@@ -386,6 +426,10 @@ private fun MessageBubble(
                 MessageStatus.FAILED -> "$waktu - gagal terkirim"
                 MessageStatus.SENT -> waktu
             }
+            if (isMine) {
+                MenuPesan(onHapus = onDelete)
+            }
+
             Text(
                 text = keterangan,
                 modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
