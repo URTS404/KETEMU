@@ -152,7 +152,12 @@ class SupabaseAuthRepository(
      * tidak perlu login ulang.
      */
     suspend fun restoreSession(): UserProfile? {
-        val user = runCatching { client.auth.currentUserOrNull() }.getOrNull() ?: return null
+        // Tunggu Auth selesai memuat sesi dari penyimpanan; tanpa ini
+        // currentUserOrNull() bisa mengembalikan null saat aplikasi baru dibuka.
+        runCatching { client.auth.awaitInitialization() }
+        val user = runCatching { client.auth.currentUserOrNull() }.getOrNull()
+        android.util.Log.i("SupabaseAuth", "restore: user=" + user?.email)
+        if (user == null) return null
         android.util.Log.i("SupabaseAuth", "sesi tersimpan ditemukan untuk " + user.email)
         return resolveProfile(user)
     }
