@@ -356,7 +356,9 @@ private fun MessageBubble(
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (bisaDiulang) {
+        // Untuk pesan bergambar, ikon putar ulang sudah tampil di tengah
+        // gambar — jangan digambar dua kali.
+        if (bisaDiulang && !message.hasImage) {
             IconButton(onClick = { onRetry(message.id) }) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,
