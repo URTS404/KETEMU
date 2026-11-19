@@ -1,0 +1,158 @@
+﻿@Composable
+private fun MessageBubble(
+    message: ChatMessage,
+    onRetry: (String) -> Unit,
+    onLongPress: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isMine = message.fromMe
+
+    // Jam kirim + status dihitung sekali di awal.
+    val jam = try {
+        java.time.Instant.ofEpochMilli(message.sentAt)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+    } catch (e: Exception) {
+        ""
+    }
+    val keterangan = when (message.status) {
+        MessageStatus.SENDING -> jam + " · menunggu terkirim"
+        MessageStatus.FAILED -> jam + " · gagal terkirim"
+        MessageStatus.SENT -> jam
+    }
+    val belumTerkirim = message.status != MessageStatus.SENT
+
+    val bubbleShape = if (isMine) {
+        RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp)
+    } else {
+        RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
+    ) {
+        Row(
+            horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Ikon putar ulang di samping hanya untuk pesan TEKS yang tertunda;
+            // untuk pesan gambar ikonnya sudah ada di tengah gambar.
+            if (isMine && belumTerkirim && !message.hasImage) {
+                IconButton(onClick = { onRetry(message.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.chat_retry),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Surface(
+                modifier = if (isMine) {
+                    Modifier.combinedClickable(onClick = {}, onLongClick = onLongPress)
+                } else {
+                    Modifier
+                },
+                shape = bubbleShape,
+                color = if (isMine) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+                contentColor = if (isMine) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            ) {
+                Box {
+                    Column(modifier = Modifier.widthIn(max = 260.dp)) {
+                        if (message.hasImage) {
+                            Box(
+                                modifier = Modifier
+                                    .widthIn(max = 260.dp)
+                                    .heightIn(max = 260.dp)
+                                    .clip(bubbleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = message.imageUrl ?: message.localImagePath,
+                                    contentDescription = stringResource(R.string.chat_image),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .then(if (belumTerkirim) Modifier.blur(10.dp) else Modifier),
+                                    contentScale = ContentScale.Crop
+                                )
+                                if (belumTerkirim) {
+                                    IconButton(
+                                        onClick = { onRetry(message.id) },
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                                CircleShape
+                                            )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Refresh,
+                                            contentDescription = stringResource(R.string.chat_retry),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (message.text.isNotBlank()) {
+                            Text(
+                                text = message.text,
+                                modifier = Modifier.padding(
+                                    start = 14.dp,
+                                    end = 14.dp,
+                                    top = 10.dp,
+                                    bottom = if (message.hasImage) 10.dp else 22.dp
+                                ),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    // Jam MENUMPANG di sudut kanan bawah: tidak menambah tinggi
+                    // gelembung, sehingga teks tetap berada tepat di tengah.
+                    if (message.status == MessageStatus.SENT) {
+                        Text(
+                            text = keterangan,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 10.dp, bottom = 5.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isMine) {
+                                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Status panjang (menunggu/gagal) tetap di LUAR gelembung agar isi
+        // pesan tidak tertutup.
+        if (belumTerkirim) {
+            Text(
+                text = keterangan,
+                modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        if (isMine) {
+            MenuPesan(onHapus = onDelete)
+        }
+    }
+}

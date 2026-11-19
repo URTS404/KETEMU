@@ -344,64 +344,51 @@ private fun MessageBubble(
 ) {
     val isMine = message.fromMe
 
-    // Waktu + status dihitung di awal supaya label bisa diletakkan DI DALAM
-    // gelembung (lebar kolom = lebar gelembung, sehingga ikon putar ulang
-    // menempel rapat di samping kiri gelembung, bukan tertinggal jauh).
-    val waktu = RelativeTime.format(message.sentAt)
-    val keterangan = when (message.status) {
-        MessageStatus.SENDING -> "" + waktu + " - menunggu terkirim"
-        MessageStatus.FAILED -> "" + waktu + " - gagal terkirim"
-        MessageStatus.SENT -> waktu
+    // Jam kirim + status dihitung sekali di awal.
+    val jam = try {
+        java.time.Instant.ofEpochMilli(message.sentAt)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+    } catch (e: Exception) {
+        ""
     }
-
-    // Pesan yang belum terkirim diberi tombol putar ulang di samping gelembung,
-    // sama seperti WhatsApp: pengguna bisa mencoba lagi tanpa mengetik ulang.
-    val bisaDiulang = isMine && message.status != MessageStatus.SENT
+    val keterangan = when (message.status) {
+        MessageStatus.SENDING -> jam + " · menunggu terkirim"
+        MessageStatus.FAILED -> jam + " · gagal terkirim"
+        MessageStatus.SENT -> jam
+    }
+    val belumTerkirim = message.status != MessageStatus.SENT
 
     val bubbleShape = if (isMine) {
-        RoundedCornerShape(
-            topStart = 18.dp,
-            topEnd = 18.dp,
-            bottomEnd = 4.dp,
-            bottomStart = 18.dp
-        )
+        RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp)
     } else {
-        RoundedCornerShape(
-            topStart = 18.dp,
-            topEnd = 18.dp,
-            bottomEnd = 18.dp,
-            bottomStart = 4.dp
-        )
+        RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)
     }
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
     ) {
-        // Untuk pesan bergambar, ikon putar ulang sudah tampil di tengah
-        // gambar — jangan digambar dua kali.
-        if (bisaDiulang && !message.hasImage) {
-            IconButton(onClick = { onRetry(message.id) }) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.chat_retry),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier.widthIn(max = 300.dp),
-            horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
+        Row(
+            horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Ikon putar ulang di samping hanya untuk pesan TEKS yang tertunda;
+            // untuk pesan gambar ikonnya sudah ada di tengah gambar.
+            if (isMine && belumTerkirim && !message.hasImage) {
+                IconButton(onClick = { onRetry(message.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.chat_retry),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
             Surface(
                 modifier = if (isMine) {
-                    Modifier.combinedClickable(
-                        onClick = {},
-                        onLongClick = onLongPress
-                    )
+                    Modifier.combinedClickable(onClick = {}, onLongClick = onLongPress)
                 } else {
                     Modifier
                 },
@@ -417,84 +404,92 @@ private fun MessageBubble(
                     MaterialTheme.colorScheme.onSurface
                 }
             ) {
-                Column {
-                    if (message.hasImage) {
-                        // Gambar yang belum terkirim sengaja dibuat BUARU + ikon di
-                        // tengah, mengikuti pola WhatsApp: isi gambar tetap terlihat
-                        // tetapi jelas belum sampai ke lawan bicara.
-                        val belumTerkirim = message.status != MessageStatus.SENT
-                        Box(
-                            modifier = Modifier
-                                .widthIn(max = 260.dp)
-                                .heightIn(max = 260.dp)
-                                .clip(bubbleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AsyncImage(
-                                model = message.imageUrl ?: message.localImagePath,
-                                contentDescription = stringResource(R.string.chat_image),
+                Box {
+                    Column(modifier = Modifier.widthIn(max = 260.dp)) {
+                        if (message.hasImage) {
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .then(
-                                        if (belumTerkirim) Modifier.blur(10.dp) else Modifier
-                                    ),
-                                contentScale = ContentScale.Crop
-                            )
-                            if (belumTerkirim) {
-                                IconButton(
-                                    onClick = { onRetry(message.id) },
+                                    .widthIn(max = 260.dp)
+                                    .heightIn(max = 260.dp)
+                                    .clip(bubbleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = message.imageUrl ?: message.localImagePath,
+                                    contentDescription = stringResource(R.string.chat_image),
                                     modifier = Modifier
-                                        .size(52.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                                            CircleShape
+                                        .fillMaxWidth()
+                                        .then(if (belumTerkirim) Modifier.blur(10.dp) else Modifier),
+                                    contentScale = ContentScale.Crop
+                                )
+                                if (belumTerkirim) {
+                                    IconButton(
+                                        onClick = { onRetry(message.id) },
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                                CircleShape
+                                            )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Refresh,
+                                            contentDescription = stringResource(R.string.chat_retry),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(26.dp)
                                         )
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Refresh,
-                                        contentDescription = stringResource(R.string.chat_retry),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(26.dp)
-                                    )
+                                    }
                                 }
                             }
                         }
+
+                        if (message.text.isNotBlank()) {
+                            Text(
+                                text = message.text,
+                                modifier = Modifier.padding(
+                                    start = 14.dp,
+                                    end = 14.dp,
+                                    top = 10.dp,
+                                    bottom = if (message.hasImage) 10.dp else 22.dp
+                                ),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
-                    if (message.text.isNotBlank()) {
+
+                    // Jam MENUMPANG di sudut kanan bawah: tidak menambah tinggi
+                    // gelembung, sehingga teks tetap berada tepat di tengah.
+                    if (message.status == MessageStatus.SENT) {
                         Text(
-                            text = message.text,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.bodyMedium
+                            text = keterangan,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 10.dp, bottom = 5.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isMine) {
+                                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
-
-                    Text(
-                        text = keterangan,
-                        modifier = Modifier.padding(
-                            start = 14.dp, end = 14.dp, bottom = 8.dp
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when {
-                            message.status != MessageStatus.SENT && isMine ->
-                                MaterialTheme.colorScheme.onPrimary
-                            !isMine -> MaterialTheme.colorScheme.onSurfaceVariant
-                            else -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
-                        }
-                    )
                 }
             }
+        }
 
-            // Pesan yang belum sampai server tetap terlihat (seperti WhatsApp):
-            // waktu + penanda antrean, supaya pengguna tahu pesannya tidak hilang.
-            val waktu = RelativeTime.format(message.sentAt)
-            val keterangan = when (message.status) {
-                MessageStatus.SENDING -> "$waktu - menunggu terkirim"
-                MessageStatus.FAILED -> "$waktu - gagal terkirim"
-                MessageStatus.SENT -> waktu
-            }
-            if (isMine) {
-                MenuPesan(onHapus = onDelete)
-            }
+        // Status panjang (menunggu/gagal) tetap di LUAR gelembung agar isi
+        // pesan tidak tertutup.
+        if (belumTerkirim) {
+            Text(
+                text = keterangan,
+                modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        if (isMine) {
+            MenuPesan(onHapus = onDelete)
         }
     }
 }
