@@ -123,18 +123,18 @@ fun reportDetailViewModelFactory(
 fun messagesViewModelFactory(container: AppContainer): ViewModelProvider.Factory =
     viewModelFactory {
         initializer {
-            MessagesViewModel(conversationRepository = container.conversationRepository)
+            MessagesViewModel(chatRepository = container.chatRepository)
         }
     }
 
 fun conversationViewModelFactory(
     container: AppContainer,
-    threadId: String
+    conversationId: String
 ): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         ConversationViewModel(
-            conversationRepository = container.conversationRepository,
-            threadId = threadId
+            chatRepository = container.chatRepository,
+            conversationId = conversationId
         )
     }
 }

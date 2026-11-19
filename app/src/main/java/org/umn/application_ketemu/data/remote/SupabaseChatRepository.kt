@@ -207,45 +207,29 @@ class SupabaseChatRepository(
     internal data class ConversationRow(
         val id: String = "",
         @SerialName("report_id") val reportId: String = "",
-        @SerialName("owner_id") val ownerId: String = "",
-        @SerialName("peer_id") val peerId: String = "",
-        @SerialName("last_message_at") val lastMessageAt: String? = null,
-        val reports: ReportJoin? = null,
-        val owner: ProfileJoin? = null,
-        val peer: ProfileJoin? = null
+        @SerialName("report_title") val reportTitle: String? = null,
+        @SerialName("report_type") val reportType: String? = null,
+        @SerialName("partner_name") val partnerName: String? = null,
+        @SerialName("partner_role") val partnerRole: String? = null,
+        @SerialName("last_message") val lastMessage: String? = null,
+        @SerialName("last_message_at") val lastMessageAt: String? = null
     ) {
-        /**
-         * Baris percakapan → [ChatThread] dari sudut pandang [currentUserId].
-         *
-         * Lawan bicara ditentukan oleh peran pembaca: pemilik laporan melihat
-         * peer, sedangkan peer/petugas melihat pemilik laporan.
-         */
-        fun toThread(currentUserId: String?): ChatThread? {
-            val title = reports?.title ?: return null
-            val iAmOwner = currentUserId != null && currentUserId == ownerId
-            val partner = if (iAmOwner) peer else owner
+        /** View `chat_threads` sudah memilih lawan bicara sesuai pembaca. */
+        fun toThread(@Suppress("UNUSED_PARAMETER") currentUserId: String?): ChatThread? {
+            val title = reportTitle ?: return null
             return ChatThread(
                 id = id,
                 reportId = reportId,
                 reportTitle = title,
-                reportType = reports?.type.orEmpty(),
-                partnerName = partner?.fullName?.ifBlank { null } ?: "Pengguna",
-                partnerRole = partner?.role.orEmpty(),
-                lastMessage = "",
+                reportType = reportType.orEmpty(),
+                partnerName = partnerName?.ifBlank { null } ?: "Pengguna",
+                partnerRole = partnerRole.orEmpty(),
+                lastMessage = lastMessage.orEmpty(),
                 lastMessageAt = isoToMillis(lastMessageAt),
                 unreadCount = 0
             )
         }
     }
-
-    @Serializable
-    internal data class ReportJoin(val title: String = "", val type: String = "")
-
-    @Serializable
-    internal data class ProfileJoin(
-        @SerialName("full_name") val fullName: String? = null,
-        val role: String? = null
-    )
 
     @Serializable
     internal data class MessageRow(
@@ -266,7 +250,7 @@ class SupabaseChatRepository(
     }
 
     private companion object {
-        const val TABLE_CONVERSATIONS = "conversations"
+        const val TABLE_CONVERSATIONS = "chat_threads"
         const val TABLE_MESSAGES = "messages"
         const val SCHEMA = "public"
         const val CHANNEL_PREFIX = "chat-"
@@ -274,10 +258,8 @@ class SupabaseChatRepository(
         const val MESSAGE_LIMIT = 200
 
         const val THREAD_COLUMNS =
-            "id,report_id,owner_id,peer_id,last_message_at," +
-                "reports!conversations_report_id_fkey(title,type)," +
-                "owner:profiles!conversations_owner_id_fkey(full_name,role)," +
-                "peer:profiles!conversations_peer_id_fkey(full_name,role)"
+            "id,report_id,report_title,report_type,partner_name,partner_role," +
+                "last_message,last_message_at"
 
         const val MESSAGE_COLUMNS =
             "id,conversation_id,sender_id,body,created_at,is_template"

@@ -351,6 +351,15 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                         onBack = { navController.popBackStack() },
                         onOpenReport = { targetReportId ->
                             navController.navigate(KetemuRoutes.reportDetail(targetReportId))
+                        },
+                        onChatClick = { targetReportId ->
+                            scope.launch {
+                                val conversationId =
+                                    container.chatRepository.startConversation(targetReportId)
+                                if (conversationId != null) {
+                                    navController.navigate(KetemuRoutes.conversation(conversationId))
+                                }
+                            }
                         }
                     )
                 }

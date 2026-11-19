@@ -44,7 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.common.UiState
 import org.umn.application_ketemu.core.util.RelativeTime
-import org.umn.application_ketemu.domain.model.ConversationThread
+import org.umn.application_ketemu.domain.model.ChatThread
 import org.umn.application_ketemu.ui.components.EmptyState
 import org.umn.application_ketemu.ui.components.InitialsAvatar
 import org.umn.application_ketemu.ui.components.LoadingSkeletonList
@@ -59,7 +59,7 @@ private enum class MessageStateKind { LOADING, EMPTY, ERROR, SUCCESS }
 /**
  * Layar Pesan: daftar percakapan pengguna dengan penemu / pemilik barang.
  *
- * Setiap percakapan terhubung ke satu laporan (lihat [ConversationThread]),
+ * Setiap percakapan terhubung ke satu laporan (lihat [ChatThread]),
  * sehingga pengguna selalu tahu percakapan itu tentang barang yang mana.
  * Menekan satu baris membuka layar Percakapan.
  */
@@ -129,7 +129,7 @@ fun MessageScreen(
 /** Daftar percakapan dengan animasi masuk berurutan (stagger). */
 @Composable
 private fun ConversationList(
-    threads: List<ConversationThread>,
+    threads: List<ChatThread>,
     onThreadClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -162,7 +162,7 @@ private fun ConversationList(
  */
 @Composable
 private fun ConversationRow(
-    thread: ConversationThread,
+    thread: ChatThread,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {

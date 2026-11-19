@@ -101,6 +101,19 @@ class ReportDetailViewModel(
             claim == null
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /**
+     * Tombol "Chat penemu / pemilik" muncul untuk laporan orang lain yang masih
+     * aktif — baik laporan HILANG (mengobrol dengan penemu) maupun TEMUAN
+     * (mengobrol dengan pemilik). Petugas juga melihatnya untuk memantau.
+     */
+    val canChat: StateFlow<Boolean> = combine(
+        uiState,
+        session.currentUser
+    ) { state, user ->
+        val report = (state as? UiState.Success)?.data ?: return@combine false
+        !report.isArchived && report.ownerId != user.id
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     private val _message = MutableStateFlow<String?>(null)
 
     /** Pesan sekali tampil untuk snackbar (berhasil/gagal mengirim klaim). */

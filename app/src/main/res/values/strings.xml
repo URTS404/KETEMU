@@ -387,4 +387,5 @@
 
     <string name="admin_role_label">Peran</string>
     <string name="admin_close">Tutup</string>
+    <string name="action_chat">Chat penemu / pemilik</string>
 </resources>

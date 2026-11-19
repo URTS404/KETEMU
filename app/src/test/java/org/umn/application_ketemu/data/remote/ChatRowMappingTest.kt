@@ -2,15 +2,17 @@ package org.umn.application_ketemu.data.remote
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Menguji pemetaan baris database menjadi model layar.
  *
- * Ini "bukti langkah pertama" yang tidak butuh jaringan: yang diperiksa adalah
- * keputusan penting di [SupabaseChatRepository] — siapa lawan bicara dilihat
- * dari sudut pandang pembaca, dan pesan siapa yang tampil di kanan.
+ * "Bukti langkah pertama" yang tidak butuh jaringan: yang diperiksa adalah
+ * keputusan penting di [SupabaseChatRepository] — nama lawan bicara sudah
+ * dipilih server lewat view `chat_threads` (db/0020), dan pesan siapa yang
+ * tampil di kanan.
  */
 class ChatRowMappingTest {
 
@@ -20,36 +22,35 @@ class ChatRowMappingTest {
     private fun row() = SupabaseChatRepository.ConversationRow(
         id = "conv-1",
         reportId = "report-1",
-        ownerId = ownerId,
-        peerId = peerId,
-        lastMessageAt = "2026-11-19T10:15:00+00:00",
-        reports = SupabaseChatRepository.ReportJoin(title = "Payung Lipat Biru", type = "FOUND"),
-        owner = SupabaseChatRepository.ProfileJoin(fullName = "Pak Rahmat", role = "ADMIN"),
-        peer = SupabaseChatRepository.ProfileJoin(fullName = "Siti Uas", role = "USER")
+        reportTitle = "Payung Lipat Biru",
+        reportType = "FOUND",
+        partnerName = "Siti Uas",
+        partnerRole = "USER",
+        lastMessage = "Barangnya masih ada?",
+        lastMessageAt = "2026-11-19T10:15:00+00:00"
     )
 
     @Test
-    fun `pemilik laporan melihat lawan bicara sebagai peer`() {
+    fun `baris view dipetakan apa adanya`() {
         val thread = row().toThread(ownerId)!!
 
         assertEquals("Siti Uas", thread.partnerName)
         assertEquals("USER", thread.partnerRole)
         assertEquals("Payung Lipat Biru", thread.reportTitle)
+        assertEquals("Barangnya masih ada?", thread.lastMessage)
+        assertTrue(thread.lastMessageAt > 0L)
     }
 
     @Test
-    fun `pihak lain melihat lawan bicara sebagai pemilik laporan`() {
-        val thread = row().toThread(peerId)!!
+    fun `nama lawan bicara kosong diganti teks umum`() {
+        val thread = row().copy(partnerName = "   ").toThread(peerId)!!
 
-        assertEquals("Pak Rahmat", thread.partnerName)
-        assertEquals("ADMIN", thread.partnerRole)
+        assertEquals("Pengguna", thread.partnerName)
     }
 
     @Test
-    fun `baris tanpa data laporan dilewati`() {
-        val tanpaLaporan = row().copy(reports = null)
-
-        assertEquals(null, tanpaLaporan.toThread(ownerId))
+    fun `baris tanpa judul laporan dilewati`() {
+        assertNull(row().copy(reportTitle = null).toThread(ownerId))
     }
 
     @Test

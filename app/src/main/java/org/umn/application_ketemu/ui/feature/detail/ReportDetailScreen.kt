@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -68,12 +69,14 @@ fun ReportDetailScreen(
     viewModel: ReportDetailViewModel,
     onBack: () -> Unit,
     onOpenReport: (String) -> Unit,
+    onChatClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val candidates by viewModel.candidates.collectAsStateWithLifecycle()
     val myClaim by viewModel.myClaim.collectAsStateWithLifecycle()
     val canClaim by viewModel.canClaim.collectAsStateWithLifecycle()
+    val canChat by viewModel.canChat.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -138,8 +141,10 @@ fun ReportDetailScreen(
                 candidates = candidates,
                 myClaim = myClaim,
                 canClaim = canClaim,
+                canChat = canChat,
                 onClaimClick = { showClaimForm = true },
                 onOpenReport = onOpenReport,
+                onChatClick = onChatClick,
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -308,7 +313,9 @@ private fun DetailContent(
     candidates: List<Report>,
     myClaim: Claim?,
     canClaim: Boolean,
+    canChat: Boolean,
     onClaimClick: () -> Unit,
+    onChatClick: (String) -> Unit,
     onOpenReport: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -381,6 +388,21 @@ private fun DetailContent(
             )
 
             StatusTimeline(report = report, modifier = Modifier.fillMaxWidth())
+
+            // Pintu masuk percakapan (db/0019): muncul untuk laporan orang lain,
+            // baik laporan HILANG (chat dengan penemu) maupun TEMUAN (chat dengan
+            // pemilik). Petugas juga melihat tombol ini dan ikut memantau utas.
+            if (canChat) {
+                OutlinedButton(
+                    onClick = { onChatClick(report.id) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.action_chat),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
 
             // Satu pengguna satu klaim per barang: setelah klaim dikirim (atau
             // sudah diputuskan), tombol diganti kartu status supaya tidak ada

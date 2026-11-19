@@ -6,6 +6,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AssistChip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -68,12 +71,12 @@ fun ConversationScreen(
     val thread by viewModel.thread.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val canSend by viewModel.canSend.collectAsStateWithLifecycle()
-    val isTyping by viewModel.isPartnerTyping.collectAsStateWithLifecycle()
+    val isSending by viewModel.isSending.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
 
-    // Banner konteks barang = item ke-0, jadi total = 1 + pesan (+ indikator).
-    val itemCount = 1 + messages.size + if (isTyping) 1 else 0
+    // Banner konteks barang = item ke-0, jadi total = 1 + pesan.
+    val itemCount = 1 + messages.size
     LaunchedEffect(itemCount) {
         if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
     }
@@ -107,18 +110,42 @@ fun ConversationScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(onClick = viewModel::onRefresh) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "Muat ulang"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
         bottomBar = {
-            MessageComposer(
-                value = draft,
-                onValueChange = viewModel::onDraftChange,
-                onSend = viewModel::onSend,
-                canSend = canSend
-            )
+            Column {
+                if (viewModel.templates.isNotEmpty()) {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(viewModel.templates.size) { index ->
+                            val template = viewModel.templates[index]
+                            AssistChip(
+                                onClick = { viewModel.onDraftChange(template.body) },
+                                label = { Text(template.label) }
+                            )
+                        }
+                    }
+                }
+                MessageComposer(
+                    value = draft,
+                    onValueChange = viewModel::onDraftChange,
+                    onSend = { viewModel.onSend() },
+                    canSend = canSend
+                )
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -135,9 +162,6 @@ fun ConversationScreen(
                 MessageBubble(message = message)
             }
 
-            if (isTyping) {
-                item { TypingBubble() }
-            }
         }
     }
 }
