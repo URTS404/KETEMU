@@ -63,6 +63,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,8 +124,20 @@ fun ConversationScreen(
 
     // Banner konteks barang = item ke-0, jadi total = 1 + pesan.
     val itemCount = 1 + messages.size
+    // Ikuti pesan terbaru HANYA bila pengguna memang sedang berada di dasar.
+    // Tanpa syarat ini, setiap pesan/pindah-gambar memaksa daftar melompat,
+    // dan itulah yang membuat tampilan tiba-tiba kembali ke atas.
+    val diDasar by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val terakhir = info.visibleItemsInfo.lastOrNull()
+            terakhir == null || terakhir.index >= info.totalItemsCount - 1
+        }
+    }
     LaunchedEffect(itemCount) {
-        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
+        if (itemCount > 0 && diDasar) {
+            listState.animateScrollToItem(itemCount - 1)
+        }
     }
 
     Scaffold(
