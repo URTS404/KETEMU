@@ -21,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.Add
@@ -107,6 +108,13 @@ fun ConversationScreen(
     }
 
     val messages by viewModel.messages.collectAsStateWithLifecycle()
+
+    // Model gambar yang sedang diperbesar (null = tidak ada pratinjau).
+    var gambarPratinjau by remember { mutableStateOf<String?>(null) }
+
+    gambarPratinjau?.let { model ->
+        ImageZoomOverlay(model = model, onClose = { gambarPratinjau = null })
+    }
     val thread by viewModel.thread.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val canSend by viewModel.canSend.collectAsStateWithLifecycle()
@@ -258,6 +266,7 @@ fun ConversationScreen(
                 MessageBubble(
                     message = message,
                     onRetry = viewModel::onRetry,
+                    onImageClick = { gambarPratinjau = it },
                     onLongPress = { hapusId = message.id },
                     onDelete = { viewModel.onDelete(message.id) }
                 )
@@ -339,6 +348,7 @@ private fun HapusPesanDialog(
 private fun MessageBubble(
     message: ChatMessage,
     onRetry: (String) -> Unit,
+    onImageClick: (String) -> Unit,
     onLongPress: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -444,7 +454,11 @@ private fun MessageBubble(
                                     .fillMaxWidth()
                                     .then(
                                         if (belumTerkirim) Modifier.blur(10.dp) else Modifier
-                                    ),
+                                    )
+                                    .clickable {
+                                        val model = message.imageUrl ?: message.localImagePath
+                                        if (model != null) onImageClick(model)
+                                    },
                                 contentScale = ContentScale.Crop
                             )
                             if (belumTerkirim) {
