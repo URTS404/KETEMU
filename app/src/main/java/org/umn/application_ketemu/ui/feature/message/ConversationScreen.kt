@@ -64,6 +64,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -100,6 +102,7 @@ fun ConversationScreen(
     val isSending by viewModel.isSending.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     // Pesan yang sedang dipilih untuk dihapus (tekan lama pada gelembung).
     var hapusId by remember { mutableStateOf<String?>(null) }
     val konteks = LocalContext.current
@@ -124,19 +127,17 @@ fun ConversationScreen(
 
     // Banner konteks barang = item ke-0, jadi total = 1 + pesan.
     val itemCount = 1 + messages.size
-    // Ikuti pesan terbaru HANYA bila pengguna memang sedang berada di dasar.
-    // Tanpa syarat ini, setiap pesan/pindah-gambar memaksa daftar melompat,
-    // dan itulah yang membuat tampilan tiba-tiba kembali ke atas.
-    val diDasar by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo
-            val terakhir = info.visibleItemsInfo.lastOrNull()
-            terakhir == null || terakhir.index >= info.totalItemsCount - 1
-        }
-    }
-    LaunchedEffect(itemCount) {
-        if (itemCount > 0 && diDasar) {
-            listState.animateScrollToItem(itemCount - 1)
+    // Posisi gulir TIDAK lagi dipaksa mengikuti jumlah pesan: setiap kali daftar
+    // disusun ulang (baris baru, gambar, penghapusan) tinggi baris berubah dan
+    // paksaan itu justru melempar tampilan ke atas. Sekarang:
+    //  - saat layar dibuka: langsung ke pesan terakhir;
+    //  - saat Anda mengirim: digulir setelah pesan benar-benar terkirim.
+    // Sekali saja, saat pesan pertama kali termuat: lompat ke pesan terakhir.
+    var sudahKeDasar by remember { mutableStateOf(false) }
+    LaunchedEffect(messages.size) {
+        if (!sudahKeDasar && messages.isNotEmpty()) {
+            listState.scrollToItem(messages.size)
+            sudahKeDasar = true
         }
     }
 
@@ -204,7 +205,14 @@ fun ConversationScreen(
                 MessageComposer(
                     value = draft,
                     onValueChange = viewModel::onDraftChange,
-                    onSend = { viewModel.onSend() },
+                    onSend = {
+                        viewModel.onSend()
+                        scope.launch {
+                            kotlinx.coroutines.delay(350)
+                            val total = listState.layoutInfo.totalItemsCount
+                            if (total > 0) listState.animateScrollToItem(total - 1)
+                        }
+                    },
                     onPickImage = onPickImage,
                     canSend = canSend
                 )
