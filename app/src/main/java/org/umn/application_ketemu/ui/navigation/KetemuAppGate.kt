@@ -51,6 +51,14 @@ fun KetemuAppGate(modifier: Modifier = Modifier) {
         factory = mainViewModelFactory(container)
     )
     val isLoggedIn by mainViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val sesiSiap by mainViewModel.isSessionReady.collectAsStateWithLifecycle()
+
+    if (!sesiSiap) {
+        // Selama sesi tersimpan diperiksa, tampilkan layar kosong. Tanpa ini
+        // layar Login sempat muncul lalu berganti ke Beranda (kedip).
+        androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxSize())
+        return
+    }
 
     AnimatedContent(
         targetState = isLoggedIn,

@@ -21,6 +21,18 @@ import org.umn.application_ketemu.domain.model.UserRole
  */
 class SessionStore {
 
+    private val _restored = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /**
+     * `true` setelah aplikasi selesai memeriksa sesi Supabase yang tersimpan.
+     * Gerbang memakainya agar layar Login tidak sempat muncul lalu berganti.
+     */
+    val restored: kotlinx.coroutines.flow.StateFlow<Boolean> = _restored
+
+    fun markRestored() {
+        _restored.value = true
+    }
+
     /**
      * Profil akun yang BENAR-BENAR login (hasil [signIn]).
      *

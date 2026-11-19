@@ -38,4 +38,7 @@ class MainViewModel(
      * (Acceptance Criteria #1 PRD: pembatasan akses per peran).
      */
     val isLoggedIn: StateFlow<Boolean> = session.isLoggedIn
+
+    /** `false` selama sesi tersimpan masih diperiksa (mencegah kedip login). */
+    val isSessionReady: StateFlow<Boolean> = session.restored
 }

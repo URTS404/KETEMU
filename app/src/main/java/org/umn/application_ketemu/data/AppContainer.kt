@@ -233,6 +233,7 @@ class AppContainer(context: Context) {
             }.onFailure {
                 android.util.Log.w("Auth", "pemulihan sesi gagal: " + it.message)
             }
+            session.markRestored()
         }
 
         appScope.launch {
