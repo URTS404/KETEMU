@@ -70,7 +70,22 @@ class LoginViewModel(
     // ditentukan saat pendaftaran, bukan NIM/NIDN.
     val trialAccounts: List<TrialAccount> =
         if (org.umn.application_ketemu.data.remote.SupabaseProvider.isConfigured) {
-            emptyList()
+            // Akun sungguhan di Supabase: sandi ditentukan saat pendaftaran,
+            // bukan NIM/NIDN seperti pada mode lokal.
+            listOf(
+                TrialAccount(
+                    roleLabel = "Mahasiswa",
+                    fullName = "Siti Uas",
+                    email = "siti.uas@student.umn.ac.id",
+                    password = "rahasia123"
+                ),
+                TrialAccount(
+                    roleLabel = "Staf",
+                    fullName = "Pak Rahmat (Satpam)",
+                    email = "rahmat@umn.ac.id",
+                    password = "rahasia123"
+                )
+            )
         } else {
             LocalAuthRepository.TRIAL_ACCOUNTS
         }
