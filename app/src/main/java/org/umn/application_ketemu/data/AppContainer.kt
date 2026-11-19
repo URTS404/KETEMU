@@ -222,6 +222,19 @@ class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
+        // Pulihkan sesi Supabase yang tersimpan agar tidak perlu login ulang.
+        appScope.launch {
+            runCatching {
+                val profil = (authRepository as? SupabaseAuthRepository)?.restoreSession()
+                if (profil != null) {
+                    session.signIn(profil)
+                    android.util.Log.i("Auth", "sesi dipulihkan: " + profil.email)
+                }
+            }.onFailure {
+                android.util.Log.w("Auth", "pemulihan sesi gagal: " + it.message)
+            }
+        }
+
         appScope.launch {
             networkMonitor.isOnline.collect { online ->
                 if (online) runCatching { chatRepository.flushPending() }

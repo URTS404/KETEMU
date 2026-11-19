@@ -146,6 +146,17 @@ class SupabaseAuthRepository(
         AuthResult.Failure(e.toAuthErrorReason())
     }
 
+    /**
+     * Mengembalikan profil bila Supabase masih menyimpan sesi login (token
+     * dimuat dari penyimpanan). Dipakai saat aplikasi dibuka agar pengguna
+     * tidak perlu login ulang.
+     */
+    suspend fun restoreSession(): UserProfile? {
+        val user = runCatching { client.auth.currentUserOrNull() }.getOrNull() ?: return null
+        android.util.Log.i("SupabaseAuth", "sesi tersimpan ditemukan untuk " + user.email)
+        return resolveProfile(user)
+    }
+
     override suspend fun signOut() {        try {
             client.auth.signOut()
         } catch (_: Exception) {
