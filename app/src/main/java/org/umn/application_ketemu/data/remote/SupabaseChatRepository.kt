@@ -93,6 +93,30 @@ class SupabaseChatRepository(
      *  2. pesan antrean yang isinya sudah ada di server dalam 5 menit terakhir
      *     dianggap sudah terkirim, jadi tidak ditampilkan lagi sebagai tertunda.
      */
+    /**
+     * Membuang entri antrean yang pesannya ternyata SUDAH ada di server.
+     *
+     * Tanpa ini, entri lama bisa bertahan selamanya di penyimpanan dan terus
+     * tampil sebagai "menunggu terkirim" meski pesannya sudah terkirim.
+     */
+    private fun bersihkanAntreanUsang(terkirim: List<ChatMessage>, threadId: String) {
+        val tertunda = pendingStore.load().filter { it.threadId == threadId }
+        if (tertunda.isEmpty()) return
+
+        val penandaTerkirim = terkirim
+            .map { it.text.trim() to (it.sentAt / WINDOW_DUPLIKAT_MS) }
+            .toHashSet()
+
+        tertunda.forEach { pesan ->
+            val cocok = pesan.text.trim() to (pesan.sentAt / WINDOW_DUPLIKAT_MS)
+            if (cocok in penandaTerkirim) {
+                android.util.Log.d("Chat", "antrean usang dibuang: " + pesan.id)
+                pendingStore.remove(pesan.id)
+            }
+        }
+        outbox.value = pendingStore.load()
+    }
+
     private fun gabungPesan(
         terkirim: List<ChatMessage>,
         tertunda: List<ChatMessage>
@@ -190,7 +214,13 @@ class SupabaseChatRepository(
     /** Kirim ulang semua pesan yang tertahan (dipanggil saat jaringan kembali). */
     override suspend fun flushPending() {
         val tertunda = pendingStore.load()
-        if (tertunda.isEmpty()) return
+        if (tertunda.isEmpty()) {
+            // Penting: state outbox tetap disegarkan walau antrean kosong.
+            // Tanpa ini, tampilan bisa memegang salinan lama dan gelembung
+            // "menunggu terkirim" tetap muncul padahal sudah terkirim.
+            outbox.value = emptyList()
+            return
+        }
         val me = client.auth.currentUserOrNull()?.id ?: return
 
         val percakapanBerubah = mutableSetOf<String>()
@@ -410,6 +440,10 @@ class SupabaseChatRepository(
         val pesan = rows.map { row ->
             row.toDomain(me, imageUrl = row.imagePath?.let { path -> signedUrl(path) })
         }
+
+        // Entri antrean yang pesannya sudah ada di server tidak boleh
+        // menggantung di tampilan sebagai "menunggu terkirim".
+        runCatching { bersihkanAntreanUsang(pesan, conversationId) }
         messagesByThread.update { it + (conversationId to pesan) }
     }
 
