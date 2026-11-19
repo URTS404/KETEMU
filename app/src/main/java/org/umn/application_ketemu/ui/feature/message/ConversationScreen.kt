@@ -107,6 +107,15 @@ fun ConversationScreen(
     }
 
     val messages by viewModel.messages.collectAsStateWithLifecycle()
+
+    // Diagnosis: dari mana gelembung "menunggu terkirim" berasal.
+    androidx.compose.runtime.LaunchedEffect(messages) {
+        val ringkas = messages.joinToString(" | ") { m ->
+            m.id.take(8) + ":" + m.status + ":" + (if (m.hasImage) "img" else "txt") +
+                (if (m.imageUrl != null) "+url" else "")
+        }
+        android.util.Log.d("Chat", "total=" + messages.size + " :: " + ringkas)
+    }
     val thread by viewModel.thread.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val canSend by viewModel.canSend.collectAsStateWithLifecycle()
