@@ -111,14 +111,19 @@ fun ConversationScreen(
     val pemilihFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        if (uri != null) {
-            // Kompresi dijalankan di luar thread UI agar layar tidak tersendat.
-            Thread {
-                val hasil = ImageCompressor.compress(konteks, uri)
-                if (hasil != null) {
-                    viewModel.onImagePicked(hasil.bytes, hasil.width, hasil.height)
-                }
-            }.start()
+        android.util.Log.d("Chat", "pemilih foto kembali: uri=" + uri)
+        if (uri == null) return@rememberLauncherForActivityResult
+        // Kompresi dijalankan di luar thread UI agar layar tidak tersendat.
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val hasil = runCatching { ImageCompressor.compress(konteks, uri) }
+                .onFailure { android.util.Log.e("Chat", "kompresi gambar gagal: " + it) }
+                .getOrNull()
+            if (hasil == null) {
+                android.util.Log.e("Chat", "kompresi gambar mengembalikan null untuk " + uri)
+                return@launch
+            }
+            android.util.Log.d("Chat", "kompresi selesai: " + hasil.bytes.size + " byte, " + hasil.width + "x" + hasil.height)
+            viewModel.onImagePicked(hasil.bytes, hasil.width, hasil.height)
         }
     }
     val onPickImage: () -> Unit = {
