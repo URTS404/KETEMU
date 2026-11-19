@@ -1,164 +1,323 @@
-# KETEMU — Campus Lost & Found Hub
+﻿================================================================================
+ KETEMU - Campus Lost & Found Hub
+ IF570L Lab Mobile Application Programming - Mid Exam (UTS) 2026/2027
+================================================================================
 
-Aplikasi Android untuk melaporkan, mencari, dan mengklaim barang hilang maupun barang temuan di lingkungan kampus (closed-ecosystem, email kampus).
-Dibangun dengan **Kotlin + Jetpack Compose**, arsitektur **MVVM** berlapis (UI → ViewModel → Domain → Data), custom **Material 3** theme, dan **Navigation Compose**.
+1. DESKRIPSI SINGKAT APLIKASI
+--------------------------------------------------------------------------------
+Ketemu adalah aplikasi Android bergaya "lost & found" untuk lingkungan kampus
+(closed-ecosystem) yang membantu mahasiswa dan staf melaporkan, mencari, dan
+mengklaim barang hilang maupun barang temuan di area kampus.
 
-> Proyek UTS mata kuliah **IF570L Lab Mobile Application Programming** — Kelompok 5.
+Alur utama:
+  - Pengguna masuk memakai email kampus.
+  - Melaporkan barang HILANG atau barang TEMUAN lengkap dengan foto, kategori,
+    dan lokasi terakhir terlihat/ditemukan.
+  - Menelusuri daftar laporan di Beranda (lihat semua) dan Aktivitas (milik
+    sendiri), dengan pencarian dan filter Hilang/Ditemukan.
+  - Membuka Detail laporan untuk melihat status barang dan perjalanannya
+    (timeline: Dilaporkan -> Diserahkan ke Pos -> Siap Diambil -> Selesai
+    Diklaim).
+  - Aplikasi tetap dapat dipakai saat offline (indikator status offline).
+  - Akun uji coba tampil langsung di layar Login (tidak perlu membuka kode
+    sumber). Bila aplikasi terhubung ke Supabase, gunakan akun berikut:
+        Mahasiswa : siti.uas@student.umn.ac.id | sandi: rahasia123
+        Staf      : rahmat@umn.ac.id           | sandi: rahasia123
+    NIM/NIDN (00000999888 dan 001234567) HANYA kolom identitas, BUKAN kata sandi.
+  - Tanpa Supabase (mode demo offline) aplikasi memakai akun lokal:
+        Mahasiswa : budi.santoso@student.umn.ac.id | sandi: 00000012345
+        Staf      : rahmat@umn.ac.id               | sandi: STAFF-001
 
-## Fitur
+Dibangun dengan arsitektur MVVM berlapis
+(UI - ViewModel - Domain - Data), Jetpack Compose, dan Navigation Compose.
+Saat terhubung ke Supabase, data laporan, klaim, percakapan, dan log aktivitas
+tersimpan di PostgreSQL (PostgREST + Realtime + Storage). Bila Supabase belum
+dikonfigurasi, aplikasi memakai repository dalam memori dengan data contoh.
 
-- **Autentikasi email kampus** — login, daftar akun, lupa kata sandi dengan validasi domain `@student.umn.ac.id` / `@umn.ac.id`.
-- **Beranda** — statistik laporan, kartu pengumuman, pencarian, dan filter Hilang/Ditemukan. Laporan **hilang** tampil langsung; laporan **temuan** baru tampil setelah diverifikasi petugas.
-- **Lapor barang** — formulir hilang/temuan dengan validasi, pemilih kategori, kamera (foto barang), serta penanda titik lokasi di peta OpenStreetMap (GPS atau ketuk peta).
-- **Detail laporan** — status barang + timeline "Perjalanan Barang" (Dilaporkan → Diserahkan ke Pos → Siap Diambil → Selesai Diklaim), plus pratinjau titik lokasi dan tombol buka di aplikasi peta.
-- **Laporan saya & Pesan** — riwayat laporan milik pengguna dan percakapan dengan petugas Pos Barang Temuan.
-- **Profil** — identitas kampus, simulasi peran (USER/STAFF/ADMIN), dan keluar.
-- **Notifikasi dua lapis** - kotak masuk in-app (lonceng Beranda) dan kartu di panel notifikasi Android untuk konfirmasi unggahan, barang temuan baru, perubahan status, dan keputusan klaim; notifikasi luar bisa dinyalakan/dimatikan dari **Akun > Pengaturan**. Kabar baru dikirim **Supabase Realtime** (langganan `INSERT` tabel `notifications`) sehingga muncul seketika, dengan polling 30 detik sebagai cadangan.
-- **Pencocokan otomatis** - begitu laporan masuk, trigger server (`db/0018_auto_match.sql`) mencocokkannya dengan laporan sebaliknya (kategori sama + kata kunci judul atau jarak GPS <= 250 m), mengirim notifikasi `POSSIBLE_MATCH`, dan mengisi bagian "Mungkin barangmu" di halaman detail.
-- **Klaim barang** - pada laporan temuan yang sudah dititipkan di pos, pemilik menekan **Ini Barang Saya**, menuliskan ciri yang hanya diketahui pemilik, lalu memantau status klaim (menunggu/disetujui beserta kode pengambilan/ditolak beserta alasannya) di halaman detail yang sama.
 
-- **Tema terang/gelap** — palet kampus sendiri (teal + oranye), tipografi dan shape kustom.
+2. NAMA APLIKASI & KELOMPOK
+--------------------------------------------------------------------------------
+Nama Aplikasi  : Ketemu
+Nama Kelompok  : Kelompok 5
 
-## Tech stack
 
-| Lapisan | Teknologi |
-|---|---|
-| Bahasa | Kotlin 2.4 |
-| UI | Jetpack Compose + Material 3 (BOM 2026.09), Compose Navigation |
-| Arsitektur | MVVM, `StateFlow`, repository + container manual (tanpa Hilt) |
-| Backend | Supabase (Auth, PostgREST, Realtime) — mode demo in-memory bila `local.properties` kosong |
-| Gambar | Coil |
-| Peta | osmdroid 6.1.20 + OpenStreetMap (tanpa API key / Play Services) |
-| Build | AGP 9.4, Gradle 9.6 (wrapper), `compileSdk`/`targetSdk` 37, `minSdk` 26 |
-| Test | JUnit4 + `kotlinx-coroutines-test` (84 unit test) |
-
-## Menjalankan
-
-Prasyarat: Android Studio terbaru (AGP 9), JDK 17+, Android SDK Platform 37.
-
-```bash
-# Windows
-gradlew.bat assembleDebug
-# macOS / Linux
-./gradlew assembleDebug
-```
-
-Hasil: `app/build/outputs/apk/debug/app-debug.apk`, atau pasang langsung dengan `gradlew.bat installDebug`.
-Berkas `local.properties` (lokasi SDK) dibuat otomatis oleh Android Studio dan tidak disertakan di repo.
-
-### Build dari terminal (Windows)
-
-Gradle wrapper memerlukan JDK yang bisa ditemukan. Bila muncul pesan
-`JAVA_HOME is not set and no 'java' command could be found`, arahkan ke JDK
-bawaan Android Studio lalu jalankan build pada terminal yang sama:
-
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
-gradlew.bat assembleDebug
-```
-
-### Jika Clean/Rebuild gagal di Windows
-
-Folder output build yang disalin dari OneDrive/arsip bisa membawa atribut
-`ReadOnly`, sehingga Gradle gagal menghapusnya (`Unable to delete directory`).
-Proyek ini melepas atribut tersebut otomatis sebelum `clean` dan `preBuild`.
-
-Bila masih gagal, pastikan tidak ada build lain yang sedang berjalan di Android
-Studio, lalu hentikan daemon Gradle dan ulangi:
-
-```powershell
-gradlew.bat --stop
-gradlew.bat clean assembleDebug
-```
-
-## Akun uji
-
-Login diperiksa secara lokal, tanpa jaringan. Kata sandi tiap akun sama dengan NIM/NIDN-nya.
-
-| Peran | Email | Sandi |
-|---|---|---|
-| Mahasiswa | `budi.santoso@student.umn.ac.id` | `00000012345` |
-| Staf (Satpam) | `rahmat@umn.ac.id` | `STAFF-001` |
-
-Akun uji juga ditampilkan langsung pada layar Login agar mudah dipakai saat demonstrasi.
-
-## Panel admin (tahap 1 UAS)
-
-Masuk sebagai staf (`rahmat@umn.ac.id` / `STAFF-001`), buka tab **Akun**, lalu tekan **Buka Panel Admin**:
-
-- **Dashboard** — antrean verifikasi, klaim menunggu, laporan diarsipkan, total laporan.
-- **Moderasi laporan** — barang **temuan** baru tampil di Beranda **setelah** diverifikasi: tekan **Verifikasi** untuk memilih Pos tujuan pada dialog serah-terima (status naik ke *Diserahkan ke Pos*, pos tersimpan, dan laporan langsung muncul di Beranda). Laporan **hilang** tampil langsung tanpa verifikasi; baik laporan hilang maupun temuan yang tidak relevan/bercanda dapat **diarsipkan** sehingga hilang dari Beranda tetapi datanya tetap tersimpan (tidak dihapus permanen).
-- **Verifikasi klaim** — dialog tinjauan menampilkan deskripsi barang, pos penitipan, pelapor temuan, identitas pengklaim, dan jawaban ciri barang; setujui (kode pengambilan diterbitkan, laporan menjadi *Siap Diambil*) atau tolak dengan alasan yang dikirim ke pengklaim.
-- **Log aktivitas** — jejak keputusan moderator yang tidak bisa diubah.
-
-Panel ini hanya dirender untuk peran STAFF/ADMIN, dan setiap aksi diperiksa ulang di ViewModel. Data masih in-memory pada tahap ini; rencana Supabase + Room ada di [docs/v2-roadmap.md](docs/v2-roadmap.md).
-
-## Notifikasi (in-app + panel sistem)
-
-Kabar Ketemu tampil di dua tempat dengan isi yang sama:
-
-- **Kotak masuk in-app** - lonceng di Beranda membuka layar Notifikasi (tandai dibaca, buka laporan terkait).
-- **Panel notifikasi Android** - kartu di luar aplikasi untuk konfirmasi unggahan, barang temuan baru, perubahan status laporan, dan keputusan klaim.
-
-Pengiriman kabar memakai dua jalur yang saling melengkapi:
-
-1. **Supabase Realtime** - `SupabaseNotificationRepository` berlangganan `INSERT` pada tabel `notifications`; kabar langsung masuk lonceng dan panel sistem tanpa menunggu. Langganan baru dibuka setelah pengguna terautentikasi agar Row Level Security mengirim baris yang benar, dan ditutup saat keluar.
-2. **Polling 30 detik** - cadangan bila Realtime tidak aktif (mis. publication belum didaftarkan) atau koneksi terputus. Baris yang sama tidak digandakan (dedupe berdasarkan `id`, terbaru lebih dahulu).
-
-Di sisi database jalankan `db/0016_notifications.sql` (tabel + trigger `reports_notify_found` untuk kabar "barang temuan baru") lalu `db/0017_realtime.sql` (mendaftarkan tabel ke publication `supabase_realtime`). Pada mode demo offline (tanpa `SUPABASE_URL`), notifikasi dibuat langsung di perangkat dan tetap tampil di kedua lapisan.
-
-Aturan yang diuji di `SystemNotifyingNotificationRepositoryTest`:
-
-1. Hanya kabar milik pengguna aktif (staf yang memutuskan klaim tidak menerima kartu milik pengklaim di perangkatnya).
-2. Hanya kabar yang belum dibaca; menandai dibaca tidak memunculkan kartu ganda.
-3. Riwayat lama (data demo atau baris Supabase saat aplikasi dibuka) tidak dikirim ulang.
-4. Sakelar **Notifikasi luar aplikasi** di halaman Akun menghormati pilihan pengguna: saat mati tidak ada kartu baru, kartu yang sudah tampil dibersihkan, dan kabar yang tiba selama sakelar mati tidak menyusul ketika dinyalakan lagi.
-
-Ketuk kartu untuk membuka layar Notifikasi (`launchMode="singleTop"` + extra intent). Di Android 13+ izin `POST_NOTIFICATIONS` diminta sekali setelah login; bila ditolak, kotak masuk in-app tetap berfungsi. Kanal notifikasi bernama **Kabar Ketemu** dan bisa dimatikan dari Pengaturan Android.
-
-Sakelar ada di **Akun > Pengaturan > Notifikasi luar aplikasi**, aktif secara bawaan pada pemasangan baru dan pilihannya disimpan di `SharedPreferences` (`SharedPreferencesSystemNotificationSettings`). Menyalakannya meminta izin `POST_NOTIFICATIONS` bila belum ada; bila izin ditolak, sakelar kembali mati. Ketika izin sudah ada tetapi notifikasi aplikasi diblokir dari Pengaturan Android, layar Akun menampilkan petunjuk dan tombol **Buka pengaturan**. Mematikan sakelar tidak menghapus kotak masuk in-app - kabar tetap tersimpan di lonceng Beranda.
-
-## Pencocokan otomatis (hilang <-> temuan)
-
-Pencocokan dihitung **di server**, bukan di perangkat, supaya tetap berjalan walau aplikasi tertutup dan hasilnya sama untuk semua pengguna:
-
-1. Setiap laporan baru memicu trigger `reports_auto_match` (`db/0018_auto_match.sql`).
-2. Kandidat = laporan aktif berjenis sebaliknya, kategori sama, pemilik berbeda, dan judulnya berbagi kata kunci (minimal 4 huruf) **atau** titik GPS-nya berjarak <= 250 m.
-3. Pasangan dicatat di tabel `matches` (unik per pasangan, tanpa policy tulis untuk klien) dan pemilik laporan lama menerima notifikasi `POSSIBLE_MATCH` yang ikut terkirim lewat Realtime.
-4. Halaman detail menampilkan bagian **"Mungkin barangmu"** (atau "Mungkin pemiliknya" pada laporan temuan) berisi kartu kandidat; ketuk untuk membuka detailnya, lalu ajukan klaim dari sana (lihat bagian berikut).
-
-Pada mode demo offline, `DummyData.matches()` menyediakan satu pasangan contoh agar bagian tersebut langsung terlihat saat demo.
-
-## Klaim barang (tahap 4 UAS)
-
-Alur klaim sengaja lewat petugas pos supaya barang tidak diserahkan ke orang yang salah:
-
-1. Pemilik membuka laporan **temuan** yang barangnya sudah *Diserahkan ke Pos* (atau *Siap Diambil*) — misalnya `Tumbler Hitam Berstiker UMN` dari bagian "Mungkin barangmu" pada laporan botol yang hilang.
-2. Tekan **Ini Barang Saya**, tulis ciri yang hanya diketahui pemilik (mis. nama di bagian bawah botol), minimal 15 karakter, lalu **Kirim klaim**.
-3. Klaim masuk sebagai `MENUNGGU`; halaman detail mengganti tombol dengan kartu **Status klaim Anda** sehingga klaim tidak bisa dikirim dua kali.
-4. Satpam membuka **Panel Admin > Verifikasi klaim**, mencocokkan deskripsi barang + pos + jawaban ciri dengan benda fisik di meja pos, lalu **Setujui klaim** (kode pengambilan 6 karakter diterbitkan, laporan menjadi *Siap Diambil*) atau tolak dengan alasan.
-5. Keputusan dikirim sebagai notifikasi ke pengklaim; kode pengambilan juga tampil pada kartu status di halaman detail.
-
-Syarat yang diperiksa di ViewModel (`ReportDetailViewModel`), bukan hanya di UI: barang harus bertipe temuan, sudah ada di pos, bukan laporan pengguna sendiri, pengguna bukan STAFF/ADMIN, dan belum pernah ada klaim atas barang tersebut. Pada mode demo offline, klaim botol contoh sudah tersedia sebagai `clm-004` sehingga antrean "Verifikasi klaim" langsung berisi tiga klaim (KTM, payung, botol).
-
-## Struktur proyek
-
-```
-app/src/main/java/org/umn/application_ketemu/
-├── core/        utilitas (validasi email kampus)
-├── data/        repository, dummy data, sesi, container dependensi
-├── domain/      model + kontrak repository
-└── ui/          theme, komponen, navigasi, layar Compose + ViewModel
-```
-
-## Tim — Kelompok 5
+3. DAFTAR ANGGOTA KELOMPOK
+--------------------------------------------------------------------------------
 
 1. Brilliant Hafizd Hermawan (00000130613)
 2. Kevin Ivan Setiadi Phang (00000131636)
 3. Indra Rizky Raharja (00000133155)
 4. Awang Raditya Pratama (00000133275)
 
-## Dokumen lain
 
-- Dokumen lengkap berorientasi rubrik UTS (deskripsi, pembagian tugas, kontribusi anggota, catatan build) dan berkas APK **tidak** disertakan di dalam repo; keduanya dikumpulkan bersama arsip tugas.
+4. PEMBAGIAN TUGAS & SISTEM KERJA KELOMPOK
+--------------------------------------------------------------------------------
+Pembagian tugas disusun berdasarkan aliran kerja (workstream) agar setiap
+anggota memiliki lingkup tanggung jawab yang jelas dan tidak tumpang tindih.
+
+  a. Product & Flow Design
+     Perumusan ide produk, value proposition, dan alur pengguna end-to-end.
+  b. Engineering & UI Design
+     Implementasi inti aplikasi, arsitektur MVVM, custom Material 3 theme,
+     serta perancangan antarmuka.
+  c. Quality Assurance & Debugging
+     Pengujian fungsional, penelusuran defect, dan verifikasi build.
+  d. Project Coordination & Review
+     Perencanaan kerja, pemantauan progres, dan review silang antar anggota.
+
+Sistem kerja kelompok:
+  1. Perencanaan
+     Ruang lingkup fitur dan kriteria selesai (definition of done) disepakati
+     di awal, mengacu pada proposal dan rubrik penilaian.
+  2. Pelaksanaan
+     Setiap anggota mengerjakan modul/layar sesuai tanggung jawabnya, kemudian
+     hasil kerja diintegrasikan secara bertahap ke dalam satu basis kode.
+  3. Review
+     Setiap penambahan fitur ditinjau anggota lain sebelum digabungkan, dengan
+     fokus pada konsistensi tampilan, kelengkapan state, dan kualitas kode.
+  4. Verifikasi
+     Sebelum build APK final, seluruh alur utama diuji ulang (masuk -> lapor
+     barang -> pelacakan status -> detail laporan) untuk memastikan tidak ada
+     regresi.
+  5. Dokumentasi
+     Keputusan teknis serta pembagian tugas dicatat agar dapat
+     dipertanggungjawabkan saat presentasi dan penilaian.
+
+
+5. KONTRIBUSI SPESIFIK SETIAP ANGGOTA
+--------------------------------------------------------------------------------
+
+1. Brilliant Hafizd Hermawan (00000130613) - Product & Flow Design
+   - Merumuskan ide dan value proposition aplikasi Ketemu sebagai pusat layanan
+     lost & found civitas akademika dalam satu ekosistem terpusat.
+   - Menyusun alur aplikasi end-to-end: masuk -> lapor barang -> pelacakan
+     status -> pengambilan/klaim, termasuk penetapan empat tahap status barang
+     (Dilaporkan, Diserahkan ke Pos, Siap Diambil, Selesai Diklaim).
+   - Menetapkan prioritas fitur sebagai acuan ruang lingkup pekerjaan tim.
+
+2. Kevin Ivan Setiadi Phang (00000131636) - Lead Engineer & UI Designer
+   - Bertanggung jawab atas implementasi utama aplikasi dengan arsitektur MVVM
+     berlapis (ui / domain / data / core).
+   - Merancang design system dan custom Material 3 theme (skema warna brand,
+     tipografi, dan shape) beserta aset logo, ikon peluncur, dan splash screen.
+   - Membangun layar Beranda, Detail Laporan, Buat Laporan, Pesan/Percakapan,
+     Profil, dan layar autentikasi, termasuk navigation graph aplikasi.
+   - Menyiapkan model domain serta dummy data sebagai sumber data prototipe.
+
+3. Indra Rizky Raharja (00000133155) - Quality Assurance & Debugging
+   - Melakukan pengujian fungsional pada setiap layar dan alur navigasi,
+     termasuk pengiriman argumen dari layar daftar ke layar detail.
+   - Menelusuri dan memperbaiki defect pada layout, state yang tidak
+     ter-update, serta validasi form.
+   - Menyusun skenario pengujian dan memverifikasi build APK sebelum
+     penyerahan.
+
+4. Awang Raditya Pratama (00000133275) - Project Coordinator & Reviewer
+   - Mengelola jadwal kerja, memantau progres, dan memastikan hasil kerja
+     selaras dengan proposal serta rubrik penilaian.
+   - Melakukan review silang terhadap pekerjaan anggota: konsistensi tampilan,
+     kelengkapan fitur, dan kerapian struktur kode.
+   - Mengoordinasikan kelengkapan deliverables (source code, APK, README, dan
+     video demo).
+
+
+6. RINGKASAN FITUR YANG SUDAH DIBUAT (untuk memetakan ke rubrik)
+--------------------------------------------------------------------------------
+  - Layar list       : Beranda (Home) dan Aktivitas / Laporan Saya
+  - Layar detail     : Detail Laporan + timeline status barang
+  - Layar form/input : Buat Laporan (jenis, foto, kategori, lokasi) +
+                       Login, Daftar Akun, Lupa Kata Sandi
+  - Layar fitur native: pengambilan foto barang (integrasi kamera memakai
+                       ActivityResultContracts.TakePicture + izin CAMERA,
+                       dengan penanganan saat izin ditolak / kamera tidak
+                       tersedia)
+  - Layar pilihan bebas: Profil (Akun) dan Pesan
+  - Custom Material 3 theme: warna, tipografi, dan shape (lihat ui/theme)
+  - State management : ViewModel + StateFlow + rememberSaveable
+  - Navigation       : NavHost/NavController dengan argumen reportId
+                       (List -> Detail) yang dibaca dinamis
+  - Validasi form    : tipe keyboard sesuai pada layar autentikasi
+                       (Email/Number/Phone/Password) + validasi domain email
+                       kampus dan konfirmasi kata sandi; isError + supporting
+                       text; tombol simpan diblokir selama input belum valid
+  - Dummy data       : dimodelkan sebagai data class (Report, PosLocation,
+                       UserProfile) dengan variasi status
+
+
+7. ARSITEKTUR & TECH STACK
+--------------------------------------------------------------------------------
+  - Bahasa          : Kotlin
+  - UI              : Jetpack Compose (Material 3)
+  - Arsitektur      : MVVM berlapis (ui / domain / data / core)
+  - Navigasi        : Navigation Compose (NavHost + NavController)
+  - State           : ViewModel + StateFlow, rememberSaveable
+  - Asinkron        : Kotlin Coroutines
+  - Struktur paket  :
+        core/     -> utilitas bersama (network, common state)
+        domain/   -> model + kontrak repository (murni, tanpa Android)
+        data/     -> implementasi repository + dummy data + sesi
+        ui/       -> layar Compose, komponen, tema, navigasi, ViewModel
+
+
+8. CARA MEMBUKA & MENJALANKAN
+--------------------------------------------------------------------------------
+Prasyarat: Android Studio versi terbaru (AGP 9 + Kotlin bawaan), JDK 17 atau
+lebih baru (JDK bawaan Android Studio sudah memenuhi), dan Android SDK dengan
+compileSdk 37. Android Studio akan menawarkan unduhan komponen yang belum ada.
+
+  1. Buka folder project ini di Android Studio (File > Open).
+  2. Build debug APK:
+        Windows     : gradlew.bat assembleDebug
+        macOS/Linux : ./gradlew assembleDebug
+     Hasil: app/build/outputs/apk/debug/app-debug.apk
+  3. Pasang ke perangkat/emulator: gradlew.bat installDebug
+  4. Atau langsung pasang berkas APK yang disertakan pada perangkat Android
+     (aktifkan "Install unknown apps" bila diminta).
+
+Catatan build:
+  - Output build memakai lokasi standar Gradle (build/ dan app/build/), jadi
+    proyek dapat langsung di-build di komputer mana pun tanpa path khusus dan
+    tanpa syarat izin tulis ke folder di luar proyek.
+  - Berkas local.properties (berisi lokasi Android SDK komputer pembuat) TIDAK
+    disertakan dalam arsip; Android Studio membuatnya otomatis saat project
+    dibuka. Bila build dijalankan dari terminal dan muncul pesan "SDK location
+    not found", tambahkan baris  sdk.dir=<lokasi Android SDK>  pada
+    local.properties atau set variabel lingkungan ANDROID_HOME.
+  - Bila arsip dijalankan dari folder yang di-sync cloud dan build gagal acak
+    karena berkas dikunci proses sinkronisasi, alihkan output ke luar folder
+    tersebut dengan menambahkan baris berikut pada gradle.properties:
+        ketemu.buildDir=D:/AndroidBuilds/Ketemu
+    (lihat komentar "LOKASI OUTPUT BUILD (OPSIONAL)" di build.gradle.kts).
+    Tanpa baris itu, pengalihan tidak aktif sama sekali.
+
+
+9. FILE YANG DISERTAKAN DALAM ARSIP
+--------------------------------------------------------------------------------
+  - Seluruh source code project (folder project lengkap)
+  - app-debug.apk (APK siap pasang)
+  - README.txt (berkas ini)
+  - Video demo (maksimal 5 menit) yang memetakan setiap kriteria rubrik
+
+  Bila arsip dibuat dalam bentuk ZIP, folder/berkas berikut TIDAK perlu ikut
+  (dapat dibuat ulang otomatis oleh Android Studio): build/, app/build/,
+  .gradle/, .kotlin/, .idea/, dan local.properties.
+
+================================================================================
+10. FITUR YANG SUDAH BERJALAN
+--------------------------------------------------------------------------------
+Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
+
+  a. Autentikasi terpusat (Supabase Auth)
+     - Daftar/masuk memakai email kampus (domain umn.ac.id / student.umn.ac.id).
+     - Sesi disimpan, sehingga aplikasi tidak minta login ulang setiap dibuka.
+     - Akun yang diblokir admin tidak dapat masuk ("Akun ini diblokir oleh admin").
+
+  b. Chat penemu - pemilik (Realtime)
+     - Tombol "Chat penemu" / "Chat orang kehilangan" pada Detail laporan.
+     - Pesan teks + gambar, terkirim seketika lewat Supabase Realtime.
+     - Gambar dikompres otomatis (WebP, sisi terpanjang 1280 px) sebelum diunggah.
+     - Ketuk gambar di chat untuk memperbesar (cubit 1x-5x, geser, ketuk dua kali).
+     - Antrean offline: pesan/gambar yang dikirim tanpa jaringan tampil buram
+       dengan ikon putar ulang, lalu terkirim otomatis saat internet kembali.
+     - Tekan lama / menu titik-tiga pada pesan sendiri untuk menghapus.
+
+  c. Panel admin (pemisahan hak STAFF dan ADMIN)
+     STAFF : moderasi laporan, memutuskan klaim (setuju/tolak),
+             melihat log aktivitas, melihat statistik.
+     ADMIN : semua di atas + kelola pengguna (ubah peran, verifikasi akun,
+             blokir/buka blokir) dan membuat kunci staf.
+
+  d. Klaim barang dan kode pengambilan
+     - Pengaju klaim menuliskan jawaban verifikasi.
+     - Petugas menyetujui/menolak; saat disetujui sistem membuat
+       kode pengambilan 6 karakter (mis. 414A0D) dan status laporan berubah
+       menjadi Siap Diambil secara otomatis (trigger database).
+
+  e. Kunci staf sekali pakai
+     - Admin membuat 10 kunci (format XXXX-XXXX).
+     - Calon staf menebus kunci di layar Akun; peran berubah menjadi STAFF.
+     - Kunci hangus setelah dipakai dan tercatat siapa pemakainya.
+
+  f. Lokasi & peta
+     - Titik koordinat laporan (latitude/longitude) dan peta OpenStreetMap.
+
+  g. Notifikasi
+     - Kotak masuk notifikasi + kartu notifikasi Android untuk laporan baru.
+
+  h. Pencocokan awal (berbasis aturan)
+     - Barang hilang dan temuan dengan judul serupa ditautkan otomatis
+       oleh trigger database (bukan pembandingan gambar).
+
+  i. Log aktivitas (audit trail) permanen
+     - Setiap aksi moderator dicatat otomatis oleh trigger database;
+       tidak dapat diubah atau dihapus dari aplikasi.
+
+
+================================================================================
+11. DATABASE (Supabase / PostgreSQL)
+--------------------------------------------------------------------------------
+Skrip SQL dijalankan berurutan di Supabase -> SQL Editor:
+
+  0001_schema.sql                 tabel, enum, trigger dasar
+  0002_rls.sql                   Row Level Security + penjaga kolom
+  0003_seed.sql                  4 kategori + 4 pos barang temuan
+  0004_seed_reports.sql          contoh laporan (2)
+  0005, 0006                     promosi akun staf
+  0007_seed_claim.sql            contoh klaim
+  0008_selfcheck.sql             12 pemeriksaan mandiri
+  0009_fix_audit_enum_cast.sql   perbaikan cast enum audit
+  0010_report_coordinates.sql    kolom latitude/longitude
+  0011_admin_management.sql      is_banned, audit akun, policy admin
+  0012_admin_audit.sql           trigger audit perubahan profil
+  0013_demo_admin_staff.sql      akun demo STAFF/ADMIN
+  0014_account_status.sql        cek status blokir saat login
+  0015_staff_keys.sql            kunci staf sekali pakai
+  0016_notifications.sql         tabel + trigger notifikasi
+  0017_realtime.sql              aktifkan Realtime
+  0018_auto_match.sql            pencocokan judul otomatis
+  0019_messages.sql              percakapan + pesan
+  0020_chat_view.sql             view chat_threads (nama lawan bicara)
+  0021_healthcheck.sql           pemeriksaan kesehatan database
+  0022_chat_images.sql           kolom gambar + bucket storage
+  0023_chat_storage.sql          policy storage chat-images
+  0024_message_delete.sql        izin hapus pesan sendiri
+  0025_seed_demo.sql             data demo (8 laporan, 2 klaim, 1 chat)
+  0026_fix_can_access_conversation.sql  fungsi akses percakapan (SECURITY DEFINER)
+
+Konfigurasi aplikasi ada di local.properties (tidak ikut repositori):
+  SUPABASE_URL=...              URL proyek
+  SUPABASE_PUBLISHABLE_KEY=...   kunci publik (aman untuk klien)
+Kunci secret/service_role TIDAK boleh dimasukkan ke aplikasi.
+
+
+================================================================================
+12. CARA MENJALANKAN DAN UJI CEPAT
+--------------------------------------------------------------------------------
+Prasyarat: Android Studio (JDK 17+), Android SDK 37, emulator/HP minSdk 26.
+
+  1. git clone https://github.com/URTS404/KETEMU.git
+  2. Buka proyek di Android Studio, biarkan Gradle Sync selesai.
+  3. Isi local.properties dengan SUPABASE_URL dan SUPABASE_PUBLISHABLE_KEY
+     (bila kosong, aplikasi berjalan dalam mode demo offline).
+  4. Jalankan skrip database 0001 - 0026 di SQL Editor Supabase.
+  5. Run aplikasi.
+
+Uji cepat (5 menit):
+  - Masuk: rahmat@umn.ac.id / rahasia123 (ADMIN).
+  - Beranda menampilkan 10 laporan demo.
+  - Pesan -> pilih percakapan -> kirim teks dan gambar.
+  - Matikan data (mode pesawat) -> kirim pesan -> muncul buram + ikon putar
+    ulang -> nyalakan data -> pesan terkirim otomatis.
+  - Akun -> Buka Panel Admin -> Moderasi laporan / Verifikasi klaim.
+  - Setujui klaim -> muncul kode pengambilan 6 karakter.
+
+
+================================================================================
+13. BATASAN YANG DIKETAHUI
+--------------------------------------------------------------------------------
+  - Daftar laporan belum dapat dibaca saat offline (chat sudah punya antrean
+    offline; laporan baru juga sudah diantrekan, tetapi daftar butuh jaringan).
+  - URL gambar chat berlaku 1 jam; bila kedaluwarsa gambar perlu dimuat ulang
+    dengan tombol muat ulang di kanan atas percakapan.
+  - Pencocokan barang masih berbasis kemiripan judul, belum membandingkan foto.
+  - Pelaporan lokasi memakai koordinat dari peta, belum navigasi ke lokasi.
