@@ -167,7 +167,7 @@
     <string name="login_password_hide">Sembunyikan</string>
     <string name="login_button">Masuk</string>
     <string name="login_trial_title">Akun untuk uji coba</string>
-    <string name="login_trial_hint">Masuk memakai salah satu akun di bawah ini. Kata sandinya sama dengan NIM/NIDN akun tersebut.</string>
+    <string name="login_trial_hint">Masuk memakai salah satu akun di bawah ini untuk mencoba aplikasi.</string>
     <string name="login_trial_email">Email: %1$s</string>
     <string name="login_trial_password">Sandi: %1$s</string>
     <string name="login_error_email_empty">Email kampus wajib diisi.</string>
