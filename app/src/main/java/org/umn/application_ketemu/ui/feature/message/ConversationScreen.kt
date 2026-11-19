@@ -149,13 +149,7 @@ fun ConversationScreen(
     //  - saat layar dibuka: langsung ke pesan terakhir;
     //  - saat Anda mengirim: digulir setelah pesan benar-benar terkirim.
     // Sekali saja, saat pesan pertama kali termuat: lompat ke pesan terakhir.
-    var sudahKeDasar by remember { mutableStateOf(false) }
-    LaunchedEffect(messages.size) {
-        if (!sudahKeDasar && messages.isNotEmpty()) {
-            listState.scrollToItem(messages.size)
-            sudahKeDasar = true
-        }
-    }
+
 
     Scaffold(
         // `imePadding()` membuat seluruh layar (termasuk kolom tulis di
@@ -226,7 +220,7 @@ fun ConversationScreen(
                         scope.launch {
                             kotlinx.coroutines.delay(350)
                             val total = listState.layoutInfo.totalItemsCount
-                            if (total > 0) listState.animateScrollToItem(total - 1)
+                            if (total > 0) listState.animateScrollToItem(0)
                         }
                     },
                     onPickImage = onPickImage,
@@ -251,11 +245,16 @@ fun ConversationScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            // reverseLayout: index 0 berada di DASAR layar. Dengan pola ini,
+            // daftar selalu menempel ke bawah - tidak ada lagi lompatan ke atas
+            // ketika gambar selesai dimuat atau pesan baru masuk.
+            reverseLayout = true
         ) {
-            item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
-
-            itemsIndexed(items = messages, key = { _, message -> message.id }) { _, message ->
+            itemsIndexed(
+                items = messages.asReversed(),
+                key = { _, message -> message.id }
+            ) { _, message ->
                 MessageBubble(
                     message = message,
                     onRetry = viewModel::onRetry,
@@ -263,6 +262,9 @@ fun ConversationScreen(
                     onDelete = { viewModel.onDelete(message.id) }
                 )
             }
+
+            // Karena reverseLayout, item terakhir tampil paling atas.
+            item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
 
         }
     }
