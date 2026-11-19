@@ -73,11 +73,10 @@ class SupabaseChatRepository(
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> =
         kotlinx.coroutines.flow.callbackFlow {
             launch { runCatching { loadMessages(conversationId) } }
+            launch { runCatching { flushPending() } }
             launch { runCatching { startRealtime(conversationId) } }
             kotlinx.coroutines.flow.combine(messagesByThread, outbox) { cache, pending ->
-                val terkirim = cache[conversationId].orEmpty()
-                val tertunda = pending.filter { it.threadId == conversationId }
-                terkirim + tertunda
+                gabungPesan(cache[conversationId].orEmpty(), pending.filter { it.threadId == conversationId })
             }.collect { trySend(it) }
             // Layar ditutup → kanal dilepas. Inilah yang membuat pemakaian
             // Realtime hemat: tidak ada langganan yang menggantung.
@@ -85,6 +84,28 @@ class SupabaseChatRepository(
                 scope.launch { stopRealtime(conversationId) }
             }
         }
+
+    /**
+     * Gabungkan pesan server dengan antrean lokal.
+     *
+     * Dua lapis deduplikasi (inilah yang sebelumnya membuat gelembung berganda):
+     *  1. berdasarkan id - satu pesan hanya boleh muncul sekali;
+     *  2. pesan antrean yang isinya sudah ada di server dalam 5 menit terakhir
+     *     dianggap sudah terkirim, jadi tidak ditampilkan lagi sebagai tertunda.
+     */
+    private fun gabungPesan(
+        terkirim: List<ChatMessage>,
+        tertunda: List<ChatMessage>
+    ): List<ChatMessage> {
+        val idTerkirim = terkirim.mapTo(HashSet()) { it.id }
+        val penandaTerkirim = terkirim.map { it.text.trim() to (it.sentAt / WINDOW_DUPLIKAT_MS) }.toHashSet()
+
+        val sisa = tertunda.filter { pesan ->
+            pesan.id !in idTerkirim &&
+                (pesan.text.trim() to (pesan.sentAt / WINDOW_DUPLIKAT_MS)) !in penandaTerkirim
+        }
+        return (terkirim + sisa).sortedBy { it.sentAt }
+    }
 
     override suspend fun startConversation(reportId: String): String? = runCatching {
         val id = client.postgrest
@@ -436,6 +457,9 @@ class SupabaseChatRepository(
         const val CHANNEL_PREFIX = "chat-"
         const val THREAD_LIMIT = 50
         const val MESSAGE_LIMIT = 200
+
+        /** Jendela waktu untuk mengenali pesan antrean yang sebenarnya sudah terkirim. */
+        const val WINDOW_DUPLIKAT_MS = 5 * 60 * 1000L
 
         const val THREAD_COLUMNS =
             "id,report_id,report_title,report_type,partner_name,partner_role," +
