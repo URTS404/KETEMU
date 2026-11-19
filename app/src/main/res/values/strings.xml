@@ -389,5 +389,6 @@
     <string name="admin_close">Tutup</string>
     <string name="action_chat">Chat penemu / pemilik</string>
     <string name="action_chat_lost">Chat orang kehilangan</string>
+    <string name="chat_retry">Kirim ulang pesan</string>
     <string name="action_chat_found">Chat penemu</string>
 </resources>

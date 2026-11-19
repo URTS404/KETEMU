@@ -48,6 +48,14 @@ interface ChatRepository {
      */
     suspend fun flushPending() = Unit
 
+    /**
+     * Coba kirim satu pesan yang masih tertahan, dipanggil dari ikon
+     * putar ulang di samping gelembung.
+     *
+     * @return true bila pesan berhasil dikirim.
+     */
+    suspend fun retry(messageId: String): Boolean = false
+
     /** Balasan cepat yang boleh dipakai petugas. */
     fun templates(): List<TemplateReply>
 }

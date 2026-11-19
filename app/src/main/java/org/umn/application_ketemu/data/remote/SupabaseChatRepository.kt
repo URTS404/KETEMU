@@ -152,6 +152,32 @@ class SupabaseChatRepository(
         outbox.value = pendingStore.load()
     }
 
+    /** Kirim ulang satu pesan tertentu (tombol putar ulang di samping gelembung). */
+    override suspend fun retry(messageId: String): Boolean {
+        val pesan = pendingStore.load().firstOrNull { it.id == messageId } ?: return false
+        val me = client.auth.currentUserOrNull()?.id ?: return false
+        val berhasil = runCatching {
+            val row = client.postgrest
+                .from(TABLE_MESSAGES)
+                .insert(
+                    buildJsonObject {
+                        put("conversation_id", pesan.threadId)
+                        put("sender_id", me)
+                        put("body", pesan.text)
+                        put("is_template", false)
+                    }
+                ) { select(Columns.raw(MESSAGE_COLUMNS)) }
+                .decodeSingle<MessageRow>()
+
+            pendingStore.remove(pesan.id)
+            appendMessage(row.toDomain(me))
+            touchThread(pesan.threadId, row)
+        }.isSuccess
+
+        outbox.value = pendingStore.load()
+        return berhasil
+    }
+
     private fun enqueue(conversationId: String, body: String) {
         val pesan = ChatMessage(
             id = "local-${'$'}{java.util.UUID.randomUUID()}",

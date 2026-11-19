@@ -164,7 +164,7 @@ fun ConversationScreen(
             item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
 
             itemsIndexed(items = messages, key = { _, message -> message.id }) { _, message ->
-                MessageBubble(message = message)
+                MessageBubble(message = message, onRetry = viewModel::onRetry)
             }
 
         }
@@ -179,8 +179,16 @@ fun ConversationScreen(
  * RoundedCornerShape langsung - bukan MaterialTheme.shapes.
  */
 @Composable
-private fun MessageBubble(message: ChatMessage) {
+private fun MessageBubble(
+    message: ChatMessage,
+    onRetry: (String) -> Unit
+) {
     val isMine = message.fromMe
+
+    // Pesan yang belum terkirim diberi tombol putar ulang di samping gelembung,
+    // sama seperti WhatsApp: pengguna bisa mencoba lagi tanpa mengetik ulang.
+    val bisaDiulang = isMine && message.status != MessageStatus.SENT
+
     val bubbleShape = if (isMine) {
         RoundedCornerShape(
             topStart = 18.dp,
@@ -199,8 +207,20 @@ private fun MessageBubble(message: ChatMessage) {
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (bisaDiulang) {
+            IconButton(onClick = { onRetry(message.id) }) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.chat_retry),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
         Column(
             modifier = Modifier.widthIn(max = 300.dp),
             horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
@@ -229,8 +249,8 @@ private fun MessageBubble(message: ChatMessage) {
             // waktu + penanda antrean, supaya pengguna tahu pesannya tidak hilang.
             val waktu = RelativeTime.format(message.sentAt)
             val keterangan = when (message.status) {
-                MessageStatus.SENDING -> "$waktu · menunggu terkirim"
-                MessageStatus.FAILED -> "$waktu · gagal terkirim"
+                MessageStatus.SENDING -> "$waktu - menunggu terkirim"
+                MessageStatus.FAILED -> "$waktu - gagal terkirim"
                 MessageStatus.SENT -> waktu
             }
             Text(

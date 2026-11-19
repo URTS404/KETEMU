@@ -66,7 +66,12 @@ class ConversationViewModel(
         }
     }
 
-    /** Tombol "Muat ulang": jaring pengaman bila Realtime terputus. */
+    /** Kirim ulang satu pesan yang tertahan (ikon putar ulang di gelembung). */
+    fun onRetry(messageId: String) {
+        viewModelScope.launch { chatRepository.retry(messageId) }
+    }
+
+    /** Tombol Muat ulang: jaring pengaman bila Realtime terputus. */
     fun onRefresh() {
         viewModelScope.launch { chatRepository.refresh() }
     }
