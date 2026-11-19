@@ -344,6 +344,16 @@ private fun MessageBubble(
 ) {
     val isMine = message.fromMe
 
+    // Waktu + status dihitung di awal supaya label bisa diletakkan DI DALAM
+    // gelembung (lebar kolom = lebar gelembung, sehingga ikon putar ulang
+    // menempel rapat di samping kiri gelembung, bukan tertinggal jauh).
+    val waktu = RelativeTime.format(message.sentAt)
+    val keterangan = when (message.status) {
+        MessageStatus.SENDING -> "" + waktu + " - menunggu terkirim"
+        MessageStatus.FAILED -> "" + waktu + " - gagal terkirim"
+        MessageStatus.SENT -> waktu
+    }
+
     // Pesan yang belum terkirim diberi tombol putar ulang di samping gelembung,
     // sama seperti WhatsApp: pengguna bisa mencoba lagi tanpa mengetik ulang.
     val bisaDiulang = isMine && message.status != MessageStatus.SENT
@@ -457,6 +467,20 @@ private fun MessageBubble(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+
+                    Text(
+                        text = keterangan,
+                        modifier = Modifier.padding(
+                            start = 14.dp, end = 14.dp, bottom = 8.dp
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when {
+                            message.status != MessageStatus.SENT && isMine ->
+                                MaterialTheme.colorScheme.onPrimary
+                            !isMine -> MaterialTheme.colorScheme.onSurfaceVariant
+                            else -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                        }
+                    )
                 }
             }
 
@@ -471,17 +495,6 @@ private fun MessageBubble(
             if (isMine) {
                 MenuPesan(onHapus = onDelete)
             }
-
-            Text(
-                text = keterangan,
-                modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (message.status == MessageStatus.SENT) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.error
-                }
-            )
         }
     }
 }
