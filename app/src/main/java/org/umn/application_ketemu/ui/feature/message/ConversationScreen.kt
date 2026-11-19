@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -82,7 +83,10 @@ fun ConversationScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        // `imePadding()` membuat seluruh layar (termasuk kolom tulis di
+        // bottomBar) naik mengikuti tinggi keyboard. Tanpa ini, dengan
+        // edge-to-edge Android 15+ tombol kirim tertutup keyboard.
+        modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(

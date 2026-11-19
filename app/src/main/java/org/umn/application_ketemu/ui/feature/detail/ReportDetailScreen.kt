@@ -393,12 +393,20 @@ private fun DetailContent(
             // baik laporan HILANG (chat dengan penemu) maupun TEMUAN (chat dengan
             // pemilik). Petugas juga melihat tombol ini dan ikut memantau utas.
             if (canChat) {
+                // Label mengikuti jenis laporan: pada laporan HILANG lawan
+                // bicaranya adalah orang yang kehilangan, pada laporan TEMUAN
+                // lawan bicaranya adalah penemu.
+                val chatLabel = if (report.type == ItemType.FOUND) {
+                    R.string.action_chat_found
+                } else {
+                    R.string.action_chat_lost
+                }
                 OutlinedButton(
                     onClick = { onChatClick(report.id) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = stringResource(R.string.action_chat),
+                        text = stringResource(chatLabel),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
