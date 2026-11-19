@@ -478,7 +478,7 @@ private fun MessageBubble(
                     Text(
                         text = keterangan,
                         modifier = Modifier.padding(
-                            start = 14.dp, end = 14.dp, bottom = 8.dp
+                            start = 14.dp, end = 14.dp, top = 0.dp, bottom = 3.dp
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = when {
