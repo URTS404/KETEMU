@@ -206,10 +206,10 @@ class AppContainer(context: Context) {
      * autentikasi berjalan lokal (mode UTS).
      */
     val authRepository: AuthRepository = if (SupabaseProvider.isConfigured) {
-        FallbackAuthRepository(
-            primary = SupabaseAuthRepository(SupabaseProvider.client),
-            fallback = LocalAuthRepository()
-        )
+        // Supabase aktif = login WAJIB lewat Supabase. Cadangan lokal hanya
+        // dipakai bila Supabase memang tidak dikonfigurasi; kalau tidak, login
+        // akan tampak "berhasil" tetapi tanpa JWT sehingga semua data hilang.
+        SupabaseAuthRepository(SupabaseProvider.client)
     } else {
         LocalAuthRepository()
     }

@@ -27,6 +27,8 @@ import org.umn.application_ketemu.domain.repository.AuthResult
  * tetap bisa dibuka tanpa memanggil jaringan sampai pengguna benar-benar
  * mencoba masuk/daftar.
  */
+private const val TAG = "Auth"
+
 class SupabaseAuthRepository(
     private val client: SupabaseClient = org.umn.application_ketemu.data.remote.SupabaseProvider.client
 ) : AuthRepository {
