@@ -40,7 +40,10 @@ class PendingChatStore(context: Context) {
                             text = item.optString("text"),
                             fromMe = true,
                             sentAt = item.optLong("sentAt"),
-                            status = MessageStatus.SENDING
+                            status = MessageStatus.SENDING,
+                            localImagePath = item.optString("localImagePath").ifBlank { null },
+                            imageWidth = item.optInt("imageWidth"),
+                            imageHeight = item.optInt("imageHeight")
                         )
                     )
                 }
@@ -68,6 +71,9 @@ class PendingChatStore(context: Context) {
                     put("threadId", message.threadId)
                     put("text", message.text)
                     put("sentAt", message.sentAt)
+                    message.localImagePath?.let { put("localImagePath", it) }
+                    put("imageWidth", message.imageWidth)
+                    put("imageHeight", message.imageHeight)
                 }
             )
         }

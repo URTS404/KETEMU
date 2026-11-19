@@ -4,6 +4,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.realtime.PostgresAction
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.hours
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -51,7 +53,8 @@ import java.time.OffsetDateTime
  */
 class SupabaseChatRepository(
     private val client: SupabaseClient,
-    private val pendingStore: PendingChatStore
+    private val pendingStore: PendingChatStore,
+    private val pendingDir: java.io.File
 ) : ChatRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -178,6 +181,78 @@ class SupabaseChatRepository(
         return berhasil
     }
 
+    /**
+     * Unggah gambar lalu simpan pesannya.
+     *
+     * Kalau unggah gagal (offline), gambar disalin dulu ke penyimpanan aplikasi
+     * dan dimasukkan ke antrean offline — jadi pengguna tetap melihat gelembung
+     * buram "menunggu terkirim" dan gambarnya tidak hilang.
+     */
+    override suspend fun sendImage(
+        conversationId: String,
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        caption: String
+    ): Boolean {
+        val me = client.auth.currentUserOrNull()?.id ?: return false
+        val nama = java.util.UUID.randomUUID().toString()
+        val path = "$conversationId/$nama.webp"
+
+        val berhasil = runCatching {
+            client.storage.from(BUCKET_IMAGES).upload(path, bytes) { upsert = false }
+            val row = client.postgrest
+                .from(TABLE_MESSAGES)
+                .insert(
+                    buildJsonObject {
+                        put("conversation_id", conversationId)
+                        put("sender_id", me)
+                        put("body", caption.trim().ifEmpty { null })
+                        put("image_path", path)
+                        put("image_width", width)
+                        put("image_height", height)
+                        put("is_template", false)
+                    }
+                ) { select(Columns.raw(MESSAGE_COLUMNS)) }
+                .decodeSingle<MessageRow>()
+
+            appendMessage(row.toDomain(me, imageUrl = signedUrl(path)))
+            touchThread(conversationId, row)
+        }.onFailure {
+            android.util.Log.e("Chat", "unggah gambar gagal: " + it.message)
+        }.isSuccess
+
+        if (!berhasil) {
+            // Simpan salinan lokal supaya gelembung buram tetap bisa ditampilkan.
+            val berkas = java.io.File(
+                java.io.File(pendingDir, "outbox-" + nama + ".webp").also {
+                    it.parentFile?.mkdirs()
+                }.path
+            )
+            runCatching { berkas.writeBytes(bytes) }
+            val pesan = ChatMessage(
+                id = "local-" + nama,
+                threadId = conversationId,
+                text = caption,
+                fromMe = true,
+                sentAt = System.currentTimeMillis(),
+                status = MessageStatus.SENDING,
+                localImagePath = berkas.path,
+                imageWidth = width,
+                imageHeight = height
+            )
+            pendingStore.add(pesan)
+            outbox.value = pendingStore.load()
+        }
+        return berhasil
+    }
+
+    /** URL sementara (1 jam) untuk gambar privat di bucket `chat-images`. */
+    private suspend fun signedUrl(path: String): String? = runCatching {
+        client.storage.from(BUCKET_IMAGES)
+            .createSignedUrl(path, 1.hours)
+    }.getOrNull()
+
     private fun enqueue(conversationId: String, body: String) {
         val pesan = ChatMessage(
             id = "local-${'$'}{java.util.UUID.randomUUID()}",
@@ -223,7 +298,10 @@ class SupabaseChatRepository(
                 limit(MESSAGE_LIMIT.toLong())
             }
             .decodeList<MessageRow>()
-        messagesByThread.update { it + (conversationId to rows.map { row -> row.toDomain(me) }) }
+        val pesan = rows.map { row ->
+            row.toDomain(me, imageUrl = row.imagePath?.let { path -> signedUrl(path) })
+        }
+        messagesByThread.update { it + (conversationId to pesan) }
     }
 
     // -------------------------------------------------------------- realtime
@@ -279,7 +357,7 @@ class SupabaseChatRepository(
             list.map { thread ->
                 if (thread.id != conversationId) thread
                 else thread.copy(
-                    lastMessage = row.body,
+                    lastMessage = row.body.orEmpty().ifBlank { "[gambar]" },
                     lastMessageAt = isoToMillis(row.createdAt)
                 )
             }
@@ -321,21 +399,28 @@ class SupabaseChatRepository(
         val id: String = "",
         @SerialName("conversation_id") val conversationId: String = "",
         @SerialName("sender_id") val senderId: String = "",
-        val body: String = "",
+        val body: String? = null,
         @SerialName("created_at") val createdAt: String? = null,
-        @SerialName("is_template") val isTemplate: Boolean = false
+        @SerialName("is_template") val isTemplate: Boolean = false,
+        @SerialName("image_path") val imagePath: String? = null,
+        @SerialName("image_width") val imageWidth: Int = 0,
+        @SerialName("image_height") val imageHeight: Int = 0
     ) {
-        fun toDomain(currentUserId: String?): ChatMessage = ChatMessage(
+        fun toDomain(currentUserId: String?, imageUrl: String? = null): ChatMessage = ChatMessage(
             id = id,
             threadId = conversationId,
-            text = body,
+            text = body.orEmpty(),
             fromMe = currentUserId != null && senderId == currentUserId,
-            sentAt = isoToMillis(createdAt)
+            sentAt = isoToMillis(createdAt),
+            imageUrl = imageUrl,
+            imageWidth = imageWidth,
+            imageHeight = imageHeight
         )
     }
 
     private companion object {
         const val TABLE_CONVERSATIONS = "chat_threads"
+        const val BUCKET_IMAGES = "chat-images"
         const val TABLE_MESSAGES = "messages"
         const val SCHEMA = "public"
         const val CHANNEL_PREFIX = "chat-"
@@ -347,7 +432,8 @@ class SupabaseChatRepository(
                 "last_message,last_message_at"
 
         const val MESSAGE_COLUMNS =
-            "id,conversation_id,sender_id,body,created_at,is_template"
+            "id,conversation_id,sender_id,body,created_at,is_template," +
+                "image_path,image_width,image_height"
 
         /** Balasan cepat petugas (opsi 5C) — teks, tanpa lampiran. */
         val TEMPLATES = listOf(

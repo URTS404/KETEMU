@@ -179,7 +179,11 @@ class AppContainer(context: Context) {
     private val pendingChatStore = PendingChatStore(context)
 
     val chatRepository: ChatRepository = if (SupabaseProvider.isConfigured) {
-        SupabaseChatRepository(SupabaseProvider.client, pendingChatStore)
+        SupabaseChatRepository(
+            SupabaseProvider.client,
+            pendingChatStore,
+            java.io.File(context.filesDir, "chat_outbox")
+        )
     } else {
         InMemoryChatRepository()
     }

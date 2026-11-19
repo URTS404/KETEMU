@@ -66,6 +66,23 @@ class ConversationViewModel(
         }
     }
 
+    /** Kirim gambar yang sudah dikompres (dipanggil dari tombol lampiran). */
+    fun onImagePicked(bytes: ByteArray, width: Int, height: Int) {
+        if (_isSending.value) return
+        _isSending.value = true
+        viewModelScope.launch {
+            chatRepository.sendImage(
+                conversationId = conversationId,
+                bytes = bytes,
+                width = width,
+                height = height,
+                caption = _draft.value.trim()
+            )
+            _draft.value = ""
+            _isSending.value = false
+        }
+    }
+
     /** Kirim ulang satu pesan yang tertahan (ikon putar ulang di gelembung). */
     fun onRetry(messageId: String) {
         viewModelScope.launch { chatRepository.retry(messageId) }

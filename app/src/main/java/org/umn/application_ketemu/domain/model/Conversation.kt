@@ -25,8 +25,16 @@ data class ChatMessage(
     /** true = pesan dari pengguna yang sedang masuk (ditampilkan di kanan). */
     val fromMe: Boolean,
     val sentAt: Long,
-    val status: MessageStatus = MessageStatus.SENT
-)
+    val status: MessageStatus = MessageStatus.SENT,
+    /** URL bertanda tangan (sementara) untuk gambar di Storage, bila ada. */
+    val imageUrl: String? = null,
+    /** Berkas lokal untuk gambar yang belum terunggah (antrean offline). */
+    val localImagePath: String? = null,
+    val imageWidth: Int = 0,
+    val imageHeight: Int = 0
+) {
+    val hasImage: Boolean get() = imageUrl != null || localImagePath != null
+}
 
 /**
  * Satu utas percakapan versi mode lokal (tanpa Supabase).

@@ -13,6 +13,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import org.umn.application_ketemu.core.image.ImageCompressor
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -76,6 +90,25 @@ fun ConversationScreen(
     val isSending by viewModel.isSending.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
+    val konteks = LocalContext.current
+
+    // Pemilih foto bawaan Android (tanpa izin Storage/Media).
+    val pemilihFoto = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            // Kompresi dijalankan di luar thread UI agar layar tidak tersendat.
+            Thread {
+                val hasil = ImageCompressor.compress(konteks, uri)
+                if (hasil != null) {
+                    viewModel.onImagePicked(hasil.bytes, hasil.width, hasil.height)
+                }
+            }.start()
+        }
+    }
+    val onPickImage: () -> Unit = {
+        pemilihFoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
 
     // Banner konteks barang = item ke-0, jadi total = 1 + pesan.
     val itemCount = 1 + messages.size
@@ -148,6 +181,7 @@ fun ConversationScreen(
                     value = draft,
                     onValueChange = viewModel::onDraftChange,
                     onSend = { viewModel.onSend() },
+                    onPickImage = onPickImage,
                     canSend = canSend
                 )
             }
@@ -238,11 +272,57 @@ private fun MessageBubble(
                     MaterialTheme.colorScheme.onSurface
                 }
             ) {
-                Text(
-                    text = message.text,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Column {
+                    if (message.hasImage) {
+                        // Gambar yang belum terkirim sengaja dibuat BUARU + ikon di
+                        // tengah, mengikuti pola WhatsApp: isi gambar tetap terlihat
+                        // tetapi jelas belum sampai ke lawan bicara.
+                        val belumTerkirim = message.status != MessageStatus.SENT
+                        Box(
+                            modifier = Modifier
+                                .widthIn(max = 260.dp)
+                                .heightIn(max = 260.dp)
+                                .clip(bubbleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = message.imageUrl ?: message.localImagePath,
+                                contentDescription = stringResource(R.string.chat_image),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (belumTerkirim) Modifier.blur(10.dp) else Modifier
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                            if (belumTerkirim) {
+                                IconButton(
+                                    onClick = { onRetry(message.id) },
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                            CircleShape
+                                        )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Refresh,
+                                        contentDescription = stringResource(R.string.chat_retry),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (message.text.isNotBlank()) {
+                        Text(
+                            text = message.text,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
 
             // Pesan yang belum sampai server tetap terlihat (seperti WhatsApp):
@@ -342,6 +422,7 @@ private fun MessageComposer(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
+    onPickImage: () -> Unit,
     canSend: Boolean
 ) {
     Surface(
@@ -356,6 +437,15 @@ private fun MessageComposer(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            IconButton(onClick = onPickImage, modifier = Modifier.size(44.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.chat_attach),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,

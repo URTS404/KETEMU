@@ -36,6 +36,21 @@ interface ChatRepository {
     /** Kirim pesan; [isTemplate] menandai pemakaian balasan cepat petugas. */
     suspend fun send(conversationId: String, body: String, isTemplate: Boolean = false): Boolean
 
+    /**
+     * Kirim pesan gambar (sudah dikompres oleh [ImageCompressor]).
+     *
+     * @param bytes isi berkas siap unggah.
+     * @param caption teks pendamping; boleh kosong.
+     * @return true bila gambar berhasil diunggah dan pesannya tersimpan.
+     */
+    suspend fun sendImage(
+        conversationId: String,
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        caption: String = ""
+    ): Boolean = false
+
     /** Segarkan dari server (dipakai saat Realtime tidak tersedia). */
     suspend fun refresh()
 
