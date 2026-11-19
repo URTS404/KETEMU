@@ -14,9 +14,23 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0008_selfcheck.sql` | Query pemeriksaan cepat setelah setup |
 | `0009_fix_audit_enum_cast.sql` | Perbaikan cast enum pada trigger audit |
 | `0010_report_coordinates.sql` | Kolom `latitude`/`longitude` untuk titik peta |
+| `0011_admin_management.sql` | Pemisahan hak akses STAFF vs ADMIN (hak tambahan khusus admin) |
+| `0012_admin_audit.sql` | Audit untuk aksi ADMIN pada akun pengguna |
+| `0013_demo_admin_staff.sql` | Data demo untuk memamerkan pemisahan hak STAFF vs ADMIN |
+| `0014_account_status.sql` | Pemeriksaan status blokir untuk akun yang sedang login |
+| `0015_staff_keys.sql` | Kunci staf (undangan sekali pakai) + penjagaan domain kampus |
 | `0016_notifications.sql` | Tabel `notifications`, RLS, dan trigger `reports_notify_found` (konfirmasi barang temuan + siaran barang temuan baru) |
 | `0017_realtime.sql` | Mendaftarkan `notifications` ke publication `supabase_realtime` agar kabar baru dikirim seketika (Realtime) |
 | `0018_auto_match.sql` | Tabel `matches`, RLS baca-saja, dan trigger `reports_auto_match` (pencocokan otomatis + notifikasi `POSSIBLE_MATCH`) |
+| `0019_messages.sql` | Tabel `messages` + akses percakapan dua arah pada satu laporan |
+| `0020_chat_view.sql` | View `chat_threads` (ringkasan percakapan per laporan) |
+| `0021_healthcheck.sql` | Query pemeriksaan cepat untuk kondisi chat dan notifikasi |
+| `0022_chat_images.sql` | Indeks lampiran gambar pada `messages` |
+| `0023_chat_storage.sql` | Bucket Storage + policy baca/tulis gambar chat |
+| `0024_message_delete.sql` | Policy hapus pesan milik sendiri |
+| `0025_seed_demo.sql` | Data contoh tambahan untuk demo dan penilaian |
+| `0026_fix_can_access_conversation.sql` | Perbaikan `can_access_conversation` untuk lampiran gambar chat |
+| `0027_typing_state.sql` | Tabel + fungsi `set_typing`/`peer_typing` untuk indikator "sedang menulis…" (kedaluwarsa 5 detik) |
 
 ## 1. Buat project
 
@@ -42,9 +56,14 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 4. `db/0010_report_coordinates.sql` — wajib bila memakai fitur titik peta
 5. `db/0016_notifications.sql` lalu `db/0017_realtime.sql` — kotak masuk notifikasi dan pengiriman kabar seketika (Realtime)
 6. `db/0018_auto_match.sql` - pencocokan otomatis hilang <-> temuan + notifikasi "Mungkin barangmu"
+7. `db/0019_messages.sql` lalu `db/0020_chat_view.sql` - pesan dua arah per laporan
+8. `db/0022_chat_images.sql` lalu `db/0023_chat_storage.sql` - lampiran foto di chat
+9. `db/0024_message_delete.sql` - hapus pesan sendiri
+10. `db/0026_fix_can_access_conversation.sql` - wajib bila langkah 8 dipakai
+11. `db/0027_typing_state.sql` - indikator "sedang menulis..." di dalam percakapan
 
-Berkas `0004`–`0009` hanya berisi data contoh dan perbaikan; jalankan bila
-project Anda berasal dari versi skema sebelumnya.
+Berkas `0004`–`0009` serta `0021` dan `0025` hanya berisi data contoh dan
+pemeriksaan; jalankan bila perlu.
 
 Semua berkas aman dijalankan ulang (memakai `create ... if not exists`,
 `create or replace`, `drop policy if exists`, dan `on conflict do update`).
