@@ -290,14 +290,24 @@ class SupabaseChatRepository(
 
     private suspend fun loadMessages(conversationId: String) {
         val me = client.auth.currentUserOrNull()?.id
-        val rows = client.postgrest
+
+        suspend fun ambil(kolom: String) = client.postgrest
             .from(TABLE_MESSAGES)
-            .select(columns = Columns.raw(MESSAGE_COLUMNS)) {
+            .select(columns = Columns.raw(kolom)) {
                 filter { eq("conversation_id", conversationId) }
                 order("created_at", Order.ASCENDING)
                 limit(MESSAGE_LIMIT.toLong())
             }
             .decodeList<MessageRow>()
+        // Kolom gambar diminta terpisah: bila database belum memilikinya
+        // (skrip 0022 belum jalan atau cache skema basi), percakapan TIDAK
+        // boleh tampak kosong - kita ulangi dengan kolom dasar dan mencatat galat.
+        val rows = runCatching { ambil(MESSAGE_COLUMNS_GAMBAR) }
+            .getOrElse { galat ->
+                android.util.Log.e("Chat", "gagal muat kolom gambar: " + galat.message)
+                ambil(MESSAGE_COLUMNS)
+            }
+
         val pesan = rows.map { row ->
             row.toDomain(me, imageUrl = row.imagePath?.let { path -> signedUrl(path) })
         }
@@ -403,8 +413,8 @@ class SupabaseChatRepository(
         @SerialName("created_at") val createdAt: String? = null,
         @SerialName("is_template") val isTemplate: Boolean = false,
         @SerialName("image_path") val imagePath: String? = null,
-        @SerialName("image_width") val imageWidth: Int = 0,
-        @SerialName("image_height") val imageHeight: Int = 0
+        @SerialName("image_width") val imageWidth: Int? = null,
+        @SerialName("image_height") val imageHeight: Int? = null
     ) {
         fun toDomain(currentUserId: String?, imageUrl: String? = null): ChatMessage = ChatMessage(
             id = id,
@@ -413,8 +423,8 @@ class SupabaseChatRepository(
             fromMe = currentUserId != null && senderId == currentUserId,
             sentAt = isoToMillis(createdAt),
             imageUrl = imageUrl,
-            imageWidth = imageWidth,
-            imageHeight = imageHeight
+            imageWidth = imageWidth ?: 0,
+            imageHeight = imageHeight ?: 0
         )
     }
 
@@ -433,6 +443,10 @@ class SupabaseChatRepository(
 
         const val MESSAGE_COLUMNS =
             "id,conversation_id,sender_id,body,created_at,is_template"
+
+        /** Kolom tambahan; diminta terpisah supaya kegagalan tidak mengosongkan layar. */
+        const val MESSAGE_COLUMNS_GAMBAR =
+            MESSAGE_COLUMNS + ",image_path,image_width,image_height"
 
         /** Balasan cepat petugas (opsi 5C) — teks, tanpa lampiran. */
         val TEMPLATES = listOf(
