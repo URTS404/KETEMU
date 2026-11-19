@@ -196,7 +196,7 @@ class SupabaseChatRepository(
                         put("body", pesan.text)
                         put("is_template", false)
                     }
-                ) { select(Columns.raw(MESSAGE_COLUMNS)) }
+                ) { select(Columns.raw(MESSAGE_COLUMNS_GAMBAR)) }
                 .decodeSingle<MessageRow>()
 
             pendingStore.remove(pesan.id)
@@ -240,11 +240,14 @@ class SupabaseChatRepository(
                         put("image_height", height)
                         put("is_template", false)
                     }
-                ) { select(Columns.raw(MESSAGE_COLUMNS)) }
+                ) { select(Columns.raw(MESSAGE_COLUMNS_GAMBAR)) }
                 .decodeSingle<MessageRow>()
 
             appendMessage(row.toDomain(me, imageUrl = signedUrl(path)))
             touchThread(conversationId, row)
+            // Muat ulang dari server supaya gelembung gambar langsung tampil
+            // (sebelumnya baru muncul setelah layar ditutup dan dibuka lagi).
+            loadMessages(conversationId)
         }.onFailure {
             android.util.Log.e("Chat", "unggah gambar gagal: " + it.message)
         }.isSuccess
@@ -401,7 +404,10 @@ class SupabaseChatRepository(
                     .getOrNull()
                     ?.takeIf { it.conversationId == conversationId }
                     ?.let { row ->
-                        appendMessage(row.toDomain(me))
+                        // Gambar privat butuh URL sementara; tanpa ini gelembung
+                        // gambar baru terlihat setelah layar dimuat ulang.
+                        val url = row.imagePath?.let { path -> signedUrl(path) }
+                        appendMessage(row.toDomain(me, imageUrl = url))
                         touchThread(conversationId, row)
                     }
             }
