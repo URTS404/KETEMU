@@ -1,4 +1,4 @@
-﻿-- 0027_typing_state.sql
+-- 0027_typing_state.sql
 -- Indikator "sedang mengetik" per percakapan (tanpa polling pesan).
 create table if not exists public.typing_state (
     conversation_id uuid not null references public.conversations(id) on delete cascade,
@@ -47,7 +47,7 @@ as $$
         select 1 from public.typing_state t
         where t.conversation_id = p_conversation_id
           and t.user_id <> coalesce(auth.uid(), '00000000-0000-0000-0000-000000000000'::uuid)
-          and t.updated_at > now() - interval ''5 seconds''
+          and t.updated_at > now() - interval '5 seconds'
     );
 $$;
 
