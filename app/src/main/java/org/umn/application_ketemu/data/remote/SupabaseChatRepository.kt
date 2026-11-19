@@ -193,6 +193,7 @@ class SupabaseChatRepository(
         if (tertunda.isEmpty()) return
         val me = client.auth.currentUserOrNull()?.id ?: return
 
+        val percakapanBerubah = mutableSetOf<String>()
         tertunda.forEach { pesan ->
             runCatching {
                 val row = kirimSatu(pesan, me)
@@ -200,11 +201,17 @@ class SupabaseChatRepository(
                 pendingStore.remove(pesan.id)
                 appendMessage(row.toDomain(me))
                 touchThread(pesan.threadId, row)
+                percakapanBerubah += pesan.threadId
             }.onFailure {
                 android.util.Log.e("Chat", "kirim ulang gagal: " + it.message)
             }
         }
         outbox.value = pendingStore.load()
+        // Muat ulang daftar pesan supaya gelembung "menunggu terkirim"
+        // langsung berganti menjadi pesan (gambar) yang benar-benar terkirim.
+        percakapanBerubah.forEach { id ->
+            runCatching { loadMessages(id) }
+        }
     }
 
     /** Kirim ulang satu pesan tertentu (tombol putar ulang di samping gelembung). */

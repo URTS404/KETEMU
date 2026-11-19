@@ -95,6 +95,17 @@ fun ConversationScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Saat layar kembali dibuka, muat ulang dari server: signed URL gambar
+    // hanya berlaku 1 jam, jadi gambar lama perlu URL baru agar tetap tampil.
+    val pemilikSiklus = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(pemilikSiklus) {
+        val pengamat = androidx.lifecycle.LifecycleEventObserver { _, peristiwa ->
+            if (peristiwa == androidx.lifecycle.Lifecycle.Event.ON_RESUME) viewModel.onRefresh()
+        }
+        pemilikSiklus.lifecycle.addObserver(pengamat)
+        onDispose { pemilikSiklus.lifecycle.removeObserver(pengamat) }
+    }
+
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val thread by viewModel.thread.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
