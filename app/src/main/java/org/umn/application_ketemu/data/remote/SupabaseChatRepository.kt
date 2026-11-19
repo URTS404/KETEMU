@@ -146,6 +146,47 @@ class SupabaseChatRepository(
         }
     }
 
+    /**
+     * Mengirim satu entri antrean, baik teks maupun gambar.
+     *
+     * Entri bergambar harus diunggah dulu ke Storage; sebelumnya jalur ini
+     * hanya mengirim teks sehingga gambar tertunda tidak pernah terkirim.
+     */
+    private suspend fun kirimSatu(pesan: ChatMessage, me: String): MessageRow {
+        val lokal = pesan.localImagePath
+        if (lokal != null) {
+            val berkas = java.io.File(lokal)
+            check(berkas.exists()) { "berkas antrean hilang: " + lokal }
+            val path = pesan.threadId + "/" + java.util.UUID.randomUUID() + ".webp"
+            client.storage.from(BUCKET_IMAGES).upload(path, berkas.readBytes()) { upsert = false }
+            return client.postgrest
+                .from(TABLE_MESSAGES)
+                .insert(
+                    buildJsonObject {
+                        put("conversation_id", pesan.threadId)
+                        put("sender_id", me)
+                        put("body", pesan.text.trim().ifEmpty { null })
+                        put("image_path", path)
+                        put("image_width", pesan.imageWidth)
+                        put("image_height", pesan.imageHeight)
+                        put("is_template", false)
+                    }
+                ) { select(Columns.raw(MESSAGE_COLUMNS_GAMBAR)) }
+                .decodeSingle<MessageRow>()
+        }
+        return client.postgrest
+            .from(TABLE_MESSAGES)
+            .insert(
+                buildJsonObject {
+                    put("conversation_id", pesan.threadId)
+                    put("sender_id", me)
+                    put("body", pesan.text)
+                    put("is_template", false)
+                }
+            ) { select(Columns.raw(MESSAGE_COLUMNS_GAMBAR)) }
+            .decodeSingle<MessageRow>()
+    }
+
     /** Kirim ulang semua pesan yang tertahan (dipanggil saat jaringan kembali). */
     override suspend fun flushPending() {
         val tertunda = pendingStore.load()
@@ -154,23 +195,13 @@ class SupabaseChatRepository(
 
         tertunda.forEach { pesan ->
             runCatching {
-                val row = client.postgrest
-                    .from(TABLE_MESSAGES)
-                    .insert(
-                        buildJsonObject {
-                            put("conversation_id", pesan.threadId)
-                            put("sender_id", me)
-                            put("body", pesan.text)
-                            put("is_template", false)
-                        }
-                    ) { select(Columns.raw(MESSAGE_COLUMNS)) }
-                    .decodeSingle<MessageRow>()
+                val row = kirimSatu(pesan, me)
 
                 pendingStore.remove(pesan.id)
                 appendMessage(row.toDomain(me))
                 touchThread(pesan.threadId, row)
             }.onFailure {
-                android.util.Log.e("Chat", "kirim ulang gagal: ${'$'}{it.message}")
+                android.util.Log.e("Chat", "kirim ulang gagal: " + it.message)
             }
         }
         outbox.value = pendingStore.load()
@@ -187,17 +218,7 @@ class SupabaseChatRepository(
 
         val me = client.auth.currentUserOrNull()?.id ?: return false
         val berhasil = runCatching {
-            val row = client.postgrest
-                .from(TABLE_MESSAGES)
-                .insert(
-                    buildJsonObject {
-                        put("conversation_id", pesan.threadId)
-                        put("sender_id", me)
-                        put("body", pesan.text)
-                        put("is_template", false)
-                    }
-                ) { select(Columns.raw(MESSAGE_COLUMNS_GAMBAR)) }
-                .decodeSingle<MessageRow>()
+            val row = kirimSatu(pesan, me)
 
             pendingStore.remove(pesan.id)
             appendMessage(row.toDomain(me))
