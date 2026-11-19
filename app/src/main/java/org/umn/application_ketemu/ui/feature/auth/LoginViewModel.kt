@@ -65,7 +65,15 @@ class LoginViewModel(
     private val session: SessionStore,
     private val authRepository: AuthRepository,
     val campusDomain: String = BuildConfig.CAMPUS_EMAIL_DOMAIN,
-    val trialAccounts: List<TrialAccount> = LocalAuthRepository.TRIAL_ACCOUNTS
+    // Kartu akun contoh hanya berguna pada mode lokal (tanpa Supabase).
+    // Saat Supabase aktif, kredensialnya menyesatkan: sandi akun sungguhan
+    // ditentukan saat pendaftaran, bukan NIM/NIDN.
+    val trialAccounts: List<TrialAccount> =
+        if (org.umn.application_ketemu.data.remote.SupabaseProvider.isConfigured) {
+            emptyList()
+        } else {
+            LocalAuthRepository.TRIAL_ACCOUNTS
+        }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())

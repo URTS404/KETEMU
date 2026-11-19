@@ -133,7 +133,9 @@ fun LoginScreen(
 
             // Akun uji coba: ditampilkan langsung di layar agar pengguna/penguji
             // tidak perlu membuka kode sumber untuk mengetahui email & sandinya.
-            TrialAccountsCard(accounts = viewModel.trialAccounts)
+            if (viewModel.trialAccounts.isNotEmpty()) {
+                TrialAccountsCard(accounts = viewModel.trialAccounts)
+            }
 
             TextButton(
                 onClick = onForgotPasswordClick,
