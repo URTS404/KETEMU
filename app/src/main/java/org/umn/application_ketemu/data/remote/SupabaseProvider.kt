@@ -1,6 +1,9 @@
 package org.umn.application_ketemu.data.remote
 
+import android.content.Context
 import com.russhwolf.settings.MapSettings
+import com.russhwolf.settings.Settings
+import com.russhwolf.settings.SharedPreferencesSettings
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.SettingsCodeVerifierCache
@@ -28,6 +31,23 @@ object SupabaseProvider {
         BuildConfig.SUPABASE_URL.isNotBlank() &&
             (BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank() || BuildConfig.SUPABASE_ANON_KEY.isNotBlank())
 
+    /** Context aplikasi untuk penyimpanan sesi (diisi dari [KetemuApp]). */
+    private var appContext: Context? = null
+
+    /**
+     * Dipanggil sekali dari Application#onCreate, sebelum container dibuat.
+     * Setelah ini sesi login & cache PKCE disimpan di SharedPreferences,
+     * sehingga pengguna tidak perlu login ulang setiap aplikasi dibuka.
+     */
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    private val sesi: Settings
+        get() = appContext
+            ?.let { SharedPreferencesSettings(it.getSharedPreferences("ketemu_session", Context.MODE_PRIVATE)) }
+            ?: MapSettings()
+
     private val apiKey: String
         get() = BuildConfig.SUPABASE_PUBLISHABLE_KEY.ifBlank { BuildConfig.SUPABASE_ANON_KEY }
 
@@ -38,8 +58,8 @@ object SupabaseProvider {
             supabaseKey = apiKey
         ) {
             install(Auth) {
-                sessionManager = SettingsSessionManager(MapSettings())
-                codeVerifierCache = SettingsCodeVerifierCache(MapSettings())
+                sessionManager = SettingsSessionManager(sesi)
+                codeVerifierCache = SettingsCodeVerifierCache(sesi)
             }
             install(Postgrest)
             // Realtime dipakai SupabaseNotificationRepository untuk menerima

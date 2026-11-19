@@ -4,6 +4,7 @@ import android.app.Application
 
 import org.umn.application_ketemu.core.notification.KetemuNotificationChannels
 import org.umn.application_ketemu.data.AppContainer
+import org.umn.application_ketemu.data.remote.SupabaseProvider
 
 /**
  * Application class milik Ketemu.
@@ -21,6 +22,9 @@ class KetemuApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Sesi login disimpan sebelum client Supabase dipakai.
+        SupabaseProvider.init(this)
+
         // Kanal panel sistem dibuat di awal: Android 8+ membuang notifikasi yang
         // kanalnya belum terdaftar, jadi jangan menunggu sampai kabar pertama.
         KetemuNotificationChannels.ensure(this)
