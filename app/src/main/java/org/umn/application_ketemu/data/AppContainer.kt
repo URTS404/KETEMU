@@ -17,6 +17,7 @@ import org.umn.application_ketemu.data.remote.SupabaseMatchRepository
 import org.umn.application_ketemu.data.remote.SupabaseNotificationRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.remote.SupabaseReportRepository
+import org.umn.application_ketemu.data.remote.SupabaseChatRepository
 import org.umn.application_ketemu.data.remote.SupabaseStaffKeyRepository
 import org.umn.application_ketemu.data.remote.SupabaseUserRepository
 import org.umn.application_ketemu.data.repository.InMemoryAuditLogRepository
@@ -25,6 +26,7 @@ import org.umn.application_ketemu.data.repository.InMemoryConversationRepository
 import org.umn.application_ketemu.data.repository.InMemoryMatchRepository
 import org.umn.application_ketemu.data.repository.InMemoryNotificationRepository
 import org.umn.application_ketemu.data.repository.InMemoryReportRepository
+import org.umn.application_ketemu.data.repository.InMemoryChatRepository
 import org.umn.application_ketemu.data.repository.InMemoryStaffKeyRepository
 import org.umn.application_ketemu.data.repository.InMemoryUserRepository
 import org.umn.application_ketemu.data.repository.SystemNotifyingNotificationRepository
@@ -36,6 +38,7 @@ import org.umn.application_ketemu.domain.repository.ConversationRepository
 import org.umn.application_ketemu.domain.repository.MatchRepository
 import org.umn.application_ketemu.domain.repository.NotificationRepository
 import org.umn.application_ketemu.domain.repository.ReportRepository
+import org.umn.application_ketemu.domain.repository.ChatRepository
 import org.umn.application_ketemu.domain.repository.StaffKeyRepository
 import org.umn.application_ketemu.domain.repository.UserRepository
 
@@ -160,6 +163,13 @@ class AppContainer(context: Context) {
         SupabaseUserRepository(SupabaseProvider.client)
     } else {
         InMemoryUserRepository(listOf(DummyData.student, DummyData.staff))
+    }
+
+    /** Percakapan per laporan (db/0019). Realtime hanya saat layar chat terbuka. */
+    val chatRepository: ChatRepository = if (SupabaseProvider.isConfigured) {
+        SupabaseChatRepository(SupabaseProvider.client)
+    } else {
+        InMemoryChatRepository()
     }
 
     /** Kunci staf (undangan sekali pakai) — dibaca penuh hanya oleh ADMIN. */
