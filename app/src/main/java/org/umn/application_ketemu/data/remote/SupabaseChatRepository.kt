@@ -479,6 +479,31 @@ class SupabaseChatRepository(
         channels[conversationId] = channel to job
     }
 
+    /**
+     * Indikator "sedang mengetik" memakai tabel `typing_state` (`db/0027`).
+     * Ditulis lewat fungsi `set_typing` dan dibaca lewat `peer_typing`
+     * (keduanya SECURITY DEFINER, jadi RLS tetap terjaga).
+     */
+    override suspend fun setTyping(conversationId: String) {
+        runCatching {
+            client.postgrest.rpc(
+                function = "set_typing",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_conversation_id", conversationId)
+                }
+            )
+        }
+    }
+
+    override suspend fun isPeerTyping(conversationId: String): Boolean = runCatching {
+        client.postgrest.rpc(
+            function = "peer_typing",
+            parameters = kotlinx.serialization.json.buildJsonObject {
+                put("p_conversation_id", conversationId)
+            }
+        ).decodeAs<Boolean>()
+    }.getOrDefault(false)
+
     /** Lepas kanal; dipanggil saat layar percakapan ditutup. */
     suspend fun stopRealtime(conversationId: String) {
         val entry = channels.remove(conversationId) ?: return

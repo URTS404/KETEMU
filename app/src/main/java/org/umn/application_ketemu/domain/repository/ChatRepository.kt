@@ -79,6 +79,12 @@ interface ChatRepository {
      */
     suspend fun deleteMessage(messageId: String): Boolean = false
 
+    /** Kabari lawan bicara bahwa pengguna sedang mengetik. */
+    suspend fun setTyping(conversationId: String) = Unit
+
+    /** True bila lawan bicara mengetik dalam beberapa detik terakhir. */
+    suspend fun isPeerTyping(conversationId: String): Boolean = false
+
     /** Balasan cepat yang boleh dipakai petugas. */
     fun templates(): List<TemplateReply>
 }

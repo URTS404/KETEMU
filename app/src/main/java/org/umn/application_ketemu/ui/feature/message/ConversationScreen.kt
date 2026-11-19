@@ -108,6 +108,9 @@ fun ConversationScreen(
     }
 
     val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val peerTyping by viewModel.peerTyping.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.pantauMengetik() }
 
     // Model gambar yang sedang diperbesar (null = tidak ada pratinjau).
     var gambarPratinjau by remember { mutableStateOf<String?>(null) }
@@ -273,6 +276,10 @@ fun ConversationScreen(
             }
 
             // Karena reverseLayout, item terakhir tampil paling atas.
+            if (peerTyping) {
+                item(key = "sedang-mengetik") { TypingBubble() }
+            }
+
             item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
 
         }

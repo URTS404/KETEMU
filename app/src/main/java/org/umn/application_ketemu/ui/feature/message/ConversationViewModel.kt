@@ -2,6 +2,9 @@ package org.umn.application_ketemu.ui.feature.message
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,8 +53,34 @@ class ConversationViewModel(
         .map { it.isNotBlank() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    private val _peerTyping = MutableStateFlow(false)
+
+    /** True selama lawan bicara mengetik. */
+    val peerTyping: StateFlow<Boolean> = _peerTyping.asStateFlow()
+
+    private var pantauJob: Job? = null
+    private var ketikTerakhir = 0L
+
     fun onDraftChange(value: String) {
         _draft.value = value
+        val sekarang = System.currentTimeMillis()
+        if (value.isNotBlank() && sekarang - ketikTerakhir > 2_000) {
+            ketikTerakhir = sekarang
+            viewModelScope.launch { runCatching { chatRepository.setTyping(conversationId) } }
+        }
+    }
+
+    /** Mulai memantau status mengetik lawan bicara selama layar terbuka. */
+    fun pantauMengetik() {
+        if (pantauJob != null) return
+        pantauJob = viewModelScope.launch {
+            while (true) {
+                _peerTyping.value = runCatching {
+                    chatRepository.isPeerTyping(conversationId)
+                }.getOrDefault(false)
+                delay(2_500)
+            }
+        }
     }
 
     fun onSend(isTemplate: Boolean = false) {
