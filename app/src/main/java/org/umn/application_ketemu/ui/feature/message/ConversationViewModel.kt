@@ -88,6 +88,11 @@ class ConversationViewModel(
         viewModelScope.launch { chatRepository.retry(messageId) }
     }
 
+    /** Hapus pesan (dipanggil dari dialog tekan-lama). */
+    fun onDelete(messageId: String) {
+        viewModelScope.launch { chatRepository.deleteMessage(messageId) }
+    }
+
     /** Tombol Muat ulang: jaring pengaman bila Realtime terputus. */
     fun onRefresh() {
         viewModelScope.launch { chatRepository.refresh() }

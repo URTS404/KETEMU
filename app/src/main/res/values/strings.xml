@@ -390,6 +390,10 @@
     <string name="action_chat">Chat penemu / pemilik</string>
     <string name="action_chat_lost">Chat orang kehilangan</string>
     <string name="chat_retry">Kirim ulang pesan</string>
+    <string name="chat_delete_title">Hapus pesan?</string>
+    <string name="chat_delete_body">Pesan ini akan dihapus dari percakapan dan tidak bisa dikembalikan.</string>
+    <string name="chat_delete_confirm">Hapus</string>
+    <string name="action_cancel">Batal</string>
     <string name="chat_attach">Lampirkan gambar</string>
     <string name="chat_image">Gambar pada pesan</string>
     <string name="action_chat_found">Chat penemu</string>

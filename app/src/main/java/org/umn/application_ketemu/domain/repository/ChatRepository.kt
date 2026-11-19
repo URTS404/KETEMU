@@ -71,6 +71,14 @@ interface ChatRepository {
      */
     suspend fun retry(messageId: String): Boolean = false
 
+    /**
+     * Hapus satu pesan milik sendiri (tekan lama pada gelembung).
+     * Pesan yang masih di antrean lokal cukup dibuang dari antrean.
+     *
+     * @return true bila berhasil dihapus.
+     */
+    suspend fun deleteMessage(messageId: String): Boolean = false
+
     /** Balasan cepat yang boleh dipakai petugas. */
     fun templates(): List<TemplateReply>
 }

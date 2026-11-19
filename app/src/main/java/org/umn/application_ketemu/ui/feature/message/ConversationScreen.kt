@@ -53,6 +53,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -90,6 +96,8 @@ fun ConversationScreen(
     val isSending by viewModel.isSending.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
+    // Pesan yang sedang dipilih untuk dihapus (tekan lama pada gelembung).
+    var hapusId by remember { mutableStateOf<String?>(null) }
     val konteks = LocalContext.current
 
     // Pemilih foto bawaan Android (tanpa izin Storage/Media).
@@ -187,6 +195,16 @@ fun ConversationScreen(
             }
         }
     ) { innerPadding ->
+        if (hapusId != null) {
+            HapusPesanDialog(
+                onHapus = {
+                    viewModel.onDelete(hapusId!!)
+                    hapusId = null
+                },
+                onBatal = { hapusId = null }
+            )
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -198,7 +216,11 @@ fun ConversationScreen(
             item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
 
             itemsIndexed(items = messages, key = { _, message -> message.id }) { _, message ->
-                MessageBubble(message = message, onRetry = viewModel::onRetry)
+                MessageBubble(
+                    message = message,
+                    onRetry = viewModel::onRetry,
+                    onLongPress = { hapusId = message.id }
+                )
             }
 
         }
@@ -213,9 +235,32 @@ fun ConversationScreen(
  * RoundedCornerShape langsung - bukan MaterialTheme.shapes.
  */
 @Composable
+private fun HapusPesanDialog(
+    onHapus: () -> Unit,
+    onBatal: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onBatal,
+        title = { Text(stringResource(R.string.chat_delete_title)) },
+        text = { Text(stringResource(R.string.chat_delete_body)) },
+        confirmButton = {
+            TextButton(onClick = onHapus) {
+                Text(stringResource(R.string.chat_delete_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onBatal) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
 private fun MessageBubble(
     message: ChatMessage,
-    onRetry: (String) -> Unit
+    onRetry: (String) -> Unit,
+    onLongPress: () -> Unit
 ) {
     val isMine = message.fromMe
 
@@ -260,6 +305,14 @@ private fun MessageBubble(
             horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
         ) {
             Surface(
+                modifier = if (isMine) {
+                    Modifier.combinedClickable(
+                        onClick = {},
+                        onLongClick = onLongPress
+                    )
+                } else {
+                    Modifier
+                },
                 shape = bubbleShape,
                 color = if (isMine) {
                     MaterialTheme.colorScheme.primary
