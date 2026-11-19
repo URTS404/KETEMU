@@ -265,6 +265,7 @@ private fun MenuPesan(onHapus: () -> Unit) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.chat_delete_action)) },
                 onClick = {
+                    android.util.Log.d("Chat", "menu hapus diketuk")
                     terbuka = false
                     onHapus()
                 }

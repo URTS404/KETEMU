@@ -280,6 +280,47 @@ class SupabaseChatRepository(
             .createSignedUrl(path, 1.hours)
     }.getOrNull()
 
+    /** Hapus pesan sendiri (menu titik-tiga pada gelembung). */
+    override suspend fun deleteMessage(messageId: String): Boolean {
+        android.util.Log.d("Chat", "deleteMessage mulai: " + messageId)
+
+        // Pesan yang belum terkirim hidup hanya di antrean lokal.
+        if (pendingStore.load().any { it.id == messageId }) {
+            pendingStore.remove(messageId)
+            outbox.value = pendingStore.load()
+            android.util.Log.d("Chat", "hapus pesan dari antrean lokal: " + messageId)
+            return true
+        }
+
+        val threadId = messagesByThread.value.entries
+            .firstOrNull { (_, daftar) -> daftar.any { it.id == messageId } }
+            ?.key
+
+        val me = client.auth.currentUserOrNull()?.id
+        android.util.Log.d("Chat", "deleteMessage: me=" + me)
+        if (me == null) return false
+
+        val berhasil = runCatching {
+            client.postgrest.from(TABLE_MESSAGES).delete {
+                filter {
+                    eq("id", messageId)
+                    eq("sender_id", me)
+                }
+            }
+        }.onFailure {
+            android.util.Log.e("Chat", "hapus pesan gagal: " + it.message)
+        }.isSuccess
+
+        if (berhasil) {
+            messagesByThread.update { peta ->
+                peta.mapValues { (_, daftar) -> daftar.filterNot { it.id == messageId } }
+            }
+            android.util.Log.i("Chat", "hapus pesan berhasil: " + messageId)
+            threadId?.let { id -> runCatching { loadMessages(id) } }
+        }
+        return berhasil
+    }
+
     private fun enqueue(conversationId: String, body: String) {
         val pesan = ChatMessage(
             id = "local-${'$'}{java.util.UUID.randomUUID()}",

@@ -90,7 +90,11 @@ class ConversationViewModel(
 
     /** Hapus pesan (dipanggil dari dialog tekan-lama). */
     fun onDelete(messageId: String) {
-        viewModelScope.launch { chatRepository.deleteMessage(messageId) }
+        android.util.Log.d("Chat", "onDelete dipanggil: " + messageId)
+        viewModelScope.launch {
+            val hasil = chatRepository.deleteMessage(messageId)
+            android.util.Log.d("Chat", "hasil hapus " + messageId + " = " + hasil)
+        }
     }
 
     /** Tombol Muat ulang: jaring pengaman bila Realtime terputus. */
