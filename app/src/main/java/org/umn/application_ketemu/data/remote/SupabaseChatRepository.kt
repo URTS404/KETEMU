@@ -432,8 +432,7 @@ class SupabaseChatRepository(
                 "last_message,last_message_at"
 
         const val MESSAGE_COLUMNS =
-            "id,conversation_id,sender_id,body,created_at,is_template," +
-                "image_path,image_width,image_height"
+            "id,conversation_id,sender_id,body,created_at,is_template"
 
         /** Balasan cepat petugas (opsi 5C) — teks, tanpa lampiran. */
         val TEMPLATES = listOf(
