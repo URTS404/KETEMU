@@ -229,6 +229,10 @@ class AppContainer(context: Context) {
                 if (profil != null) {
                     session.signIn(profil)
                     android.util.Log.i("Auth", "sesi dipulihkan: " + profil.email)
+                    // Antrean hanya bisa dikirim setelah sesi tersedia; tanpa ini
+                    // pesan/gambar tertunda menunggu sampai jaringan berubah.
+                    runCatching { chatRepository.flushPending() }
+                    android.util.Log.i("Chat", "antrean dikirim setelah sesi dipulihkan")
                 }
             }.onFailure {
                 android.util.Log.w("Auth", "pemulihan sesi gagal: " + it.message)
