@@ -68,9 +68,14 @@ class ConversationViewModel(
 
     /** Kirim gambar yang sudah dikompres (dipanggil dari tombol lampiran). */
     fun onImagePicked(bytes: ByteArray, width: Int, height: Int) {
-        if (_isSending.value) return
+        android.util.Log.d("Chat", "onImagePicked: sedangKirim=" + _isSending.value + ", percakapan=" + conversationId)
+        if (_isSending.value) {
+            android.util.Log.w("Chat", "onImagePicked diabaikan: masih ada pengiriman lain")
+            return
+        }
         _isSending.value = true
         viewModelScope.launch {
+            android.util.Log.d("Chat", "onImagePicked: memanggil sendImage")
             chatRepository.sendImage(
                 conversationId = conversationId,
                 bytes = bytes,
