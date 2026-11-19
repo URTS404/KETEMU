@@ -57,6 +57,14 @@ class SupabaseReportRepository(
 
     /** Mengambil ulang seluruh laporan yang boleh dilihat pengguna saat ini. */
     suspend fun refresh() {
+        runCatching { ambilBaru() }.onFailure {
+            // Kegagalan di sini sebelumnya tidak terlihat sama sekali: cache
+            // dibiarkan kosong sehingga beranda tampak "belum ada laporan".
+            android.util.Log.e("Reports", "gagal muat laporan: " + it.message)
+        }
+    }
+
+    private suspend fun ambilBaru() {
         val rows = client.postgrest
             .from(TABLE)
             .select(columns = Columns.raw(REPORT_SELECT_COLUMNS)) {
