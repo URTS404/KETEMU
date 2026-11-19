@@ -39,6 +39,15 @@ interface ChatRepository {
     /** Segarkan dari server (dipakai saat Realtime tidak tersedia). */
     suspend fun refresh()
 
+    /**
+     * Kirim ulang pesan yang tertahan di antrean lokal.
+     *
+     * Dipanggil otomatis saat jaringan kembali (lihat AppContainer) dan saat
+     * pengguna menekan tombol muat ulang. Implementasi tanpa antrean boleh
+     * mengabaikan fungsi ini.
+     */
+    suspend fun flushPending() = Unit
+
     /** Balasan cepat yang boleh dipakai petugas. */
     fun templates(): List<TemplateReply>
 }

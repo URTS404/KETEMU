@@ -1,5 +1,15 @@
 package org.umn.application_ketemu.data
 
+import org.umn.application_ketemu.data.repository.PendingChatStore
+
+import kotlinx.coroutines.launch
+
+import kotlinx.coroutines.SupervisorJob
+
+import kotlinx.coroutines.Dispatchers
+
+import kotlinx.coroutines.CoroutineScope
+
 import android.content.Context
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.core.notification.AndroidSystemNotifier
@@ -166,8 +176,10 @@ class AppContainer(context: Context) {
     }
 
     /** Percakapan per laporan (db/0019). Realtime hanya saat layar chat terbuka. */
+    private val pendingChatStore = PendingChatStore(context)
+
     val chatRepository: ChatRepository = if (SupabaseProvider.isConfigured) {
-        SupabaseChatRepository(SupabaseProvider.client)
+        SupabaseChatRepository(SupabaseProvider.client, pendingChatStore)
     } else {
         InMemoryChatRepository()
     }
@@ -199,5 +211,19 @@ class AppContainer(context: Context) {
     }
 
     /** Apakah project Supabase sudah dikonfigurasi pada build ini. */
+    /**
+     * Begitu jaringan kembali, pesan yang tertahan di outbox dikirim ulang
+     * otomatis — tanpa pengguna harus membuka layar percakapan.
+     */
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        appScope.launch {
+            networkMonitor.isOnline.collect { online ->
+                if (online) runCatching { chatRepository.flushPending() }
+            }
+        }
+    }
+
     fun supabaseConfigured(): Boolean = SupabaseProvider.isConfigured
 }

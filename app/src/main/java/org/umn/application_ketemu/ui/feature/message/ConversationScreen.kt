@@ -50,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.util.RelativeTime
 import org.umn.application_ketemu.domain.model.ChatMessage
+import org.umn.application_ketemu.domain.model.MessageStatus
 
 /**
  * Layar Percakapan (chat 1-on-1).
@@ -224,11 +225,23 @@ private fun MessageBubble(message: ChatMessage) {
                 )
             }
 
+            // Pesan yang belum sampai server tetap terlihat (seperti WhatsApp):
+            // waktu + penanda antrean, supaya pengguna tahu pesannya tidak hilang.
+            val waktu = RelativeTime.format(message.sentAt)
+            val keterangan = when (message.status) {
+                MessageStatus.SENDING -> "$waktu · menunggu terkirim"
+                MessageStatus.FAILED -> "$waktu · gagal terkirim"
+                MessageStatus.SENT -> waktu
+            }
             Text(
-                text = RelativeTime.format(message.sentAt),
+                text = keterangan,
                 modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (message.status == MessageStatus.SENT) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
             )
         }
     }

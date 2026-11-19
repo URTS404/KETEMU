@@ -28,6 +28,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.umn.application_ketemu.data.repository.PendingChatStore
+import org.umn.application_ketemu.domain.model.MessageStatus
 import org.umn.application_ketemu.domain.model.ChatMessage
 import org.umn.application_ketemu.domain.model.ChatThread
 import org.umn.application_ketemu.domain.model.TemplateReply
@@ -48,12 +50,16 @@ import java.time.OffsetDateTime
  *  - Proyeksi kolom dibatasi dan daftar utas dibatasi [THREAD_LIMIT].
  */
 class SupabaseChatRepository(
-    private val client: SupabaseClient
+    private val client: SupabaseClient,
+    private val pendingStore: PendingChatStore
 ) : ChatRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val threads = MutableStateFlow<List<ChatThread>>(emptyList())
     private val messagesByThread = MutableStateFlow<Map<String, List<ChatMessage>>>(emptyMap())
+
+    /** Pesan yang belum terkirim (outbox lokal), dibaca ulang dari disk. */
+    private val outbox = MutableStateFlow(pendingStore.load())
 
     /** Kanal Realtime aktif per percakapan (paling banyak satu layar). */
     private val channels = mutableMapOf<String, Pair<RealtimeChannel, Job>>()
@@ -65,9 +71,11 @@ class SupabaseChatRepository(
         kotlinx.coroutines.flow.callbackFlow {
             launch { runCatching { loadMessages(conversationId) } }
             launch { runCatching { startRealtime(conversationId) } }
-            messagesByThread
-                .onEach { cache -> trySend(cache[conversationId].orEmpty()) }
-                .launchIn(this)
+            kotlinx.coroutines.flow.combine(messagesByThread, outbox) { cache, pending ->
+                val terkirim = cache[conversationId].orEmpty()
+                val tertunda = pending.filter { it.threadId == conversationId }
+                terkirim + tertunda
+            }.collect { trySend(it) }
             // Layar ditutup → kanal dilepas. Inilah yang membuat pemakaian
             // Realtime hemat: tidak ada langganan yang menggantung.
             awaitClose {
@@ -85,8 +93,10 @@ class SupabaseChatRepository(
         android.util.Log.e("Chat", "start_conversation gagal: ${it.message}")
     }.getOrNull()
 
-    override suspend fun send(conversationId: String, body: String, isTemplate: Boolean): Boolean =
-        runCatching {
+    override suspend fun send(conversationId: String, body: String, isTemplate: Boolean): Boolean {
+        val teks = body.trim()
+        if (teks.isEmpty()) return false
+        return try {
             val me = client.auth.currentUserOrNull()?.id ?: return false
             val row = client.postgrest
                 .from(TABLE_MESSAGES)
@@ -94,7 +104,7 @@ class SupabaseChatRepository(
                     buildJsonObject {
                         put("conversation_id", conversationId)
                         put("sender_id", me)
-                        put("body", body.trim())
+                        put("body", teks)
                         put("is_template", isTemplate)
                     }
                 ) { select(Columns.raw(MESSAGE_COLUMNS)) }
@@ -103,11 +113,60 @@ class SupabaseChatRepository(
             appendMessage(row.toDomain(me))
             touchThread(conversationId, row)
             true
-        }.onFailure {
-            android.util.Log.e("Chat", "kirim pesan gagal: ${it.message}")
-        }.getOrDefault(false)
+        } catch (error: Exception) {
+            // Offline / server menolak: pesan TIDAK hilang, tapi ditahan di
+            // antrean lokal dan tampil sebagai gelembung "menunggu terkirim".
+            android.util.Log.e("Chat", "kirim pesan gagal, masuk antrean: ${'$'}{error.message}")
+            enqueue(conversationId, teks)
+            false
+        }
+    }
+
+    /** Kirim ulang semua pesan yang tertahan (dipanggil saat jaringan kembali). */
+    override suspend fun flushPending() {
+        val tertunda = pendingStore.load()
+        if (tertunda.isEmpty()) return
+        val me = client.auth.currentUserOrNull()?.id ?: return
+
+        tertunda.forEach { pesan ->
+            runCatching {
+                val row = client.postgrest
+                    .from(TABLE_MESSAGES)
+                    .insert(
+                        buildJsonObject {
+                            put("conversation_id", pesan.threadId)
+                            put("sender_id", me)
+                            put("body", pesan.text)
+                            put("is_template", false)
+                        }
+                    ) { select(Columns.raw(MESSAGE_COLUMNS)) }
+                    .decodeSingle<MessageRow>()
+
+                pendingStore.remove(pesan.id)
+                appendMessage(row.toDomain(me))
+                touchThread(pesan.threadId, row)
+            }.onFailure {
+                android.util.Log.e("Chat", "kirim ulang gagal: ${'$'}{it.message}")
+            }
+        }
+        outbox.value = pendingStore.load()
+    }
+
+    private fun enqueue(conversationId: String, body: String) {
+        val pesan = ChatMessage(
+            id = "local-${'$'}{java.util.UUID.randomUUID()}",
+            threadId = conversationId,
+            text = body,
+            fromMe = true,
+            sentAt = System.currentTimeMillis(),
+            status = MessageStatus.SENDING
+        )
+        pendingStore.add(pesan)
+        outbox.value = pendingStore.load()
+    }
 
     override suspend fun refresh() {
+        runCatching { flushPending() }
         runCatching { threads.value = loadThreads() }
             .onFailure { android.util.Log.e("Chat", "muat utas gagal: ${it.message}") }
     }
