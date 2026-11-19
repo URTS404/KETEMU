@@ -67,6 +67,9 @@ class SupabaseChatRepository(
     /** Kanal Realtime aktif per percakapan (paling banyak satu layar). */
     private val channels = mutableMapOf<String, Pair<RealtimeChannel, Job>>()
 
+    /** Menahan log galat `peer_typing` beruntun agar logcat tidak banjir. */
+    private var galatKetikDilaporkan = false
+
     override fun observeThreads(): Flow<List<ChatThread>> =
         threads.asStateFlow().onStart { runCatching { refresh() } }
 
@@ -485,6 +488,7 @@ class SupabaseChatRepository(
      * (keduanya SECURITY DEFINER, jadi RLS tetap terjaga).
      */
     override suspend fun setTyping(conversationId: String) {
+        android.util.Log.d("Chat", "setTyping: mulai untuk percakapan $conversationId")
         runCatching {
             client.postgrest.rpc(
                 function = "set_typing",
@@ -492,17 +496,38 @@ class SupabaseChatRepository(
                     put("p_conversation_id", conversationId)
                 }
             )
+        }.onSuccess { respons ->
+            android.util.Log.d("Chat", "setTyping: berhasil (respons=$respons)")
+        }.onFailure { galat ->
+            // Jangan ditelan diam-diam: tanpa log ini penyebab indikator
+            // "sedang mengetik" tidak muncul (mis. fungsi `set_typing` belum
+            // ada di Supabase, sesi kedaluwarsa, atau jaringan putus) tidak
+            // terlihat sama sekali.
+            android.util.Log.e("Chat", "setTyping: GAGAL untuk $conversationId", galat)
+            android.util.Log.e("Chat", "setTyping: rincian = " + galat.message)
         }
     }
 
-    override suspend fun isPeerTyping(conversationId: String): Boolean = runCatching {
-        client.postgrest.rpc(
-            function = "peer_typing",
-            parameters = kotlinx.serialization.json.buildJsonObject {
-                put("p_conversation_id", conversationId)
+    override suspend fun isPeerTyping(conversationId: String): Boolean {
+        val hasil = runCatching {
+            client.postgrest.rpc(
+                function = "peer_typing",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_conversation_id", conversationId)
+                }
+            ).decodeAs<Boolean>()
+        }
+        hasil.exceptionOrNull()?.let { galat ->
+            // Cukup dicatat sekali selama galatnya beruntun; tanpa ini
+            // kegagalan polling tidak pernah terlihat di logcat.
+            if (!galatKetikDilaporkan) {
+                galatKetikDilaporkan = true
+                android.util.Log.e("Chat", "isPeerTyping: GAGAL untuk $conversationId", galat)
             }
-        ).decodeAs<Boolean>()
-    }.getOrDefault(false)
+        }
+        if (hasil.isSuccess) galatKetikDilaporkan = false
+        return hasil.getOrDefault(false)
+    }
 
     /** Lepas kanal; dipanggil saat layar percakapan ditutup. */
     suspend fun stopRealtime(conversationId: String) {

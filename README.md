@@ -1,4 +1,4 @@
-﻿================================================================================
+================================================================================
  KETEMU - Campus Lost & Found Hub
  IF570L Lab Mobile Application Programming - Mid Exam (UTS) 2026/2027
 ================================================================================
@@ -220,6 +220,10 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
      - Antrean offline: pesan/gambar yang dikirim tanpa jaringan tampil buram
        dengan ikon putar ulang, lalu terkirim otomatis saat internet kembali.
      - Tekan lama / menu titik-tiga pada pesan sendiri untuk menghapus.
+     - Indikator "sedang menulis..." tampil pada lawan bicara (tabel
+       `typing_state`, `db/0027_typing_state.sql`) dan hilang 5 detik setelah
+       pengirim berhenti mengetik.
+     - Daftar pesan menggulir otomatis ke pesan terbaru saat pesan masuk.
 
   c. Panel admin (pemisahan hak STAFF dan ADMIN)
      STAFF : moderasi laporan, memutuskan klaim (setuju/tolak),

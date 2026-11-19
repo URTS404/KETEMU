@@ -66,6 +66,7 @@ class ConversationViewModel(
         val sekarang = System.currentTimeMillis()
         if (value.isNotBlank() && sekarang - ketikTerakhir > 2_000) {
             ketikTerakhir = sekarang
+            android.util.Log.d("Chat", "onDraftChange: mengirim setTyping (jeda > 2 dtk)")
             viewModelScope.launch { runCatching { chatRepository.setTyping(conversationId) } }
         }
     }
@@ -75,9 +76,14 @@ class ConversationViewModel(
         if (pantauJob != null) return
         pantauJob = viewModelScope.launch {
             while (true) {
-                _peerTyping.value = runCatching {
+                val mengetik = runCatching {
                     chatRepository.isPeerTyping(conversationId)
                 }.getOrDefault(false)
+                if (mengetik != _peerTyping.value) {
+                    // Jejak untuk uji dua perangkat: kapan indikator menyala/mati.
+                    android.util.Log.d("Chat", "pantauMengetik: lawan mengetik = $mengetik")
+                }
+                _peerTyping.value = mengetik
                 delay(2_500)
             }
         }

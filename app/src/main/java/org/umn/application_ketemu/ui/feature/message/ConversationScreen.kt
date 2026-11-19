@@ -152,15 +152,15 @@ fun ConversationScreen(
         pemilihFoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
-    // Banner konteks barang = item ke-0, jadi total = 1 + pesan.
-    val itemCount = 1 + messages.size
-    // Posisi gulir TIDAK lagi dipaksa mengikuti jumlah pesan: setiap kali daftar
-    // disusun ulang (baris baru, gambar, penghapusan) tinggi baris berubah dan
-    // paksaan itu justru melempar tampilan ke atas. Sekarang:
-    //  - saat layar dibuka: langsung ke pesan terakhir;
-    //  - saat Anda mengirim: digulir setelah pesan benar-benar terkirim.
-    // Sekali saja, saat pesan pertama kali termuat: lompat ke pesan terakhir.
-
+    // Gulir otomatis ke pesan terbaru: saat layar dibuka, saat pesan masuk
+    // (termasuk dari lawan bicara lewat Realtime), dan saat indikator "sedang
+    // mengetik" muncul. Daftar memakai reverseLayout, jadi index 0 adalah
+    // posisi paling bawah - menggulir ke 0 berarti menempel ke pesan terakhir.
+    LaunchedEffect(messages.size, peerTyping) {
+        if (listState.layoutInfo.totalItemsCount > 0) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     Scaffold(
         // `imePadding()` membuat seluruh layar (termasuk kolom tulis di
@@ -262,6 +262,15 @@ fun ConversationScreen(
             // ketika gambar selesai dimuat atau pesan baru masuk.
             reverseLayout = true
         ) {
+            // reverseLayout: index 0 = paling BAWAH. Indikator "sedang mengetik"
+            // harus berada di index 0 agar tampil tepat di bawah pesan terbaru.
+            // Sebelumnya ia diletakkan setelah daftar pesan sehingga tergambar
+            // di ATAS riwayat percakapan - di luar layar untuk utas panjang,
+            // sehingga indikatornya tampak "tidak muncul" sama sekali.
+            if (peerTyping) {
+                item(key = "sedang-mengetik") { TypingBubble() }
+            }
+
             itemsIndexed(
                 items = messages.asReversed(),
                 key = { _, message -> message.id }
@@ -275,12 +284,11 @@ fun ConversationScreen(
                 )
             }
 
-            // Karena reverseLayout, item terakhir tampil paling atas.
-            if (peerTyping) {
-                item(key = "sedang-mengetik") { TypingBubble() }
+            // Banner konteks barang sengaja di akhir: pada reverseLayout ia
+            // tampil paling atas, seperti judul utas.
+            item(key = "konteks-laporan") {
+                ReportContextBanner(title = thread?.reportTitle.orEmpty())
             }
-
-            item { ReportContextBanner(title = thread?.reportTitle.orEmpty()) }
 
         }
     }
