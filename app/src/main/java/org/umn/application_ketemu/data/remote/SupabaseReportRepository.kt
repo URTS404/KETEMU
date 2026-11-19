@@ -71,6 +71,7 @@ class SupabaseReportRepository(
                 order("created_at", Order.DESCENDING)
             }
             .decodeList<ReportRow>()
+        android.util.Log.d("Reports", "refresh: baris=" + rows.size)
         cache.value = rows.mapNotNull { it.toDomain() }
     }
 
