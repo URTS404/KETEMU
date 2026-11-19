@@ -179,6 +179,12 @@ class SupabaseChatRepository(
     /** Kirim ulang satu pesan tertentu (tombol putar ulang di samping gelembung). */
     override suspend fun retry(messageId: String): Boolean {
         val pesan = pendingStore.load().firstOrNull { it.id == messageId } ?: return false
+        // Cari percakapan asal pesan ini supaya daftarnya bisa dimuat ulang
+        // setelah penghapusan (kalau tidak, layar tampak tidak berubah).
+        val threadId = messagesByThread.value.entries
+            .firstOrNull { (_, daftar) -> daftar.any { it.id == messageId } }
+            ?.key
+
         val me = client.auth.currentUserOrNull()?.id ?: return false
         val berhasil = runCatching {
             val row = client.postgrest
