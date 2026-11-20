@@ -228,12 +228,16 @@ private fun MyClaimCard(
     claim: Claim,
     modifier: Modifier = Modifier
 ) {
-    val (statusText, statusColor) = when (claim.status) {
-        ClaimStatus.MENUNGGU -> stringResource(R.string.claim_status_pending) to
-            MaterialTheme.colorScheme.tertiary
-        ClaimStatus.DISETUJUI -> stringResource(R.string.claim_status_approved) to
+    val sudahDiambil = claim.handedOverAt != null
+    val (statusText, statusColor) = when {
+        // Serah terima sudah dicatat petugas: kode pengambilan tidak relevan lagi.
+        sudahDiambil -> stringResource(R.string.claim_status_taken) to
             MaterialTheme.colorScheme.primary
-        ClaimStatus.DITOLAK -> stringResource(R.string.claim_status_rejected) to
+        claim.status == ClaimStatus.MENUNGGU -> stringResource(R.string.claim_status_pending) to
+            MaterialTheme.colorScheme.tertiary
+        claim.status == ClaimStatus.DISETUJUI -> stringResource(R.string.claim_status_approved) to
+            MaterialTheme.colorScheme.primary
+        else -> stringResource(R.string.claim_status_rejected) to
             MaterialTheme.colorScheme.error
     }
 
@@ -261,6 +265,14 @@ private fun MyClaimCard(
             )
 
             when {
+                sudahDiambil -> {
+                    Text(
+                        text = stringResource(R.string.claim_status_taken_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 claim.status == ClaimStatus.DISETUJUI && claim.pickupCode != null -> {
                     Text(
                         text = stringResource(

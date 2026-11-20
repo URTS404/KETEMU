@@ -248,7 +248,7 @@ class SupabaseClaimRepository(
         /** `profiles` harus diberi nama constraint karena tabel ini punya dua FK ke sana. */
         const val SELECT_COLUMNS =
             "id,report_id,claimant_id,answer,status,decision_note,pickup_code,created_at,decided_at," +
-                
+                "handed_over_at," +
                 "reports(id,title,status)," +
                 "profiles!claims_claimant_id_fkey(full_name,email)"
     }

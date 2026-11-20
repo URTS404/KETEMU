@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ketemu</string>
     <string name="app_tagline">Campus Lost &amp; Found Hub</string>
@@ -37,6 +37,8 @@
     <string name="claim_status_pending">Menunggu verifikasi petugas</string>
     <string name="claim_status_pending_desc">Klaim Anda sedang diperiksa. Anda akan menerima notifikasi setelah petugas memutuskan.</string>
     <string name="claim_status_approved">Disetujui</string>
+    <string name="claim_status_taken">Barang sudah diambil</string>
+    <string name="claim_status_taken_desc">Serah terima sudah dicatat petugas pos. Laporan temuan dan laporan hilang terkait sudah ditutup.</string>
     <string name="claim_status_pickup_code">Kode pengambilan: %1$s</string>
     <string name="claim_status_pickup_hint">Bawa KTM asli dan sebutkan kode ini di pos tempat barang dititipkan.</string>
     <string name="claim_status_rejected">Ditolak</string>
