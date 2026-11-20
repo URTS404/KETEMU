@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.data.remote
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -98,6 +99,19 @@ class SupabaseNotificationRepository(
 
     override fun observeNotifications(): Flow<List<AppNotification>> =
         cache.asStateFlow().onStart { runCatching { refresh() } }
+
+    /**
+     * Memuat ulang kotak masuk tanpa menunggu ada layar yang mengamatinya.
+     *
+     * Dipanggil pekerja latar belakang agar notifikasi baru (mis. keputusan
+     * klaim atau pengingat pengambilan dari `pg_cron`) tetap sampai ke perangkat
+     * saat aplikasi tertutup. Kegagalan jaringan tidak dilempar: pekerja akan
+     * mencoba lagi pada jadwal berikutnya.
+     */
+    override suspend fun tarikSekarang() {
+        runCatching { refresh() }
+            .onFailure { Log.w(TAG, "tarikSekarang gagal: ${it.message}") }
+    }
 
     override suspend fun publish(notification: AppNotification) {
         // Jenis-jenis ini dibangkitkan trigger server; mengirim dari klien akan

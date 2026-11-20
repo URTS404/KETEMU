@@ -59,7 +59,7 @@ Sisa yang masih boleh dikerjakan (tidak menghalangi demo):
 |---|---|
 | Penjadwalan sinkron | Timer 20 detik + pemicu saat jaringan pulih, ditambah `WorkManager` (`data/sync/`): berkala 15 menit + sekali saat aplikasi dibuka, jadi antrean tetap terkirim walau aplikasi ditutup |
 | Konflik | "Perubahan lokal menang": baris PENDING tidak ditimpa hasil server sampai terkirim |
-| Hapus laporan oleh mahasiswa | Belum ada di UI maupun kebijakan RLS (hapus hanya lewat SQL Editor) |
+| Hapus laporan oleh mahasiswa | Ada di menu titik-tiga halaman Detail (db/0031 `reports_delete_own`): pemilik boleh menghapus laporannya sendiri, ditolak server bila klaim masih `MENUNGGU`/`DISETUJUI`. **SQL `db/0031` belum dijalankan**, jadi sementara ini aplikasi menampilkan pesan "belum bisa dihapus" |
 | Migrasi skema | Sudah tidak memakai `fallbackToDestructiveMigration`; perubahan skema wajib disertai `Migration` di `KetemuDatabase.MIGRASI` (gagal keras bila lupa, bukan menghapus data) |
 | Pengingat pengambilan | Fungsi database `kirim_pengingat_pengambilan()` + jadwal `pg_cron` tiap jam (db/0030): pengingat hari ke-3 dan ke-6 untuk klaim `DISETUJUI` yang belum diserahkan, maksimal dua kali per klaim |
 
@@ -78,6 +78,8 @@ CLIP + pgvector ± 1–2 minggu.
 - **Indikator "sedang menulis…"** (`0027`) beserta gulir otomatis pesan masuk — 20 November 2026.
 - **Room/offline-first untuk laporan** (#2): daftar laporan terbaca tanpa jaringan, aksi tulis masuk antrean `outbox` dan terkirim otomatis — 20 November 2026.
 - **Unit test**: 113 `@Test` di `app/src/test` (22 berkas).
+- **Hapus laporan sendiri** — 20 November 2026: menu titik-tiga di Detail + dialog konfirmasi, kebijakan `reports_delete_own` (db/0031), dan pemeriksaan "server benar-benar menghapus" agar laporan tidak hidup lagi saat sinkron.
+- **Notifikasi saat aplikasi ditutup** — 20 November 2026: `NotifikasiSyncWorker` (WorkManager, tiap 15 menit + sekali saat aplikasi dibuka) menarik kotak masuk dan memunculkan kartu panel sistem; penanda terakhir di `PenandaNotifikasi`. Batas: bukan push seketika (butuh FCM).
 - **Serah terima barang + penutupan dua laporan** — 20 November 2026: bagian "Menunggu pengambilan" di layar Verifikasi klaim, dialog kode pengambilan opsional, laporan temuan & laporan hilang pasangannya menjadi `SELESAI_DIKLAIM`, notifikasi ke pengklaim. Fungsi `complete_handover` ada di `db/0028_serah_terima.sql` (sudah dijalankan; aplikasi memakai jalur RPC, jalur cadangan klien tetap ada bila fungsi tidak ditemukan).
 
 ## Riwayat pembaruan berkas ini
@@ -92,3 +94,4 @@ CLIP + pgvector ± 1–2 minggu.
 | 20 Nov 2026 18.40 | Alur klaim dilengkapi tahap serah terima; diuji end-to-end di tiga emulator (Siti, Rahmat, Budi) sampai kedua laporan `SELESAI_DIKLAIM` |
 | 20 Nov 2026 21.55 | Perbaikan A: klaim ditolak boleh diajukan ulang (`1b82286`), WorkManager + migrasi Room eksplisit + 8 unit test serah terima (`323d6bb`). Status tetap 6 selesai, 1 sebagian |
 | 20 Nov 2026 22.05 | Fitur tambahan #1: pengingat pengambilan hari ke-3/ke-6 lewat `pg_cron` (`e0e9bec`). Tugas utama tidak berubah; yang menunggu hanya menjalankan `db/0029` di Supabase |
+| 20 Nov 2026 22.20 | Fitur tambahan #2 dan #3: hapus laporan sendiri (`reports_delete_own`, db/0031 — belum dijalankan) dan notifikasi latar `NotifikasiSyncWorker` (terbukti berbunyi saat proses aplikasi mati total). Pencocokan gambar/Lens tetap ditunda atas keputusan pemilik proyek |

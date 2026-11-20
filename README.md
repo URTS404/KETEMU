@@ -256,12 +256,21 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
 
   g. Notifikasi
      - Kotak masuk notifikasi + kartu notifikasi Android untuk laporan baru.
+     - Notifikasi tetap berbunyi saat aplikasi ditutup: pekerja latar
+       `NotifikasiSyncWorker` (WorkManager) menarik kotak masuk tiap 15 menit
+       lalu memunculkan kartu panel sistem untuk kabar yang belum dibaca
+       (`data/sync/`, penanda terakhir di `PenandaNotifikasi`). Satu percobaan
+       tambahan dijalankan setiap aplikasi dibuka.
      - Pengingat pengambilan: klaim yang sudah disetujui tapi barangnya belum
        diambil akan memicu notifikasi pada hari ke-3 dan ke-6. Pengingat
        dibuat fungsi database `kirim_pengingat_pengambilan()` dan dijadwalkan
        `pg_cron` setiap jam (db/0030), jadi tetap terkirim walau aplikasi
        sedang tertutup. Pengingat berhenti sendiri begitu serah terima
        tercatat.
+     - Batas jujur: WorkManager tidak menjamin detik tepat (paling cepat tiap
+       15 menit dan bisa ditunda mode hemat baterai). Notifikasi "seketika"
+       seperti WhatsApp/Gojek memerlukan Firebase Cloud Messaging, yang belum
+       dipakai proyek ini.
 
   h. Pencocokan awal (berbasis aturan)
      - Barang hilang dan temuan dengan judul serupa ditautkan otomatis
@@ -290,6 +299,16 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
        skema WAJIB disertai `Migration` di `KetemuDatabase.MIGRASI` (tidak ada
        lagi `fallbackToDestructiveMigration`, agar data pengguna tidak terhapus
        diam-diam).
+
+  k. Hapus laporan sendiri
+     - Pemilik laporan dapat menghapus laporannya lewat menu titik-tiga di
+       halaman Detail (dialog konfirmasi, bukan sekali tekan). Dipakai untuk
+       laporan salah kirim atau barang yang sudah ditemukan sendiri.
+     - Server menolak bila laporan masih punya klaim `MENUNGGU`/`DISETUJUI`
+       (kebijakan `reports_delete_own`, db/0031), jadi riwayat serah terima
+       tidak bisa dihapus di tengah proses. Penghapusan memerlukan internet:
+       aplikasi MEMERIKSA bahwa server benar-benar menghapus baris, supaya
+       laporan tidak "hidup lagi" pada sinkronisasi berikutnya.
 
 
 ================================================================================

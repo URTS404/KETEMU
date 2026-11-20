@@ -78,6 +78,8 @@ class SystemNotifyingNotificationRepository(
     override suspend fun markAllRead(userId: String) =
         delegate.markAllRead(userId)
 
+    override suspend fun tarikSekarang() = delegate.tarikSekarang()
+
     private fun postNewNotifications(notifications: List<AppNotification>) {
         // Id tetap dicatat walau sakelar mati, supaya menyalakannya kembali tidak
         // memunculkan deretan kabar yang tiba selama notifikasi luar dimatikan.

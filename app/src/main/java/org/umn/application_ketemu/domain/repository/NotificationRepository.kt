@@ -24,4 +24,16 @@ interface NotificationRepository {
 
     /** Menandai semua notifikasi milik [userId] sudah dibaca. */
     suspend fun markAllRead(userId: String)
+
+    /**
+     * Memuat ulang notifikasi dari server sekarang juga.
+     *
+     * Dipakai pekerja latar belakang (`NotifikasiSyncWorker`) yang hidup tanpa
+     * UI: tanpa metode ini, kotak masuk hanya diperbarui saat layar Beranda
+     * atau Notifikasi diamati, sehingga pengguna tidak diberi kabar apa pun
+     * ketika aplikasi sedang tertutup.
+     *
+     * Implementasi demo (in-memory) tidak melakukan apa pun — tidak ada server.
+     */
+    suspend fun tarikSekarang() = Unit
 }
