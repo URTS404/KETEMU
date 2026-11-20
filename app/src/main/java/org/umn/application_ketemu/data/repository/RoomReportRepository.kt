@@ -166,8 +166,52 @@ class RoomReportRepository(
         sinkronkan()
     }
 
-    // ---------------------------------------------------------------- baca lokal
+    /**
+     * Menghapus laporan milik pengguna dari server lalu dari cache lokal.
+     *
+     * Sengaja TIDAK memakai antrean `outbox`: penghapusan harus benar-benar
+     * terjadi agar pengguna tidak melihat laporan "hilang" padahal masih ada di
+     * server. Karena itu operasi ini memerlukan jaringan; saat offline
+     * dilempar [IllegalStateException] agar UI bisa menampilkan pesan jelas
+     * (berbeda dengan aksi lain yang tetap boleh diantrekan).
+     *
+     * Server tetap bisa menolak (klaim masih aktif) — galat dari PostgREST
+     * diteruskan apa adanya supaya pesannya bisa diterjemahkan layer UI.
+     */
+    override suspend fun hapusLaporan(reportId: String) {
+        val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
+        if (!daring) {
+            throw IllegalStateException("Butuh koneksi internet untuk menghapus laporan.")
+        }
 
+        // Minta balik baris yang benar-benar terhapus (`select()` = PostgREST
+        // `return=representation`). Tanpa ini, kebijakan RLS yang menolak DELETE
+        // hanya menghasilkan "0 baris terhapus" tanpa galat, dan cache lokal akan
+        // menghapus laporan yang sebenarnya masih ada di server — laporan itu lalu
+        // muncul kembali pada sinkronisasi berikutnya.
+        val terhapus = client.postgrest.from(TABLE).delete {
+            filter { eq("id", reportId) }
+            select(Columns.list("id"))
+        }.decodeList<IdBaris>()
+
+        if (terhapus.isEmpty()) {
+            throw IllegalStateException(
+                "Laporan tidak terhapus: bukan milik akun ini atau masih punya klaim aktif."
+            )
+        }
+
+        db.withTransaction {
+            antrean.deleteFor(reportId)
+            laporan.deleteById(reportId)
+        }
+        Log.d(TAG, "hapusLaporan: $reportId dihapus dari server dan cache")
+    }
+
+    /** Baris minimal untuk memastikan server benar-benar menghapus data. */
+    @Serializable
+    private data class IdBaris(val id: String)
+
+    // ---------------------------------------------------------------- baca lokal
     /** Flow laporan dari Room; pembacaan pertama memicu tarikan dari server. */
     private fun aliranLaporan(): Flow<List<Report>> =
         laporan.observeAll()

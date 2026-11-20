@@ -70,4 +70,19 @@ interface ReportRepository {
      * menyertakan pos dan tetap kompatibel.
      */
     suspend fun confirmHandover(reportId: String, pos: PosLocation)
+
+    /**
+     * Menghapus laporan milik pengguna sendiri.
+     *
+     * Dipakai saat pengguna salah kirim laporan, atau barang hilangnya sudah
+     * ditemukan sehingga laporannya tidak perlu dicari lagi. Server menolak
+     * penghapusan bila laporan masih punya klaim aktif (`MENUNGGU`/`DISETUJUI`)
+     * — kebijakan RLS `reports_delete_own` (db/0031).
+     *
+     * Berbeda dengan moderasi yang memakai [setArchived]: menghapus benar-benar
+     * membuang baris, jadi tidak ada jejak yang bisa dipulihkan petugas.
+     * Implementasi boleh melempar [IllegalStateException] bila memerlukan
+     * jaringan dan perangkat sedang offline.
+     */
+    suspend fun hapusLaporan(reportId: String)
 }

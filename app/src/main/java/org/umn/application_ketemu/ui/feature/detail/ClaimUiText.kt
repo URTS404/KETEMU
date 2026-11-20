@@ -26,4 +26,11 @@ internal object ClaimUiText {
         "Klaim terkirim. Petugas akan mencocokkan ciri barang sebelum menyerahkannya."
     const val SUBMIT_FAILED =
         "Klaim gagal dikirim. Periksa koneksi lalu coba lagi."
+
+    /** Penghapusan laporan ditolak karena laporan masih diproses petugas. */
+    const val DELETE_BLOCKED_BY_CLAIM =
+        "Laporan belum bisa dihapus: masih ada klaim yang diproses petugas, atau laporan ini bukan milik akun Anda."
+
+    const val DELETE_FAILED =
+        "Laporan gagal dihapus. Periksa koneksi lalu coba lagi."
 }

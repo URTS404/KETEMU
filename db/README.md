@@ -34,6 +34,7 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0028_serah_terima.sql` | Kolom `handed_over_at`/`handed_over_by`, enum audit `SERAH_TERIMA_BARANG`, dan fungsi `complete_handover` (petugas mencatat barang sudah diambil → laporan temuan & hilang ditutup) |
 | `0029_claim_resubmit.sql` | Indeks unik parsial `claims_one_active_per_user` menggantikan `claims_unique_active`, agar klaim yang ditolak boleh diajukan ulang |
 | `0030_pengingat_pengambilan.sql` | Tabel `pickup_reminders` + fungsi `kirim_pengingat_pengambilan()` yang dijadwalkan `pg_cron` tiap jam: pengingat hari ke-3 dan ke-6 untuk klaim yang disetujui tapi barangnya belum diambil |
+| `0031_hapus_laporan.sql` | Kebijakan `reports_delete_own`: pemilik boleh menghapus laporannya sendiri selama tidak ada klaim `MENUNGGU`/`DISETUJUI` |
 
 ## 1. Buat project
 
@@ -67,6 +68,7 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 12. `db/0028_serah_terima.sql` - serah terima barang oleh petugas pos (menutup laporan temuan + hilang)
 13. `db/0029_claim_resubmit.sql` - klaim yang ditolak boleh diajukan ulang
 14. `db/0030_pengingat_pengambilan.sql` - pengingat pengambilan otomatis (butuh ekstensi `pg_cron`)
+15. `db/0031_hapus_laporan.sql` - pemilik boleh menghapus laporan sendiri
 
 Berkas `0004`–`0009` serta `0021` dan `0025` hanya berisi data contoh dan
 pemeriksaan; jalankan bila perlu.

@@ -41,7 +41,7 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
  * sehingga mode offline (in-memory) dan Supabase memakai alur yang sama.
  */
 class ReportDetailViewModel(
-    reportRepository: ReportRepository,
+    private val reportRepository: ReportRepository,
     matchRepository: MatchRepository,
     private val claimRepository: ClaimRepository,
     private val session: SessionStore,
@@ -115,7 +115,6 @@ class ReportDetailViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val _message = MutableStateFlow<String?>(null)
-
     /** Pesan sekali tampil untuk snackbar (berhasil/gagal mengirim klaim). */
     val message: StateFlow<String?> = _message.asStateFlow()
 
@@ -188,6 +187,61 @@ class ReportDetailViewModel(
         }
     }
 
+    /**
+     * Laporan ini milik pengguna aktif? Hanya pemilik yang boleh menghapus.
+     *
+     * Tombol hapus sengaja tidak ditampilkan untuk petugas: penanganan petugas
+     * adalah *Arsipkan* (masih bisa dipulihkan dan tetap tercatat di audit),
+     * bukan menghapus permanen milik orang lain.
+     */
+    val isOwner: StateFlow<Boolean> = combine(
+        uiState,
+        session.currentUser
+    ) { state, user ->
+        val report = (state as? UiState.Success)?.data ?: return@combine false
+        report.ownerId == user.id
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    private val _sedangHapus = MutableStateFlow(false)
+
+    /** Menandai proses hapus berjalan agar tombol tidak ditekan dua kali. */
+    val sedangHapus: StateFlow<Boolean> = _sedangHapus.asStateFlow()
+
+    private val _terhapus = MutableStateFlow(false)
+
+    /** Bernilai true setelah laporan benar-benar hilang; layar detail lalu ditutup. */
+    val terhapus: StateFlow<Boolean> = _terhapus.asStateFlow()
+
+    /**
+     * Menghapus laporan milik pengguna.
+     *
+     * Dipakai ketika laporan salah kirim atau barang hilangnya sudah ditemukan
+     * sehingga tidak perlu dicari lagi. Server menolak bila masih ada klaim
+     * aktif, dan penolakan itu diterjemahkan menjadi pesan yang bisa dibaca
+     * pengguna (bukan kode PostgREST).
+     */
+    fun hapusLaporan() {
+        if (_sedangHapus.value) return
+        _sedangHapus.value = true
+        viewModelScope.launch {
+            try {
+                reportRepository.hapusLaporan(reportId)
+                _terhapus.value = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                android.util.Log.e("ReportDetail", "hapus laporan gagal: ${e.message}", e)
+                _message.value = if (e.isActiveClaimBlockingDelete()) {
+                    ClaimUiText.DELETE_BLOCKED_BY_CLAIM
+                } else {
+                    ClaimUiText.DELETE_FAILED
+                }
+            } finally {
+                _sedangHapus.value = false
+            }
+        }
+    }
+
     fun clearMessage() {
         _message.value = null
     }
@@ -213,4 +267,22 @@ private fun Throwable.isDuplicateClaim(): Boolean {
     return pesan.contains("23505") ||
         pesan.contains("claims_one_active_per_user") ||
         pesan.contains("claims_unique_active")
+}
+
+/**
+ * Apakah penolakan hapus ini karena laporan masih punya klaim aktif?
+ *
+ * Kebijakan RLS `reports_delete_own` (db/0031) hanya mengizinkan hapus bila
+ * tidak ada klaim `MENUNGGU`/`DISETUJUI`. PostgREST melaporkannya sebagai
+ * pelanggaran RLS (`42501`) atau sebagai nol baris terhapus tanpa galat — jadi
+ * pengguna diberi pesan "masih diproses petugas" agar tidak bingung.
+ */
+private fun Throwable.isActiveClaimBlockingDelete(): Boolean {
+    val pesan = message.orEmpty()
+    return pesan.contains("42501") ||
+        pesan.contains("row-level security") ||
+        pesan.contains("reports_delete_own") ||
+        // Penjaga di RoomReportRepository saat server melaporkan "0 baris terhapus":
+        // kebijakan RLS belum ada, laporan bukan milik akun ini, atau klaim masih aktif.
+        pesan.contains("tidak terhapus")
 }

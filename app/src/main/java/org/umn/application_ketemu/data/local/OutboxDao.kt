@@ -29,6 +29,10 @@ interface OutboxDao {
     @Query("SELECT COUNT(*) FROM outbox WHERE reportId = :reportId")
     suspend fun countFor(reportId: String): Int
 
+    /** Membuang semua aksi tertunda milik satu laporan (dipakai saat laporan dihapus). */
+    @Query("DELETE FROM outbox WHERE reportId = :reportId")
+    suspend fun deleteFor(reportId: String)
+
     @Query("SELECT COUNT(*) FROM outbox")
     fun observeCount(): Flow<Int>
 }

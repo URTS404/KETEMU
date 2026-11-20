@@ -47,6 +47,12 @@
     <string name="claim_status_your_answer">Jawaban Anda: %1$s</string>
     <string name="action_back">Kembali</string>
     <string name="report_detail_title">Detail Laporan</string>
+    <string name="detail_menu_open">Menu laporan</string>
+    <string name="detail_delete_report">Hapus laporan</string>
+    <string name="detail_delete_title">Hapus laporan ini?</string>
+    <string name="detail_delete_message">Laporan akan dihapus permanen dari server, termasuk klaim dan notifikasi yang menunjuk laporan ini. Tindakan ini tidak bisa dibatalkan. Pakai ini bila laporan salah kirim atau barangnya sudah Anda temukan sendiri.</string>
+    <string name="detail_delete_confirm">Hapus</string>
+    <string name="detail_delete_cancel">Batal</string>
     <string name="report_timeline_title">Perjalanan Barang</string>
     <string name="report_timeline_waiting">Menunggu</string>
     <string name="report_timeline_recorded">Tercatat di sistem</string>

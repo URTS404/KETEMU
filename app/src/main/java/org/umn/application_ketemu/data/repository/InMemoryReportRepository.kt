@@ -92,4 +92,8 @@ class InMemoryReportRepository(
             }
         }
     }
+
+    override suspend fun hapusLaporan(reportId: String) {
+        reports.value = reports.value.filterNot { it.id == reportId }
+    }
 }

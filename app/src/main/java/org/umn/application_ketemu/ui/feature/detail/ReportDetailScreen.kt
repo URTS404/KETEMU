@@ -14,9 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -77,6 +81,9 @@ fun ReportDetailScreen(
     val myClaim by viewModel.myClaim.collectAsStateWithLifecycle()
     val canClaim by viewModel.canClaim.collectAsStateWithLifecycle()
     val canChat by viewModel.canChat.collectAsStateWithLifecycle()
+    val isOwner by viewModel.isOwner.collectAsStateWithLifecycle()
+    val sedangHapus by viewModel.sedangHapus.collectAsStateWithLifecycle()
+    val terhapus by viewModel.terhapus.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -84,6 +91,17 @@ fun ReportDetailScreen(
     // memverifikasi. Prosedur pengambilan dijelaskan di dialog yang sama supaya
     // tidak ada kejutan saat barang diambil.
     var showClaimForm by remember { mutableStateOf(false) }
+
+    // Menu "Hapus laporan": hanya untuk pemilik, dan selalu lewat konfirmasi
+    // karena tindakannya permanen (berbeda dengan Arsipkan milik petugas).
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showOwnerMenu by remember { mutableStateOf(false) }
+
+    // Setelah laporan benar-benar terhapus, halaman detail tidak punya data lagi,
+    // jadi langsung kembali ke layar sebelumnya.
+    LaunchedEffect(terhapus) {
+        if (terhapus) onBack()
+    }
 
     LaunchedEffect(message) {
         val text = message ?: return@LaunchedEffect
@@ -99,6 +117,17 @@ fun ReportDetailScreen(
             onSubmit = { answer ->
                 viewModel.submitClaim(answer)
                 showClaimForm = false
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        HapusLaporanDialog(
+            sedangHapus = sedangHapus,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.hapusLaporan()
             }
         )
     }
@@ -120,7 +149,43 @@ fun ReportDetailScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
-                )
+                ),
+                actions = {
+                    // Pemilik boleh menghapus laporannya sendiri (salah kirim,
+                    // atau barangnya sudah ditemukan sendiri). Petugas memakai
+                    // Arsipkan di panel admin, bukan tombol ini.
+                    if (isOwner && loadedReport != null) {
+                        Box {
+                            IconButton(
+                                onClick = { showOwnerMenu = true },
+                                enabled = !sedangHapus
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.detail_menu_open)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOwnerMenu,
+                                onDismissRequest = { showOwnerMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.detail_delete_report)) },
+                                    onClick = {
+                                        showOwnerMenu = false
+                                        showDeleteDialog = true
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = null
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -149,6 +214,37 @@ fun ReportDetailScreen(
             )
         }
     }
+}
+
+/**
+ * Konfirmasi hapus laporan milik sendiri.
+ *
+ * Penghapusan bersifat permanen (baris di server ikut hilang beserta klaim dan
+ * pencocokan yang menunjuknya), jadi selalu lewat dialog — bukan sekali tekan.
+ * Kasus pemakaiannya: salah kirim laporan, atau barang hilang sudah ditemukan
+ * sendiri sehingga laporannya tidak perlu dicari lagi.
+ */
+@Composable
+private fun HapusLaporanDialog(
+    sedangHapus: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.detail_delete_title)) },
+        text = { Text(stringResource(R.string.detail_delete_message)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !sedangHapus) {
+                Text(stringResource(R.string.detail_delete_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.detail_delete_cancel))
+            }
+        }
+    )
 }
 
 /**

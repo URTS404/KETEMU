@@ -121,6 +121,21 @@ class SupabaseReportRepository(
         refresh()
     }
 
+    /**
+     * Menghapus laporan milik sendiri.
+     *
+     * Kelas ini tidak lagi dipasang di `AppContainer` (laporan kini lewat
+     * `RoomReportRepository`), tetapi kontraknya tetap dipenuhi supaya berkas ini
+     * masih bisa dibaca sebagai rujukan DTO dan urutan kolom. Server tetap
+     * menegakkan aturan pemilik lewat kebijakan `reports_delete_own`.
+     */
+    override suspend fun hapusLaporan(reportId: String) {
+        client.postgrest.from(TABLE).delete {
+            filter { eq("id", reportId) }
+        }
+        refresh()
+    }
+
     override suspend fun updateStatus(reportId: String, status: ReportStatus) {
         client.postgrest.from(TABLE).update({ set("status", status.name) }) {
             filter { eq("id", reportId) }
