@@ -156,9 +156,16 @@ fun ConversationScreen(
     // (termasuk dari lawan bicara lewat Realtime), dan saat indikator "sedang
     // mengetik" muncul. Daftar memakai reverseLayout, jadi index 0 adalah
     // posisi paling bawah - menggulir ke 0 berarti menempel ke pesan terakhir.
+    //
+    // Syarat "hanya bila pengguna sudah di dasar": tanpa syarat ini, orang yang
+    // sedang membaca pesan lama akan terlempar ke bawah setiap ada pesan baru
+    // (regresi yang pernah diperbaiki di commit e5d78c0). Indeks 0/1 dipakai
+    // karena item ke-0 bisa berupa indikator "sedang mengetik".
     LaunchedEffect(messages.size, peerTyping) {
-        if (listState.layoutInfo.totalItemsCount > 0) {
-            listState.animateScrollToItem(0)
+        val info = listState.layoutInfo
+        if (info.totalItemsCount > 0) {
+            val teratas = info.visibleItemsInfo.firstOrNull()?.index ?: 0
+            if (teratas <= 1) listState.animateScrollToItem(0)
         }
     }
 
