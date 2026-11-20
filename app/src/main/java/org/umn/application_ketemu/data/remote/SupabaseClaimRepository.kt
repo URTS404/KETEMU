@@ -21,6 +21,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ClaimStatus
+import org.umn.application_ketemu.domain.model.HandoverResult
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import java.time.OffsetDateTime
@@ -126,7 +127,7 @@ class SupabaseClaimRepository(
      * hak akses petugas (RLS `reports_update`). Bedanya hanya pencatatan audit di
      * server, sehingga jalur klien ditandai sebagai cadangan, bukan pengganti.
      */
-    override suspend fun completeHandover(claimId: String, code: String?): Boolean {
+    override suspend fun completeHandover(claimId: String, code: String?): HandoverResult {
         val kode = code?.trim().orEmpty()
         val galat = runCatching {
             client.postgrest.rpc(
@@ -141,7 +142,8 @@ class SupabaseClaimRepository(
 
         if (galat == null) {
             refresh()
-            return true
+            // Fungsi database sudah menulis catatan auditnya sendiri.
+            return HandoverResult(berhasil = true, auditDiServer = true)
         }
 
         val pesan = galat.message.orEmpty()
@@ -154,7 +156,7 @@ class SupabaseClaimRepository(
             throw galat
         }
 
-        return serahTerimaDiKlien(claimId, kode)
+        return HandoverResult(berhasil = serahTerimaDiKlien(claimId, kode))
     }
 
     /**

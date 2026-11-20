@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.map
 import org.umn.application_ketemu.core.util.PickupCode
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ClaimStatus
+import org.umn.application_ketemu.domain.model.HandoverResult
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 
 /**
@@ -60,14 +61,18 @@ class InMemoryClaimRepository(
      * tetap diubah pemanggil ([AdminClaimsViewModel]) karena repositori demo ini
      * tidak memegang daftar laporan.
      */
-    override suspend fun completeHandover(claimId: String, code: String?): Boolean {
-        val existing = claims.value.firstOrNull { it.id == claimId } ?: return false
-        if (existing.status != ClaimStatus.DISETUJUI) return false
+    override suspend fun completeHandover(claimId: String, code: String?): HandoverResult {
+        val existing = claims.value.firstOrNull { it.id == claimId }
+            ?: return HandoverResult(berhasil = false)
+        if (existing.status != ClaimStatus.DISETUJUI) return HandoverResult(berhasil = false)
         val kode = code?.trim().orEmpty()
-        if (kode.isNotEmpty() && !kode.equals(existing.pickupCode, ignoreCase = true)) return false
+        if (kode.isNotEmpty() && !kode.equals(existing.pickupCode, ignoreCase = true)) {
+            return HandoverResult(berhasil = false)
+        }
 
         val updated = existing.copy(handedOverAt = System.currentTimeMillis())
         claims.value = claims.value.map { if (it.id == claimId) updated else it }
-        return true
+        // Demo tidak punya fungsi database, jadi audit dicatat pemanggil.
+        return HandoverResult(berhasil = true, auditDiServer = false)
     }
 }

@@ -185,8 +185,8 @@ class AdminClaimsViewModel(
         }
 
         try {
-            val berhasil = claimRepository.completeHandover(claim.id, code)
-            if (!berhasil) {
+            val hasil = claimRepository.completeHandover(claim.id, code)
+            if (!hasil.berhasil) {
                 _message.value = AdminUiText.HANDOVER_FAILED
                 return@launch
             }
@@ -195,23 +195,26 @@ class AdminClaimsViewModel(
             reportRepository.updateStatus(claim.reportId, ReportStatus.SELESAI_DIKLAIM)
 
             // Catatan audit tidak boleh membatalkan serah terima yang sudah
-            // terjadi di server: barang sudah berpindah tangan. Bila enum aksi
-            // belum ada (migrasi db/0028 belum dijalankan), cukup dilaporkan.
-            runCatching {
-                auditLogRepository.record(
-                    AuditLogEntry(
-                        id = UUID.randomUUID().toString(),
-                        actorId = actor.id,
-                        actorName = actor.fullName,
-                        action = AuditAction.SERAH_TERIMA_BARANG,
-                        targetType = "CLAIM",
-                        targetId = claim.id,
-                        note = claim.reportTitle,
-                        createdAt = System.currentTimeMillis()
+            // terjadi di server: barang sudah berpindah tangan. Bila fungsi
+            // database sudah menulis auditnya sendiri (db/0028), aplikasi tidak
+            // mencatat lagi supaya tidak ada dua baris untuk satu kejadian.
+            if (!hasil.auditDiServer) {
+                runCatching {
+                    auditLogRepository.record(
+                        AuditLogEntry(
+                            id = UUID.randomUUID().toString(),
+                            actorId = actor.id,
+                            actorName = actor.fullName,
+                            action = AuditAction.SERAH_TERIMA_BARANG,
+                            targetType = "CLAIM",
+                            targetId = claim.id,
+                            note = claim.reportTitle,
+                            createdAt = System.currentTimeMillis()
+                        )
                     )
-                )
-            }.onFailure {
-                android.util.Log.w("AdminClaims", "catatan audit serah terima gagal: ${it.message}")
+                }.onFailure {
+                    android.util.Log.w("AdminClaims", "catatan audit serah terima gagal: ${it.message}")
+                }
             }
 
             _lastDecision.value = ClaimDecision(

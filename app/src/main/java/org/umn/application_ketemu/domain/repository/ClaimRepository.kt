@@ -2,6 +2,7 @@ package org.umn.application_ketemu.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.HandoverResult
 
 /**
  * Kontrak pengajuan & keputusan klaim.
@@ -47,8 +48,9 @@ interface ClaimRepository {
      *
      * @param code kode pengambilan yang disebut pemilik; `null`/kosong berarti
      *   petugas memverifikasi identitas secara manual.
-     * @return `true` bila server menerima pencatatan serah terima.
+     * @return hasil pencatatan; `auditDiServer` menandai apakah catatan audit
+     *   sudah dibuat fungsi database (agar aplikasi tidak mencatat dua kali).
      */
-    suspend fun completeHandover(claimId: String, code: String? = null): Boolean =
+    suspend fun completeHandover(claimId: String, code: String? = null): HandoverResult =
         throw UnsupportedOperationException("Serah terima belum didukung penyimpanan ini.")
 }
