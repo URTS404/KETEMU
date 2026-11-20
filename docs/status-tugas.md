@@ -5,7 +5,7 @@ satu sesi obrolan. Daftar tugasnya berasal dari permintaan pada **17 November 20
 10.52**, dan statusnya selalu **diperiksa ulang ke kode + commit**, bukan dikutip dari
 percakapan lama.
 
-**Snapshot terakhir: `a1cb094`, 20 November 2026.**
+**Snapshot terakhir: `e0e9bec`, 20 November 2026.**
 
 Cara memakainya: sebelum melanjutkan pekerjaan, baca tabel di bawah; setelah satu tugas
 selesai, perbarui barisnya dan ganti baris "Snapshot terakhir" dengan commit baru.
@@ -32,7 +32,7 @@ Urutan pengerjaan yang disepakati: #4 → #3 → #5 → #1 → #7 → #2 → #6.
 | 1 | Pesan antar user & staff | ✅ Selesai | `db/0019_messages.sql`, `0020_chat_view.sql`, `0022_chat_images.sql`, `0023_chat_storage.sql`, `0024_message_delete.sql`, `0027_typing_state.sql`; kirim gambar + kompresi, antrean offline (`filesDir/chat_outbox`), hapus pesan, indikator mengetik, gulir otomatis |
 | 2 | Room / SQLite (offline-first) | ✅ Selesai | `data/local/` (`ReportEntity`, `OutboxEntity`, `ReportDao`, `OutboxDao`, `KetemuDatabase` v1) + `data/repository/RoomReportRepository.kt`; KSP + Room 2.8.5 aktif di `app/build.gradle.kts`; skema tercatat di `app/schemas/`. Daftar laporan terbaca offline, aksi tulis masuk `outbox` lalu terkirim otomatis |
 | 3 | Pemisahan akses STAFF vs ADMIN | ✅ Selesai | `db/0011_admin_management.sql`, `0012_admin_audit.sql`, `0013_demo_admin_staff.sql`, `0014_account_status.sql`, `0015_staff_keys.sql` |
-| 4 | Perbaikan klaim + kode pengambilan | ✅ Selesai | trigger `decide_claim` & `apply_claim_to_report` (`db/0001_schema.sql:219` dan `:254`, diperbaiki `db/0009_fix_audit_enum_cast.sql:51`); kode pengambilan `414A0D` saat uji emulator |
+| 4 | Perbaikan klaim + kode pengambilan | ✅ Selesai | trigger `decide_claim` & `apply_claim_to_report` (`db/0001_schema.sql:219` dan `:254`, diperbaiki `db/0009_fix_audit_enum_cast.sql:51`); tahap serah terima `db/0028_serah_terima.sql` (sudah dijalankan, RPC `complete_handover` aktif); `db/0029_claim_resubmit.sql` memperbaiki klaim ditolak yang tidak bisa diajukan ulang — **menunggu dijalankan di project Supabase**; kode pengambilan `414A0D` / `756B89` / `2792E5` saat uji emulator |
 | 5 | GPS / peta | ✅ Selesai (dikerjakan rekan) | `db/0010_report_coordinates.sql`, commit `2ed6a60` (peta OpenStreetMap + kolom koordinat) |
 | 6 | Pencocokan gambar ("Lens") | ⚠️ Sebagian | `db/0018_auto_match.sql` mencocokkan **kata kunci judul + jarak GPS ≤ 250 m**, bukan isi gambar. Tidak ada ML Kit / model visi di repo |
 | 7 | Pop-up notification | ✅ Selesai (dikerjakan rekan) | `db/0016_notifications.sql`, `0017_realtime.sql`, kartu notifikasi Android, sakelar di profil |
@@ -77,8 +77,8 @@ CLIP + pgvector ± 1–2 minggu.
 - **Antrean moderasi & arsip laporan** berbasis database, bukan data contoh.
 - **Indikator "sedang menulis…"** (`0027`) beserta gulir otomatis pesan masuk — 20 November 2026.
 - **Room/offline-first untuk laporan** (#2): daftar laporan terbaca tanpa jaringan, aksi tulis masuk antrean `outbox` dan terkirim otomatis — 20 November 2026.
-- **Unit test**: 105 `@Test` di `app/src/test` (22 berkas).
-- **Serah terima barang + penutupan dua laporan** — 20 November 2026: bagian "Menunggu pengambilan" di layar Verifikasi klaim, dialog kode pengambilan opsional, laporan temuan & laporan hilang pasangannya menjadi `SELESAI_DIKLAIM`, notifikasi ke pengklaim. Fungsi `complete_handover` ada di `db/0028_serah_terima.sql` (belum dijalankan di project Supabase; aplikasi memakai jalur cadangan sampai skrip itu dijalankan).
+- **Unit test**: 113 `@Test` di `app/src/test` (22 berkas).
+- **Serah terima barang + penutupan dua laporan** — 20 November 2026: bagian "Menunggu pengambilan" di layar Verifikasi klaim, dialog kode pengambilan opsional, laporan temuan & laporan hilang pasangannya menjadi `SELESAI_DIKLAIM`, notifikasi ke pengklaim. Fungsi `complete_handover` ada di `db/0028_serah_terima.sql` (sudah dijalankan; aplikasi memakai jalur RPC, jalur cadangan klien tetap ada bila fungsi tidak ditemukan).
 
 ## Riwayat pembaruan berkas ini
 
@@ -90,3 +90,5 @@ CLIP + pgvector ± 1–2 minggu.
 | 20 Nov 2026 | Berkas ini dibuat; status diperiksa ulang ke kode pada commit `a1cb094`. Tidak ada perubahan status sejak 19 Nov |
 | 20 Nov 2026 13.40 | #2 Room selesai (opsi A) dan diuji di emulator dengan mode pesawat; status menjadi 6 selesai, 1 sebagian |
 | 20 Nov 2026 18.40 | Alur klaim dilengkapi tahap serah terima; diuji end-to-end di tiga emulator (Siti, Rahmat, Budi) sampai kedua laporan `SELESAI_DIKLAIM` |
+| 20 Nov 2026 21.55 | Perbaikan A: klaim ditolak boleh diajukan ulang (`1b82286`), WorkManager + migrasi Room eksplisit + 8 unit test serah terima (`323d6bb`). Status tetap 6 selesai, 1 sebagian |
+| 20 Nov 2026 22.05 | Fitur tambahan #1: pengingat pengambilan hari ke-3/ke-6 lewat `pg_cron` (`e0e9bec`). Tugas utama tidak berubah; yang menunggu hanya menjalankan `db/0029` di Supabase |
