@@ -274,9 +274,16 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
      - Antrean dikirim berurutan saat jaringan tersedia (timer 20 detik dan
        pemicu "jaringan kembali"); UI menampilkan "Menunggu Sinkron" sampai
        terkirim.
+     - Antrean juga dikirim oleh **WorkManager** (`data/sync/`): pekerjaan
+       berkala tiap 15 menit plus satu pekerjaan sekali-jalan setiap aplikasi
+       dibuka, keduanya hanya berjalan saat ada jaringan. Jadi laporan yang
+       dibuat offline tetap terkirim walau aplikasi sudah ditutup.
      - Baris yang belum terkirim ("PENDING") tidak ditimpa hasil server, jadi
        perubahan offline tidak hilang.
-     - Skema tercatat di `app/schemas/` untuk keperluan migrasi.
+     - Skema tercatat di `app/schemas/` untuk keperluan migrasi; perubahan
+       skema WAJIB disertai `Migration` di `KetemuDatabase.MIGRASI` (tidak ada
+       lagi `fallbackToDestructiveMigration`, agar data pengguna tidak terhapus
+       diam-diam).
 
 
 ================================================================================
@@ -348,9 +355,10 @@ Uji cepat (5 menit):
 ================================================================================
 13. BATASAN YANG DIKETAHUI
 --------------------------------------------------------------------------------
-  - Daftar laporan kini terbaca offline; antrean tulis laporan dikirim oleh
-    timer 20 detik / saat jaringan pulih, BUKAN oleh WorkManager, sehingga
-    antrean baru terkirim saat aplikasi sedang berjalan.
+  - Antrean tulis laporan dikirim oleh timer 20 detik saat aplikasi berjalan,
+    dan oleh WorkManager (berkala 15 menit + sekali saat aplikasi dibuka) saat
+    aplikasi ditutup. Keduanya butuh jaringan; antrean tetap menunggu selama
+    perangkat offline.
   - Bila terjadi perubahan yang sama di dua tempat, perubahan lokal ("PENDING")
     yang menang sampai berhasil terkirim.
   - Hapus laporan permanen belum tersedia di aplikasi (hanya lewat SQL Editor
@@ -364,3 +372,6 @@ Uji cepat (5 menit):
     klien. Selama 0028 belum dijalankan, catatan audit "Serah terima barang"
     belum bisa ditulis (aplikasi tetap menutup laporan, hanya mencatat
     peringatan di log).
+  - Klaim yang ditolak boleh diajukan ulang hanya setelah
+    `db/0029_claim_resubmit.sql` dijalankan; sebelum itu constraint lama tetap
+    memblokir pengajuan ulang oleh orang yang sama.

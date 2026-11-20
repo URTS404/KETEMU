@@ -129,6 +129,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Sinkronisasi antrean laporan saat aplikasi di latar belakang.
+    implementation(libs.androidx.work.runtime.ktx)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

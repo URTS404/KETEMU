@@ -57,10 +57,10 @@ Sisa yang masih boleh dikerjakan (tidak menghalangi demo):
 
 | Hal | Keadaan sekarang |
 |---|---|
-| Penjadwalan sinkron | Timer 20 detik + pemicu saat jaringan pulih. `WorkManager` belum dipakai, jadi antrean tidak dikirim saat aplikasi mati |
+| Penjadwalan sinkron | Timer 20 detik + pemicu saat jaringan pulih, ditambah `WorkManager` (`data/sync/`): berkala 15 menit + sekali saat aplikasi dibuka, jadi antrean tetap terkirim walau aplikasi ditutup |
 | Konflik | "Perubahan lokal menang": baris PENDING tidak ditimpa hasil server sampai terkirim |
 | Hapus laporan oleh mahasiswa | Belum ada di UI maupun kebijakan RLS (hapus hanya lewat SQL Editor) |
-| Migrasi skema | Versi 1 memakai `fallbackToDestructiveMigration` (data lokal hilang bila skema berubah) — wajib diganti migrasi sungguhan sebelum rilis |
+| Migrasi skema | Sudah tidak memakai `fallbackToDestructiveMigration`; perubahan skema wajib disertai `Migration` di `KetemuDatabase.MIGRASI` (gagal keras bila lupa, bukan menghapus data) |
 
 ### #6 Pencocokan gambar — ditunda atas keputusan pemilik proyek
 

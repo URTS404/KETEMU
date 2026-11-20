@@ -5,6 +5,7 @@ import android.app.Application
 import org.umn.application_ketemu.core.notification.KetemuNotificationChannels
 import org.umn.application_ketemu.data.AppContainer
 import org.umn.application_ketemu.data.remote.SupabaseProvider
+import org.umn.application_ketemu.data.sync.SinkronLaporan
 
 /**
  * Application class milik Ketemu.
@@ -29,6 +30,11 @@ class KetemuApp : Application() {
         // kanalnya belum terdaftar, jadi jangan menunggu sampai kabar pertama.
         KetemuNotificationChannels.ensure(this)
         container = AppContainer(applicationContext)
+
+        // Timer di repositori hanya hidup selama proses ini berjalan. Worker
+        // berkala memastikan antrean laporan offline tetap terkirim walau
+        // aplikasi sudah ditutup pengguna.
+        SinkronLaporan.jadwalkan(this)
     }
 
 }

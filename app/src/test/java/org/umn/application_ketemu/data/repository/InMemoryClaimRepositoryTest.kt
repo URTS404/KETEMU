@@ -80,4 +80,61 @@ class InMemoryClaimRepositoryTest {
 
         assertNull(repository.decide("clm-tidak-ada", approve = true, decidedBy = "Pak Rahmat"))
     }
+
+    private suspend fun approved(inMemory: InMemoryClaimRepository, id: String): String {
+        inMemory.decide(id, approve = true, decidedBy = "Pak Rahmat")
+        return inMemory.getClaim(id)?.pickupCode.orEmpty()
+    }
+
+    @Test
+    fun `serah terima dengan kode benar menandai waktu pengambilan`() = runTest {
+        val repository = InMemoryClaimRepository(listOf(claim("clm-010")))
+        val kode = approved(repository, "clm-010")
+
+        val hasil = repository.completeHandover("clm-010", kode.lowercase())
+
+        assertTrue(hasil.berhasil)
+        // Demo tidak punya fungsi database, jadi audit dicatat pemanggil.
+        assertTrue(!hasil.auditDiServer)
+        assertNotNull(repository.getClaim("clm-010")?.handedOverAt)
+    }
+
+    @Test
+    fun `serah terima tanpa kode diterima untuk verifikasi KTM manual`() = runTest {
+        val repository = InMemoryClaimRepository(listOf(claim("clm-011")))
+        approved(repository, "clm-011")
+
+        val hasil = repository.completeHandover("clm-011", null)
+
+        assertTrue(hasil.berhasil)
+        assertNotNull(repository.getClaim("clm-011")?.handedOverAt)
+    }
+
+    @Test
+    fun `kode salah ditolak dan klaim tidak berubah`() = runTest {
+        val repository = InMemoryClaimRepository(listOf(claim("clm-012")))
+        approved(repository, "clm-012")
+
+        val hasil = repository.completeHandover("clm-012", "SALAH1")
+
+        assertTrue(!hasil.berhasil)
+        assertNull(repository.getClaim("clm-012")?.handedOverAt)
+    }
+
+    @Test
+    fun `serah terima hanya untuk klaim yang sudah disetujui`() = runTest {
+        val repository = InMemoryClaimRepository(listOf(claim("clm-013")))
+
+        val hasil = repository.completeHandover("clm-013", null)
+
+        assertTrue(!hasil.berhasil)
+        assertNull(repository.getClaim("clm-013")?.handedOverAt)
+    }
+
+    @Test
+    fun `serah terima klaim tak dikenal gagal`() = runTest {
+        val repository = InMemoryClaimRepository(listOf(claim("clm-014")))
+
+        assertTrue(!repository.completeHandover("clm-tidak-ada", null).berhasil)
+    }
 }

@@ -200,6 +200,16 @@ class RoomReportRepository(
     // ---------------------------------------------------------------- sinkron
 
     /** Tarik snapshot server lalu kirim antrean lokal; aman dipanggil berkali-kali. */
+    /**
+     * Memaksa satu putaran sinkronisasi dari luar (mis. [LaporanSyncWorker]).
+     *
+     * Dipakai WorkManager saat aplikasi di latar belakang: timer 20 detik di
+     * dalam proses ini tidak dapat diandalkan ketika proses dibekukan sistem.
+     * Bila jaringan belum ada, fungsi ini hanya mencatat lalu kembali; antrean
+     * tetap menunggu putaran berikutnya.
+     */
+    suspend fun sinkronkanSekarang() = sinkronkan()
+
     private suspend fun sinkronkan() {
         if (kunciSinkron.isLocked) return
         kunciSinkron.withLock {

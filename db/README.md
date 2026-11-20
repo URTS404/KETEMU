@@ -31,6 +31,8 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0025_seed_demo.sql` | Data contoh tambahan untuk demo dan penilaian |
 | `0026_fix_can_access_conversation.sql` | Perbaikan `can_access_conversation` untuk lampiran gambar chat |
 | `0027_typing_state.sql` | Tabel + fungsi `set_typing`/`peer_typing` untuk indikator "sedang menulis…" (kedaluwarsa 5 detik) |
+| `0028_serah_terima.sql` | Kolom `handed_over_at`/`handed_over_by`, enum audit `SERAH_TERIMA_BARANG`, dan fungsi `complete_handover` (petugas mencatat barang sudah diambil → laporan temuan & hilang ditutup) |
+| `0029_claim_resubmit.sql` | Indeks unik parsial `claims_one_active_per_user` menggantikan `claims_unique_active`, agar klaim yang ditolak boleh diajukan ulang |
 
 ## 1. Buat project
 
@@ -61,6 +63,8 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 9. `db/0024_message_delete.sql` - hapus pesan sendiri
 10. `db/0026_fix_can_access_conversation.sql` - wajib bila langkah 8 dipakai
 11. `db/0027_typing_state.sql` - indikator "sedang menulis..." di dalam percakapan
+12. `db/0028_serah_terima.sql` - serah terima barang oleh petugas pos (menutup laporan temuan + hilang)
+13. `db/0029_claim_resubmit.sql` - klaim yang ditolak boleh diajukan ulang
 
 Berkas `0004`–`0009` serta `0021` dan `0025` hanya berisi data contoh dan
 pemeriksaan; jalankan bila perlu.

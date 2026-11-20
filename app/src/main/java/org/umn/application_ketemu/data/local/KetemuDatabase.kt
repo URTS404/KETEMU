@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 
 /**
  * Basis data lokal KETEMU (SQLite lewat Room).
@@ -13,9 +14,19 @@ import androidx.room.RoomDatabase
  * oleh [org.umn.application_ketemu.data.repository.RoomReportRepository],
  * sehingga aplikasi tetap konsisten saat offline.
  *
- * Versi dinaikkan 1 setiap kali skema berubah; jangan lupa menambah migrasi
- * (atau `fallbackToDestructiveMigration` di build debug) agar data pengguna
- * tidak hilang.
+ * ## Aturan perubahan skema
+ *
+ * Versi dinaikkan satu setiap kali bentuk tabel berubah, dan versi baru WAJIB
+ * disertai [Migration] di [MIGRASI]. Tidak ada lagi
+ * `fallbackToDestructiveMigration`: kalau migrasi lupa ditulis, aplikasi gagal
+ * keras saat dibuka (mudah ditemukan saat pengujian) alih-alih diam-diam
+ * menghapus laporan offline dan antrean yang belum terkirim milik pengguna.
+ *
+ * Langkah menambah versi:
+ * 1. ubah entity + naikkan `version`
+ * 2. tulis `Migration(lama, baru)` di [MIGRASI]
+ * 3. jalankan `:app:compileDebugKotlin` agar `app/schemas/<versi>.json` ikut
+ *    tergenerasi dan ikut di-commit
  */
 @Database(
     entities = [ReportEntity::class, OutboxEntity::class],
@@ -31,6 +42,21 @@ abstract class KetemuDatabase : RoomDatabase() {
     companion object {
         private const val NAMA_BERKAS = "ketemu.db"
 
+        /**
+         * Daftar migrasi skema, diurutkan dari versi lama ke baru.
+         *
+         * Kosong karena skema masih versi 1. Contoh bentuk nanti:
+         * ```
+         * private val DARI_1_KE_2 = object : Migration(1, 2) {
+         *     override fun migrate(db: SupportSQLiteDatabase) {
+         *         db.execSQL("alter table reports_cache add column catatan text")
+         *     }
+         * }
+         * private val MIGRASI = arrayOf(DARI_1_KE_2)
+         * ```
+         */
+        private val MIGRASI: Array<Migration> = emptyArray()
+
         @Volatile
         private var instance: KetemuDatabase? = null
 
@@ -41,11 +67,7 @@ abstract class KetemuDatabase : RoomDatabase() {
 
         private fun build(context: Context): KetemuDatabase =
             Room.databaseBuilder(context, KetemuDatabase::class.java, NAMA_BERKAS)
-                // Skema masih versi 1 dan aplikasi belum dirilis: bila bentuk tabel
-                // berubah saat pengembangan, bangun ulang basis data daripada
-                // memaksa migrasi yang belum ada. GANTI dengan migrasi sungguhan
-                // sebelum rilis ke pengguna.
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                .addMigrations(*MIGRASI)
                 .build()
     }
 }
