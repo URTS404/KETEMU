@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.admin
 
+import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -111,7 +112,7 @@ fun AdminModerationScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { PesanSnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier

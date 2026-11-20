@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.admin
 
+import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -77,7 +78,7 @@ fun AdminUsersScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { PesanSnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier

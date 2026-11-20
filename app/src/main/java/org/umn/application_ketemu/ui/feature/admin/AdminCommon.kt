@@ -1,5 +1,6 @@
-﻿package org.umn.application_ketemu.ui.feature.admin
+package org.umn.application_ketemu.ui.feature.admin
 
+import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntAsState
@@ -103,7 +104,7 @@ fun AdminScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
             if (snackbarHostState != null) {
-                SnackbarHost(hostState = snackbarHostState)
+                PesanSnackbarHost(hostState = snackbarHostState)
             }
         },
         topBar = {

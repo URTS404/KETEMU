@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.detail
 
+import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -135,7 +136,7 @@ fun ReportDetailScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { PesanSnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.report_detail_title)) },
