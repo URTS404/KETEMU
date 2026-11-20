@@ -422,4 +422,17 @@
     <string name="chat_attach">Lampirkan gambar</string>
     <string name="chat_image">Gambar pada pesan</string>
     <string name="action_chat_found">Chat penemu</string>
+    <!-- Cari dengan foto (Lens) -->
+    <string name="home_search_photo">Cari dengan foto</string>
+    <string name="lens_sheet_title">Barang temuan yang mirip</string>
+    <string name="lens_sheet_desc">Dibandingkan dari bentuk dan warna foto. Tekan kartu untuk membuka detail.</string>
+    <string name="lens_loading">Membandingkan foto…</string>
+    <string name="lens_empty_title">Belum ada yang mirip</string>
+    <string name="lens_empty_desc">Belum ada laporan temuan berfoto yang cocok. Coba foto dari sudut lain atau dengan cahaya lebih terang.</string>
+    <string name="lens_error_title">Foto tidak bisa dibaca</string>
+    <string name="lens_error_desc">Coba pilih foto lain dari galeri.</string>
+    <string name="lens_similar">Mirip %1$d%%</string>
+    <string name="create_error_photo">Laporan barang temuan wajib memakai foto agar bisa dicocokkan.</string>
+    <string name="create_photo_gallery">Pilih dari galeri</string>
+    <string name="create_photo_found_hint">Foto wajib untuk laporan barang temuan.</string>
 </resources>

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +77,17 @@ fun PhotoPickerField(
         } else {
             pendingFile = createPhotoFile(context)
             pendingFile?.let { file -> cameraLauncher.launch(file.toShareableUri(context)) }
+        }
+    }
+
+    // Alternatif kamera: memilih foto yang sudah ada di galeri. Berguna bila
+    // pengguna memfoto barangnya lebih dulu, dan tidak butuh izin kamera.
+    val galeriLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            message = null
+            onPhotoTaken(uri.toString())
         }
     }
 
@@ -140,6 +153,18 @@ fun PhotoPickerField(
                     else R.string.create_photo_retake
                 )
             )
+        }
+
+        TextButton(
+            onClick = {
+                message = null
+                galeriLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = stringResource(R.string.create_photo_gallery))
         }
 
         message?.let { text ->

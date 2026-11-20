@@ -269,6 +269,27 @@ private fun ReportForm(
             onPhotoTaken = { photoUri = it }
         )
 
+        // Foto wajib untuk laporan temuan: hanya laporan berfoto yang punya
+        // sidik rupa untuk dicocokkan lewat pencarian foto (db/0032). Tanpa
+        // aturan ini, pencarian foto akan selalu kosong untuk data baru.
+        if (type == ItemType.FOUND) {
+            Text(
+                text = stringResource(
+                    if (showErrors && photoUri == null) {
+                        R.string.create_error_photo
+                    } else {
+                        R.string.create_photo_found_hint
+                    }
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (showErrors && photoUri == null) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -331,8 +352,11 @@ private fun ReportForm(
         Button(
             onClick = {
                 // Submission diblokir sampai field wajib valid; bila belum,
-                // tampilkan pesan error alih-alih mengirim laporan.
-                if (title.isBlank() || location.isBlank()) {
+                // tampilkan pesan error alih-alih mengirim laporan. Laporan
+                // temuan juga wajib berfoto (lihat alasan di PhotoPickerField).
+                if (title.isBlank() || location.isBlank() ||
+                    (type == ItemType.FOUND && photoUri == null)
+                ) {
                     showErrors = true
                 } else {
                     onSubmit(

@@ -44,14 +44,30 @@ Syarat pencarian: `type = 'FOUND'`, `is_archived = false`, `photo_embedding`
 tidak kosong, dan kemiripan ≥ `p_ambang`. Foto asli tetap di Storage Supabase;
 yang disimpan di kolom hanya 1024 angka hasil hitungan perangkat.
 
-## Belum dikerjakan (Tahap 2)
+## Yang sudah selesai (Tahap 2)
 
-1. Ikon gambar di kolom pencarian Beranda (`HomeScreen.kt:277`) → pilih foto dari galeri.
-2. Lembar hasil: kartu bergambar + "Mirip 87%" + tombol buka detail / "Ini barang saya".
-3. Aturan **foto wajib untuk laporan bertipe Ditemukan** (tanpa ini, pencarian
-   foto tidak punya pembanding — saat ini 0 dari 12 laporan punya foto).
-4. Cadangan pencarian teks (`pg_trgm`) bila laporan belum punya vektor.
-5. Hapus kait sementara di `KetemuApp.onCreate` (uji model saat start).
+1. Ikon gambar di kolom pencarian Beranda (`HomeScreen.kt`) → `PickVisualMedia`
+   membuka galeri, foto dihitung jadi vektor, lalu `cari_barang_mirip` dipanggil.
+2. Lembar hasil `CariFotoSheet`: kartu bergambar, label "Mirip 87%", nama pos,
+   dan kartu bisa diketuk untuk membuka detail laporan.
+3. Aturan **foto wajib untuk laporan bertipe Ditemukan**: tombol Simpan menolak
+   laporan temuan tanpa foto (`CreateReportScreen.kt`), dengan hint
+   "Foto wajib untuk laporan barang temuan." dan tombol "Pilih dari galeri" di
+   samping "Ambil Foto Barang".
+4. Kait sementara di `KetemuApp.onCreate` sudah dihapus; model kini dimuat saat
+   fitur dipakai.
+
+Bukti uji di `emulator-5554` (Siti): membuat laporan temuan berfoto dari galeri →
+logcat `sidik foto <id>: tersimpan`; mencari dengan foto yang sama → logcat
+`cariDenganFoto: 1 hasil` dan kartu menampilkan **Mirip 89%**. Laporan uji lalu
+dihapus lewat API dan server kembali ke 12 laporan.
+
+## Belum dikerjakan
+
+1. Cadangan pencarian teks (`pg_trgm`) bila laporan belum punya vektor.
+2. Menyimpan vektor untuk laporan yang dibuat **offline** (lihat batasan).
+3. Unggah foto ke Storage Supabase; saat ini `photo_url` masih URI lokal
+   perangkat, jadi foto tidak terlihat di perangkat lain.
 
 ## Batasan yang perlu diketahui
 
@@ -61,3 +77,8 @@ yang disimpan di kolom hanya 1024 angka hasil hitungan perangkat.
   vektor di tabel outbox lalu mengirimnya saat sinkronisasi.
 - Model 4,1 MB menambah ukuran APK; bila APK harus kecil, model bisa diunduh
   sekali saat pertama memakai fitur (tetap tanpa akun, tetapi butuh hosting berkas).
+- **Peringatan 16 KB page size**: di emulator Android 16/17 (`android-37.2`,
+  halaman 16 KB) muncul dialog "This app isn't 16 KB compatible" karena
+  `libtensorflowlite_jni.so` dari TensorFlow Lite 2.16.1 belum selaras 16 KB
+  (juga `libandroidx.graphics.path.so`). Aplikasi tetap berjalan, tetapi untuk
+  rilis perlu naik ke LiteRT/TFLite yang sudah 16 KB-aligned.

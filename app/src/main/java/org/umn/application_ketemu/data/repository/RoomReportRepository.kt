@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -37,6 +38,7 @@ import org.umn.application_ketemu.data.local.toEntity
 import org.umn.application_ketemu.data.remote.REPORT_SELECT_COLUMNS
 import org.umn.application_ketemu.data.remote.ReportRow
 import org.umn.application_ketemu.data.remote.toDomain
+import org.umn.application_ketemu.domain.model.HasilCariFoto
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
@@ -207,6 +209,53 @@ class RoomReportRepository(
         }.getOrDefault(false)
     }
 
+    /**
+     * Cari barang temuan yang fotonya mirip dengan [vektor] lewat RPC
+     * `cari_barang_mirip` (db/0032). Perhitungan kemiripan terjadi di database
+     * memakai indeks HNSW, jadi foto pengguna tidak pernah dikirim ke layanan
+     * luar dan tidak ada foto lain yang perlu diunduh ke HP.
+     *
+     * Kegagalan (offline, fungsi belum dipasang, vektor ditolak) menghasilkan
+     * daftar kosong + catatan log: dari sisi pengguna artinya "belum ada yang
+     * mirip", bukan galat yang perlu ditampilkan sebagai crash.
+     */
+    override suspend fun cariDenganFoto(vektor: FloatArray, batas: Int): List<HasilCariFoto> {
+        if (vektor.size != DIMENSI_VEKTOR) return emptyList()
+        val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
+        if (!daring) {
+            Log.d(TAG, "cariDenganFoto: offline, pencarian foto ditunda")
+            return emptyList()
+        }
+
+        return runCatching {
+            val angka = vektor.map { it.toDouble() }
+            client.postgrest.rpc(
+                "cari_barang_mirip",
+                buildJsonObject {
+                    putJsonArray("p_vektor") { angka.forEach { nilai -> add(JsonPrimitive(nilai)) } }
+                    put("p_batas", batas)
+                },
+            ).decodeList<CariFotoRow>().mapNotNull { baris ->
+                val status = ReportStatus.entries.firstOrNull { it.name == baris.status }
+                if (status == null) {
+                    Log.w(TAG, "cariDenganFoto: status '${baris.status}' tidak dikenal, dilewati")
+                    null
+                } else {
+                    HasilCariFoto(
+                        id = baris.id,
+                        title = baris.title,
+                        photoUrl = baris.photoUrl,
+                        status = status,
+                        posName = baris.posName,
+                        skor = baris.skor,
+                    )
+                }
+            }
+        }.onFailure {
+            Log.w(TAG, "cariDenganFoto gagal: ${it.message}")
+        }.getOrDefault(emptyList())
+    }
+
     override suspend fun hapusLaporan(reportId: String) {
         val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
         if (!daring) {
@@ -239,6 +288,23 @@ class RoomReportRepository(
     /** Baris minimal untuk memastikan server benar-benar menghapus data. */
     @Serializable
     private data class IdBaris(val id: String)
+
+    /**
+     * Satu baris keluaran RPC `cari_barang_mirip` (db/0032).
+     *
+     * Nama kolom mengikuti yang dikembalikan database; `status` dibiarkan teks
+     * lalu diterjemahkan ke `ReportStatus` di pemanggil, agar status yang belum
+     * dikenal aplikasi tidak menggagalkan seluruh pencarian.
+     */
+    @Serializable
+    private data class CariFotoRow(
+        val id: String,
+        val title: String,
+        @SerialName("photo_url") val photoUrl: String? = null,
+        val status: String,
+        @SerialName("pos_name") val posName: String? = null,
+        val skor: Int = 0,
+    )
 
     // ---------------------------------------------------------------- baca lokal
     /** Flow laporan dari Room; pembacaan pertama memicu tarikan dari server. */
@@ -398,6 +464,9 @@ class RoomReportRepository(
         const val TAG = "Reports"
         const val TABLE = "reports"
         const val REFRESH_INTERVAL_MS = 20_000L
+
+        /** Panjang sidik foto MobileNetV3; harus sama dengan kolom vector(1024). */
+        const val DIMENSI_VEKTOR = 1024
         val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     }
 }

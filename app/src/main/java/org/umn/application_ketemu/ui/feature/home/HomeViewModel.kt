@@ -2,6 +2,8 @@ package org.umn.application_ketemu.ui.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,6 +16,7 @@ import kotlinx.coroutines.launch
 import org.umn.application_ketemu.core.common.UiState
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.session.SessionStore
+import org.umn.application_ketemu.domain.model.HasilCariFoto
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportCategory
@@ -39,10 +42,16 @@ data class HomeStats(
  * inilah pemisahan logika UI/Bisnis/Data yang diminta PRD (MVVM).
  */
 class HomeViewModel(
-    reportRepository: ReportRepository,
+    private val reportRepository: ReportRepository,
     networkMonitor: NetworkMonitor,
     session: SessionStore,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    /**
+     * Penghitung sidik rupa foto (fitur "Lens"). Disuntikkan sebagai lambda agar
+     * ViewModel tidak memegang Context dan tetap bisa diuji tanpa model TFLite.
+     * `null` berarti fitur cari-dengan-foto tidak tersedia di perangkat ini.
+     */
+    private val hitungVektorFoto: (suspend (String) -> FloatArray?)? = null
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -108,6 +117,70 @@ class HomeViewModel(
         }
     }
 
+    // ── Cari dengan foto ("Lens") ────────────────────────────────────────────
+
+    private val _sedangMencariFoto = MutableStateFlow(false)
+
+    /** True selama model dan server masih membandingkan foto. */
+    val sedangMencariFoto: StateFlow<Boolean> = _sedangMencariFoto.asStateFlow()
+
+    private val _hasilCariFoto = MutableStateFlow<List<HasilCariFoto>>(emptyList())
+
+    /** Hasil terurut dari yang paling mirip; kosong = belum ada yang cocok. */
+    val hasilCariFoto: StateFlow<List<HasilCariFoto>> = _hasilCariFoto.asStateFlow()
+
+    private val _galatCariFoto = MutableStateFlow(false)
+
+    /** True bila pencarian berhenti karena masalah teknis (foto gagal dibaca). */
+    val galatCariFoto: StateFlow<Boolean> = _galatCariFoto.asStateFlow()
+
+    /**
+     * Mencocokkan foto galeri [uri] dengan laporan temuan berfoto.
+     *
+     * Alurnya: foto -> vektor (di HP, tanpa jaringan) -> RPC `cari_barang_mirip`
+     * (perbandingan vektor di database). Bila perangkat sedang offline, daftar
+     * hasil kosong dan pengguna tetap melihat pesan "belum ada yang mirip" —
+     * bukan galat, karena memang tidak ada yang bisa dibandingkan.
+     */
+    fun cariDenganFoto(uri: String) {
+        if (_sedangMencariFoto.value) return
+        viewModelScope.launch {
+            _sedangMencariFoto.value = true
+            _galatCariFoto.value = false
+            _hasilCariFoto.value = emptyList()
+            try {
+                val penghitung = hitungVektorFoto
+                if (penghitung == null) {
+                    Log.w(TAG_FOTO, "cariDenganFoto: penghitung vektor tidak tersedia")
+                    _galatCariFoto.value = true
+                    return@launch
+                }
+                val vektor = penghitung(uri)
+                if (vektor == null) {
+                    Log.w(TAG_FOTO, "cariDenganFoto: foto tidak bisa dibaca")
+                    _galatCariFoto.value = true
+                    return@launch
+                }
+                val hasil = reportRepository.cariDenganFoto(vektor)
+                _hasilCariFoto.value = hasil
+                Log.d(TAG_FOTO, "cariDenganFoto: ${hasil.size} hasil")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG_FOTO, "cariDenganFoto gagal: ${e.message}", e)
+                _galatCariFoto.value = true
+            } finally {
+                _sedangMencariFoto.value = false
+            }
+        }
+    }
+
+    /** Menutup lembar hasil (dipanggil ketika pengguna menutup atau membuka detail). */
+    fun bersihkanHasilCariFoto() {
+        _hasilCariFoto.value = emptyList()
+        _galatCariFoto.value = false
+    }
+
     val uiState: StateFlow<UiState<List<Report>>> = combine(
         reportRepository.observeReports(),
         searchQuery,
@@ -156,5 +229,9 @@ class HomeViewModel(
 
             matchesType && matchesCategory && matchesQuery
         }
+    }
+
+    private companion object {
+        const val TAG_FOTO = "Lens"
     }
 }

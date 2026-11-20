@@ -1,6 +1,7 @@
 package org.umn.application_ketemu.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import org.umn.application_ketemu.domain.model.HasilCariFoto
 import org.umn.application_ketemu.domain.model.PosLocation
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
@@ -96,4 +97,16 @@ interface ReportRepository {
      * ikut serta dalam pencarian berbasis foto.
      */
     suspend fun simpanVektorFoto(reportId: String, vektor: FloatArray): Boolean = false
+
+    /**
+     * Mencari laporan temuan yang fotonya mirip dengan [vektor] (fitur "Lens").
+     *
+     * [vektor] harus 1024 angka ternormalisasi L2 dari [org.umn.application_ketemu.core.visual.PencariVisual].
+     * Hasil diurutkan dari yang paling mirip; daftar kosong berarti belum ada
+     * laporan temuan berfoto yang cukup mirip (atau perangkat sedang offline).
+     * Versi bawaan mengembalikan daftar kosong supaya implementasi demo tetap
+     * bisa dipakai tanpa database vektor.
+     */
+    suspend fun cariDenganFoto(vektor: FloatArray, batas: Int = 20): List<HasilCariFoto> =
+        emptyList()
 }

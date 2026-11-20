@@ -4,8 +4,21 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import org.umn.application_ketemu.domain.model.HasilCariFoto
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -109,6 +122,22 @@ fun HomeScreen(
     var selectedType by rememberSaveable { mutableStateOf<ItemType?>(null) }
     var selectedCategory by rememberSaveable { mutableStateOf<ReportCategory?>(null) }
 
+    val sedangMencariFoto by viewModel.sedangMencariFoto.collectAsStateWithLifecycle()
+    val hasilCariFoto by viewModel.hasilCariFoto.collectAsStateWithLifecycle()
+    val galatCariFoto by viewModel.galatCariFoto.collectAsStateWithLifecycle()
+    var tampilkanHasilFoto by rememberSaveable { mutableStateOf(false) }
+
+    // Pengambil foto dari galeri untuk fitur cari-dengan-foto. Pemilih foto
+    // sistem (PickVisualMedia) tidak butuh izin penyimpanan sama sekali.
+    val pilihFoto = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            tampilkanHasilFoto = true
+            viewModel.cariDenganFoto(uri.toString())
+        }
+    }
+
     LaunchedEffect(query) { viewModel.onSearchQueryChange(query) }
     LaunchedEffect(selectedType) { viewModel.onTypeFilterChange(selectedType) }
     LaunchedEffect(selectedCategory) { viewModel.onCategoryFilterChange(selectedCategory) }
@@ -190,7 +219,12 @@ fun HomeScreen(
                         selectedType = selectedType,
                         onTypeChange = { selectedType = it },
                         selectedCategory = selectedCategory,
-                        onCategoryChange = { selectedCategory = it }
+                        onCategoryChange = { selectedCategory = it },
+                        onCariFotoClick = {
+                            pilihFoto.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
                     )
                 }
 
@@ -257,6 +291,167 @@ fun HomeScreen(
                 }
             }
         }
+
+        if (tampilkanHasilFoto) {
+            CariFotoSheet(
+                sedangMencari = sedangMencariFoto,
+                hasil = hasilCariFoto,
+                galat = galatCariFoto,
+                onReportClick = { id ->
+                    tampilkanHasilFoto = false
+                    viewModel.bersihkanHasilCariFoto()
+                    onReportClick(id)
+                },
+                onDismiss = {
+                    tampilkanHasilFoto = false
+                    viewModel.bersihkanHasilCariFoto()
+                }
+            )
+        }
+    }
+}
+
+/**
+ * Lembar hasil "cari barang dengan foto".
+ *
+ * Menampilkan laporan temuan berfoto yang paling mirip beserta persentase
+ * kemiripan dari server. Selama model masih menghitung, pengguna melihat
+ * indikator proses; bila tidak ada yang cocok, pesan kosong menjelaskan apa
+ * yang bisa dicoba berikutnya (bukan galat merah, karena ini keadaan normal).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CariFotoSheet(
+    sedangMencari: Boolean,
+    hasil: List<HasilCariFoto>,
+    galat: Boolean,
+    onReportClick: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.lens_sheet_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.lens_sheet_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+
+            when {
+                sedangMencari -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = stringResource(R.string.lens_loading),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                galat || hasil.isEmpty() -> EmptyState(
+                    title = stringResource(
+                        if (galat) R.string.lens_error_title else R.string.lens_empty_title
+                    ),
+                    description = stringResource(
+                        if (galat) R.string.lens_error_desc else R.string.lens_empty_desc
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+
+                else -> LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(hasil, key = { it.id }) { item ->
+                        HasilFotoCard(
+                            hasil = item,
+                            onClick = { onReportClick(item.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Satu kartu hasil pencarian foto: gambar, judul, kemiripan, dan lokasi pos. */
+@Composable
+private fun HasilFotoCard(
+    hasil: HasilCariFoto,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = hasil.photoUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = hasil.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.lens_similar, hasil.skor),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                hasil.posName?.takeIf { it.isNotBlank() }?.let { pos ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = pos,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -267,7 +462,8 @@ private fun SearchAndFilterBar(
     selectedType: ItemType?,
     onTypeChange: (ItemType?) -> Unit,
     selectedCategory: ReportCategory?,
-    onCategoryChange: (ReportCategory?) -> Unit
+    onCategoryChange: (ReportCategory?) -> Unit,
+    onCariFotoClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -281,7 +477,17 @@ private fun SearchAndFilterBar(
             singleLine = true,
             shape = MaterialTheme.shapes.small,
             placeholder = { Text(stringResource(R.string.home_search_hint)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            // Ikon di kanan kotak pencarian: buka galeri lalu bandingkan fotonya
+            // dengan laporan temuan berfoto (fitur "Lens").
+            trailingIcon = {
+                IconButton(onClick = onCariFotoClick) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_cari_foto),
+                        contentDescription = stringResource(R.string.home_search_photo)
+                    )
+                }
+            }
         )
 
         // Kotak filter berdampingan dengan kotak pencarian.
