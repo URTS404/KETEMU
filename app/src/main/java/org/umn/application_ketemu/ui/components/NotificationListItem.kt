@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -49,6 +50,7 @@ fun notificationIcon(type: AppNotificationType): ImageVector = when (type) {
     AppNotificationType.NEW_FOUND_ITEM -> Icons.Default.Search
     AppNotificationType.POSSIBLE_MATCH -> Icons.Default.Star
     AppNotificationType.REPORT_STATUS_CHANGED -> Icons.Default.Refresh
+    AppNotificationType.PICKUP_REMINDER -> Icons.Default.Notifications
     AppNotificationType.CLAIM_REJECTED -> Icons.Default.Close
 }
 
@@ -62,6 +64,8 @@ fun notificationAccent(type: AppNotificationType): Color = when (type) {
     AppNotificationType.NEW_FOUND_ITEM,
     AppNotificationType.POSSIBLE_MATCH,
     AppNotificationType.CLAIM_APPROVED -> MaterialTheme.colorScheme.tertiary
+
+    AppNotificationType.PICKUP_REMINDER -> MaterialTheme.colorScheme.secondary
 
     AppNotificationType.CLAIM_REJECTED -> MaterialTheme.colorScheme.error
 }

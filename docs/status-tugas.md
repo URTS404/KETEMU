@@ -61,6 +61,7 @@ Sisa yang masih boleh dikerjakan (tidak menghalangi demo):
 | Konflik | "Perubahan lokal menang": baris PENDING tidak ditimpa hasil server sampai terkirim |
 | Hapus laporan oleh mahasiswa | Belum ada di UI maupun kebijakan RLS (hapus hanya lewat SQL Editor) |
 | Migrasi skema | Sudah tidak memakai `fallbackToDestructiveMigration`; perubahan skema wajib disertai `Migration` di `KetemuDatabase.MIGRASI` (gagal keras bila lupa, bukan menghapus data) |
+| Pengingat pengambilan | Fungsi database `kirim_pengingat_pengambilan()` + jadwal `pg_cron` tiap jam (db/0030): pengingat hari ke-3 dan ke-6 untuk klaim `DISETUJUI` yang belum diserahkan, maksimal dua kali per klaim |
 
 ### #6 Pencocokan gambar — ditunda atas keputusan pemilik proyek
 

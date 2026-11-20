@@ -256,6 +256,12 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
 
   g. Notifikasi
      - Kotak masuk notifikasi + kartu notifikasi Android untuk laporan baru.
+     - Pengingat pengambilan: klaim yang sudah disetujui tapi barangnya belum
+       diambil akan memicu notifikasi pada hari ke-3 dan ke-6. Pengingat
+       dibuat fungsi database `kirim_pengingat_pengambilan()` dan dijadwalkan
+       `pg_cron` setiap jam (db/0030), jadi tetap terkirim walau aplikasi
+       sedang tertutup. Pengingat berhenti sendiri begitu serah terima
+       tercatat.
 
   h. Pencocokan awal (berbasis aturan)
      - Barang hilang dan temuan dengan judul serupa ditautkan otomatis
@@ -318,6 +324,8 @@ Skrip SQL dijalankan berurutan di Supabase -> SQL Editor:
   0026_fix_can_access_conversation.sql  fungsi akses percakapan (SECURITY DEFINER)
   0027_typing_state.sql          indikator "sedang menulis" di percakapan
   0028_serah_terima.sql          kolom serah terima + fungsi complete_handover
+  0029_claim_resubmit.sql        klaim ditolak boleh diajukan ulang
+  0030_pengingat_pengambilan.sql pengingat pengambilan (jadwal pg_cron)
 
 Konfigurasi aplikasi ada di local.properties (tidak ikut repositori):
   SUPABASE_URL=...              URL proyek

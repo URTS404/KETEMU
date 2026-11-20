@@ -32,7 +32,16 @@ enum class AppNotificationType {
     CLAIM_APPROVED,
 
     /** Klaim pengguna ditolak. */
-    CLAIM_REJECTED
+    CLAIM_REJECTED,
+
+    /**
+     * Pengingat agar pemilik mengambil barang yang sudah menunggu di Pos.
+     *
+     * Dibangkitkan fungsi database `kirim_pengingat_pengambilan` (db/0030)
+     * lewat penjadwal `pg_cron`, bukan dari perangkat — pengingat harus tetap
+     * terkirim walau aplikasi sedang tertutup.
+     */
+    PICKUP_REMINDER
 }
 
 /**
