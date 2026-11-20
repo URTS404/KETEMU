@@ -29,11 +29,16 @@ import java.time.OffsetDateTime
 /**
  * Implementasi [ReportRepository] di atas tabel `reports` (PostgREST).
  *
+ * CATATAN (20 November 2026): kelas ini **tidak lagi dipasang** di
+ * `AppContainer`. Penggantinya `RoomReportRepository`, yang membaca/menulis
+ * SQLite lebih dulu sehingga laporan tetap terbaca saat offline. Berkas ini
+ * dipertahankan karena masih menyimpan `ReportInsert`, `ReportRow.toDomain()`,
+ * dan urutan kolom yang dipakai bersama; hapus hanya setelah pemetaan tersebut
+ * dipindah ke berkas tersendiri.
+ *
  * Strategi sinkronisasi tahap ini sengaja sederhana: satu cache di memori yang
  * di-refresh saat pertama dibaca dan setiap [REFRESH_INTERVAL_MS]. Ini memberi
- * sifat "UI bereaksi pada data" tanpa menambah kompleksitas Realtime. Ketika
- * Room masuk (tahap 3), cache ini digantikan query lokal dan kelas ini hanya
- * bertugas mengisi Room.
+ * sifat "UI bereaksi pada data" tanpa menambah kompleksitas Realtime.
  *
  * Semua query memakai kunci publishable sehingga RLS di server yang menentukan
  * baris mana yang boleh dibaca (laporan terarsip hanya terlihat oleh STAFF/ADMIN

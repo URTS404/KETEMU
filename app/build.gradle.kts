@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // @Serializable untuk DTO PostgREST (reports/claims/audit_logs).
     alias(libs.plugins.kotlin.serialization)
+    // KSP: membangkitkan implementasi Room dari @Entity/@Dao saat kompilasi.
+    alias(libs.plugins.ksp)
 }
 
 /**
@@ -79,6 +81,18 @@ android {
     }
 }
 
+/**
+ * Lokasi skema Room (JSON) untuk tiap versi basis data. Berkas ini ikut
+ * di-commit agar perubahan skema bisa ditinjau dan migrasi ditulis tanpa
+ * menebak bentuk tabel lama.
+ */
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    // Room memeriksa query SQL terhadap skema hasil kompilasi: galat tulis
+    // (mis. nama kolom salah) jadi gagal build, bukan gagal saat aplikasi jalan.
+    arg("room.incremental", "true")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
@@ -109,6 +123,11 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.multiplatform.settings.test)
     implementation(libs.kotlinx.serialization.json)
+
+    // Basis data lokal (SQLite) untuk mode offline-first.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

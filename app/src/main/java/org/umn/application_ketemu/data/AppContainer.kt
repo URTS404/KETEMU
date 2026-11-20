@@ -26,7 +26,8 @@ import org.umn.application_ketemu.data.remote.SupabaseClaimRepository
 import org.umn.application_ketemu.data.remote.SupabaseMatchRepository
 import org.umn.application_ketemu.data.remote.SupabaseNotificationRepository
 import org.umn.application_ketemu.data.remote.SupabaseProvider
-import org.umn.application_ketemu.data.remote.SupabaseReportRepository
+import org.umn.application_ketemu.data.local.KetemuDatabase
+import org.umn.application_ketemu.data.repository.RoomReportRepository
 import org.umn.application_ketemu.data.remote.SupabaseChatRepository
 import org.umn.application_ketemu.data.remote.SupabaseStaffKeyRepository
 import org.umn.application_ketemu.data.remote.SupabaseUserRepository
@@ -93,15 +94,30 @@ class AppContainer(context: Context) {
     val notificationTapRequests: NotificationTapRequests = NotificationTapRequests()
 
     /**
+     * Pemantau koneksi.
+     *
+     * Diletakkan SEBELUM [reportRepository] karena repositori Room memakainya
+     * untuk memutuskan kapan antrean tulis dikirim (urutan inisialisasi
+     * properti Kotlin mengikuti urutan penulisan; memakai properti yang belum
+     * diinisialisasi menghasilkan null/NPE).
+     */
+    val networkMonitor: NetworkMonitor = NetworkMonitor(context)
+
+    /**
      * Sumber data laporan.
      *
-     * Supabase aktif -> data dibaca dari tabel `reports` (lihat
-     * [SupabaseReportRepository]); tanpa kunci -> data contoh in-memory seperti
-     * pada tahap UTS. Panel admin, layar detail, dan laporan saya memakai
-     * interface yang sama sehingga tidak perlu diubah.
+     * Supabase aktif -> Room menjadi sumber data UI, Supabase mengisi cache dan
+     * menerima perubahan lewat antrean `outbox` (lihat [RoomReportRepository]).
+     * Tanpa kunci -> data contoh in-memory seperti pada tahap UTS. Panel admin,
+     * layar detail, dan laporan saya memakai interface yang sama sehingga tidak
+     * perlu diubah.
      */
     val reportRepository: ReportRepository = if (SupabaseProvider.isConfigured) {
-        SupabaseReportRepository(SupabaseProvider.client)
+        RoomReportRepository(
+            client = SupabaseProvider.client,
+            db = KetemuDatabase.get(context),
+            networkMonitor = networkMonitor
+        )
     } else {
         InMemoryReportRepository(DummyData.reports())
     }
@@ -194,8 +210,6 @@ class AppContainer(context: Context) {
     } else {
         InMemoryStaffKeyRepository()
     }
-
-    val networkMonitor: NetworkMonitor = NetworkMonitor(context)
 
     /**
      * Autentikasi.

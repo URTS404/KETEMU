@@ -7,6 +7,8 @@ plugins {
     // bawaan Android Gradle Plugin (built-in Kotlin).
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    // KSP dipakai Room untuk membangkitkan kode DAO saat kompilasi.
+    alias(libs.plugins.ksp) apply false
 }
 
 // ============================================================================

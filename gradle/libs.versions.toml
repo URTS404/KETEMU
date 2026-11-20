@@ -76,9 +76,17 @@ multiplatform-settings-test = { group = "com.russhwolf", name = "multiplatform-s
 # --- Pengujian ---
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
+# --- Room (basis data lokal, offline-first) ---
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+# Pembuat kode (dipasang lewat ksp, bukan implementation).
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 # 'org.jetbrains.kotlin.android' sengaja DIHAPUS: sejak AGP 9 Kotlin sudah
 # menjadi bagian bawaan plugin Android (built-in Kotlin).
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+# KSP: pembuat kode Room (entity/DAO -> implementasi SQLite saat kompilasi).
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

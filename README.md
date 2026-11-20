@@ -18,7 +18,10 @@ Alur utama:
   - Membuka Detail laporan untuk melihat status barang dan perjalanannya
     (timeline: Dilaporkan -> Diserahkan ke Pos -> Siap Diambil -> Selesai
     Diklaim).
-  - Aplikasi tetap dapat dipakai saat offline (indikator status offline).
+  - Aplikasi tetap dapat dipakai saat offline (indikator status offline):
+    daftar laporan dibaca dari basis data lokal SQLite (Room), sehingga Beranda
+    dan Aktivitas tetap terisi tanpa jaringan. Laporan yang dibuat saat offline
+    disimpan di perangkat dan dikirim otomatis saat internet kembali.
   - Akun uji coba tampil langsung di layar Login (tidak perlu membuka kode
     sumber). Bila aplikasi terhubung ke Supabase, gunakan akun berikut:
         Mahasiswa : siti.uas@student.umn.ac.id | sandi: rahasia123
@@ -256,6 +259,19 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
      - Setiap aksi moderator dicatat otomatis oleh trigger database;
        tidak dapat diubah atau dihapus dari aplikasi.
 
+  j. Basis data lokal offline-first (Room / SQLite)
+     - Beranda, Aktivitas, antrean moderasi, dan Detail dibaca dari SQLite
+       (`data/local/`), bukan langsung dari jaringan; Supabase hanya mengisi
+       cache, sehingga daftar laporan tetap tampil tanpa internet.
+     - Setiap aksi tulis (buat laporan, ubah status, arsip, serah-terima pos)
+       ditulis ke tabel `reports_cache` + antrean `outbox` dalam SATU transaksi.
+     - Antrean dikirim berurutan saat jaringan tersedia (timer 20 detik dan
+       pemicu "jaringan kembali"); UI menampilkan "Menunggu Sinkron" sampai
+       terkirim.
+     - Baris yang belum terkirim ("PENDING") tidak ditimpa hasil server, jadi
+       perubahan offline tidak hilang.
+     - Skema tercatat di `app/schemas/` untuk keperluan migrasi.
+
 
 ================================================================================
 11. DATABASE (Supabase / PostgreSQL)
@@ -314,13 +330,21 @@ Uji cepat (5 menit):
     ulang -> nyalakan data -> pesan terkirim otomatis.
   - Akun -> Buka Panel Admin -> Moderasi laporan / Verifikasi klaim.
   - Setujui klaim -> muncul kode pengambilan 6 karakter.
+  - Mode pesawat -> tutup paksa aplikasi -> buka lagi: daftar laporan tetap
+    tampil (dibaca dari SQLite) -> buat laporan -> muncul label "Menunggu
+    Sinkron" -> matikan mode pesawat -> label hilang sendiri.
 
 
 ================================================================================
 13. BATASAN YANG DIKETAHUI
 --------------------------------------------------------------------------------
-  - Daftar laporan belum dapat dibaca saat offline (chat sudah punya antrean
-    offline; laporan baru juga sudah diantrekan, tetapi daftar butuh jaringan).
+  - Daftar laporan kini terbaca offline; antrean tulis laporan dikirim oleh
+    timer 20 detik / saat jaringan pulih, BUKAN oleh WorkManager, sehingga
+    antrean baru terkirim saat aplikasi sedang berjalan.
+  - Bila terjadi perubahan yang sama di dua tempat, perubahan lokal ("PENDING")
+    yang menang sampai berhasil terkirim.
+  - Hapus laporan permanen belum tersedia di aplikasi (hanya lewat SQL Editor
+    Supabase); yang ada adalah arsip oleh moderator.
   - URL gambar chat berlaku 1 jam; bila kedaluwarsa gambar perlu dimuat ulang
     dengan tombol muat ulang di kanan atas percakapan.
   - Pencocokan barang masih berbasis kemiripan judul, belum membandingkan foto.
