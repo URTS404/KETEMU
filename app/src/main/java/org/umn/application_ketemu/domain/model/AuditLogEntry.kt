@@ -12,7 +12,10 @@ enum class AuditAction {
     UBAH_PERAN,
     VERIFIKASI_AKUN,
     BLOKIR_AKUN,
-    BUKA_BLOKIR_AKUN
+    BUKA_BLOKIR_AKUN,
+
+    // Barang diserahkan petugas ke pemilik (db/0028), penutup alur klaim.
+    SERAH_TERIMA_BARANG
 }
 
 /**

@@ -17,6 +17,7 @@ import org.umn.application_ketemu.domain.model.AuditLogEntry
 import org.umn.application_ketemu.domain.model.AppNotification
 import org.umn.application_ketemu.domain.model.AppNotificationType
 import org.umn.application_ketemu.domain.model.Claim
+import org.umn.application_ketemu.domain.model.ClaimStatus
 import org.umn.application_ketemu.domain.model.Report
 import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.AuditLogRepository
@@ -55,6 +56,27 @@ class AdminClaimsViewModel(
         )
 
     val pendingClaims: StateFlow<List<Claim>> = claimRepository.observePendingClaims()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    /**
+     * Klaim yang sudah disetujui tetapi barangnya belum diambil pemilik.
+     *
+     * Inilah antrean kerja kedua satpam: memeriksa KTM, mencocokkan kode
+     * pengambilan, lalu menyerahkan barang. Setelah diserahkan, klaim keluar dari
+     * daftar ini karena laporannya menjadi SELESAI_DIKLAIM (db/0028).
+     */
+    val readyForPickup: StateFlow<List<Claim>> = claimRepository.observeClaims()
+        .map { claims ->
+            claims.filter {
+                it.status == ClaimStatus.DISETUJUI &&
+                    it.reportStatus == ReportStatus.SIAP_DIAMBIL &&
+                    it.handedOverAt == null
+            }.sortedBy { it.decidedAt ?: it.createdAt }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -142,6 +164,77 @@ class AdminClaimsViewModel(
     fun clearFeedback() {
         _message.value = null
         _lastDecision.value = null
+    }
+
+    /**
+     * Menutup klaim: petugas menyerahkan barang ke pemilik.
+     *
+     * Server (RPC `complete_handover`, db/0028) yang memindahkan laporan temuan
+     * ke SELESAI_DIKLAIM, menutup laporan hilang pasangannya, dan mengirim
+     * notifikasi. Di sisi perangkat, status laporan lokal ikut diperbarui supaya
+     * layar langsung berubah tanpa menunggu tarikan berkala.
+     *
+     * @param code kode pengambilan yang disebut pemilik; boleh kosong bila
+     *   petugas memeriksa KTM secara manual.
+     */
+    fun completeHandover(claim: Claim, code: String? = null) = viewModelScope.launch {
+        val actor = session.currentUser.value
+        if (!actor.role.canModerate) {
+            _message.value = AdminUiText.ACCESS_DENIED
+            return@launch
+        }
+
+        try {
+            val berhasil = claimRepository.completeHandover(claim.id, code)
+            if (!berhasil) {
+                _message.value = AdminUiText.HANDOVER_FAILED
+                return@launch
+            }
+
+            // Cermin lokal: server sudah mengubah status, Room/outbox menyusul.
+            reportRepository.updateStatus(claim.reportId, ReportStatus.SELESAI_DIKLAIM)
+
+            // Catatan audit tidak boleh membatalkan serah terima yang sudah
+            // terjadi di server: barang sudah berpindah tangan. Bila enum aksi
+            // belum ada (migrasi db/0028 belum dijalankan), cukup dilaporkan.
+            runCatching {
+                auditLogRepository.record(
+                    AuditLogEntry(
+                        id = UUID.randomUUID().toString(),
+                        actorId = actor.id,
+                        actorName = actor.fullName,
+                        action = AuditAction.SERAH_TERIMA_BARANG,
+                        targetType = "CLAIM",
+                        targetId = claim.id,
+                        note = claim.reportTitle,
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+            }.onFailure {
+                android.util.Log.w("AdminClaims", "catatan audit serah terima gagal: ${it.message}")
+            }
+
+            _lastDecision.value = ClaimDecision(
+                claimTitle = claim.reportTitle,
+                approved = true,
+                pickupCode = claim.pickupCode
+            )
+            _message.value = AdminUiText.HANDOVER_DONE
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            // Penolakan dari RPC diterjemahkan ke kalimat pendek: pesan PostgREST
+            // mentah terlalu panjang untuk snackbar.
+            val mentah = e.message.orEmpty()
+            android.util.Log.e("AdminClaims", "serah terima gagal: $mentah", e)
+            _message.value = when {
+                mentah.contains("tidak cocok", ignoreCase = true) -> AdminUiText.HANDOVER_CODE_WRONG
+                mentah.contains("belum disetujui", ignoreCase = true) -> AdminUiText.HANDOVER_NOT_APPROVED
+                mentah.contains("siap diambil", ignoreCase = true) -> AdminUiText.HANDOVER_NOT_READY
+                mentah.contains("petugas", ignoreCase = true) -> AdminUiText.ACCESS_DENIED
+                else -> AdminUiText.HANDOVER_FAILED
+            }
+        }
     }
 
     /**

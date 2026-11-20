@@ -1,4 +1,4 @@
-package org.umn.application_ketemu.ui.feature.admin
+﻿package org.umn.application_ketemu.ui.feature.admin
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
@@ -678,6 +678,7 @@ fun auditActionLabel(action: AuditAction): String = stringResource(
         AuditAction.ARSIP_LAPORAN -> R.string.admin_audit_action_archive
         AuditAction.BUKA_ARSIP_LAPORAN -> R.string.admin_audit_action_unarchive
         AuditAction.SETUJUI_KLAIM -> R.string.admin_audit_action_approve_claim
+        AuditAction.SERAH_TERIMA_BARANG -> R.string.admin_audit_action_handover
         AuditAction.TOLAK_KLAIM -> R.string.admin_audit_action_reject_claim
         AuditAction.UBAH_PERAN -> R.string.admin_audit_action_change_role
         AuditAction.VERIFIKASI_AKUN -> R.string.admin_audit_action_verify_account

@@ -29,4 +29,24 @@ internal object AdminUiText {
      * bukan sekadar menampilkan snackbar.
      */
     const val ACTION_FAILED = "Aksi gagal diproses server. Periksa koneksi lalu coba lagi."
+
+    /** Serah terima berhasil: laporan temuan & hilang pasangannya sudah ditutup. */
+    const val HANDOVER_DONE =
+        "Barang tercatat sudah diserahkan. Laporan temuan dan laporan hilang terkait ditutup."
+
+    /** Serah terima ditolak server sebelum sempat berubah apa pun. */
+    const val HANDOVER_FAILED =
+        "Serah terima gagal. Pastikan klaim sudah disetujui dan barang masih di pos."
+
+    /** Kode yang disebut pemilik tidak sama dengan kode pengambilan di sistem. */
+    const val HANDOVER_CODE_WRONG =
+        "Kode pengambilan tidak cocok. Periksa kembali kode yang disebut pemilik."
+
+    /** Klaim belum disetujui, jadi barangnya belum boleh diserahkan. */
+    const val HANDOVER_NOT_APPROVED =
+        "Klaim ini belum disetujui. Setujui klaim lebih dulu sebelum menyerahkan barang."
+
+    /** Laporan belum berstatus siap diambil (mis. barang belum diserahkan ke pos). */
+    const val HANDOVER_NOT_READY =
+        "Barang belum berstatus siap diambil. Verifikasi laporan temuan dan pilih pos tujuan dulu."
 }

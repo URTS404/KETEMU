@@ -15,12 +15,17 @@ internal data class ClaimRow(
     @SerialName("pickup_code") val pickupCode: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("decided_at") val decidedAt: String? = null,
+    @SerialName("handed_over_at") val handedOverAt: String? = null,
     val reports: ClaimReportRow? = null,
     val profiles: ClaimProfileRow? = null
 )
 
 @Serializable
-internal data class ClaimReportRow(val title: String = "")
+internal data class ClaimReportRow(
+    val id: String = "",
+    val title: String = "",
+    val status: String = "DILAPORKAN"
+)
 
 @Serializable
 internal data class ClaimProfileRow(

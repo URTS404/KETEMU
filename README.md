@@ -239,6 +239,12 @@ Selain daftar laporan (UC utama UTS), aplikasi kini memiliki:
      - Petugas menyetujui/menolak; saat disetujui sistem membuat
        kode pengambilan 6 karakter (mis. 414A0D) dan status laporan berubah
        menjadi Siap Diambil secara otomatis (trigger database).
+     - Setelah barang diserahkan, petugas membuka Verifikasi klaim ->
+       "Menunggu pengambilan" -> tombol Serah terima. Kode pengambilan boleh
+       dicocokkan (opsional; kosongkan bila memeriksa KTM langsung).
+     - Serah terima menutup dua laporan sekaligus: laporan temuan dan laporan
+       hilang pasangannya menjadi "Selesai Diklaim", lalu pengklaim menerima
+       notifikasi "Barang sudah diambil".
 
   e. Kunci staf sekali pakai
      - Admin membuat 10 kunci (format XXXX-XXXX).
@@ -303,6 +309,8 @@ Skrip SQL dijalankan berurutan di Supabase -> SQL Editor:
   0024_message_delete.sql        izin hapus pesan sendiri
   0025_seed_demo.sql             data demo (8 laporan, 2 klaim, 1 chat)
   0026_fix_can_access_conversation.sql  fungsi akses percakapan (SECURITY DEFINER)
+  0027_typing_state.sql          indikator "sedang menulis" di percakapan
+  0028_serah_terima.sql          kolom serah terima + fungsi complete_handover
 
 Konfigurasi aplikasi ada di local.properties (tidak ikut repositori):
   SUPABASE_URL=...              URL proyek
@@ -319,7 +327,7 @@ Prasyarat: Android Studio (JDK 17+), Android SDK 37, emulator/HP minSdk 26.
   2. Buka proyek di Android Studio, biarkan Gradle Sync selesai.
   3. Isi local.properties dengan SUPABASE_URL dan SUPABASE_PUBLISHABLE_KEY
      (bila kosong, aplikasi berjalan dalam mode demo offline).
-  4. Jalankan skrip database 0001 - 0026 di SQL Editor Supabase.
+  4. Jalankan skrip database 0001 - 0028 di SQL Editor Supabase.
   5. Run aplikasi.
 
 Uji cepat (5 menit):
@@ -330,6 +338,8 @@ Uji cepat (5 menit):
     ulang -> nyalakan data -> pesan terkirim otomatis.
   - Akun -> Buka Panel Admin -> Moderasi laporan / Verifikasi klaim.
   - Setujui klaim -> muncul kode pengambilan 6 karakter.
+  - Verifikasi klaim -> bagian "Menunggu pengambilan" -> Serah terima:
+    laporan temuan dan laporan hilang pasangannya menjadi "Selesai Diklaim".
   - Mode pesawat -> tutup paksa aplikasi -> buka lagi: daftar laporan tetap
     tampil (dibaca dari SQLite) -> buat laporan -> muncul label "Menunggu
     Sinkron" -> matikan mode pesawat -> label hilang sendiri.
@@ -349,3 +359,8 @@ Uji cepat (5 menit):
     dengan tombol muat ulang di kanan atas percakapan.
   - Pencocokan barang masih berbasis kemiripan judul, belum membandingkan foto.
   - Pelaporan lokasi memakai koordinat dari peta, belum navigasi ke lokasi.
+  - Serah terima barang punya dua jalur: fungsi `complete_handover` (dipakai
+    bila `db/0028_serah_terima.sql` sudah dijalankan) dan cadangan di sisi
+    klien. Selama 0028 belum dijalankan, catatan audit "Serah terima barang"
+    belum bisa ditulis (aplikasi tetap menutup laporan, hanya mencatat
+    peringatan di log).

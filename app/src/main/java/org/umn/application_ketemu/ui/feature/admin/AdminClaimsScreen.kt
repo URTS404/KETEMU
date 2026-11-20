@@ -1,4 +1,4 @@
-package org.umn.application_ketemu.ui.feature.admin
+﻿package org.umn.application_ketemu.ui.feature.admin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -68,11 +68,13 @@ fun AdminClaimsScreen(
     onBack: () -> Unit
 ) {
     val claims by viewModel.pendingClaims.collectAsStateWithLifecycle()
+    val siapDiambil by viewModel.readyForPickup.collectAsStateWithLifecycle()
     val reportsById by viewModel.reportsById.collectAsStateWithLifecycle()
     val allowed by viewModel.isAllowed.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var selected by remember { mutableStateOf<Claim?>(null) }
+    var handoverTarget by remember { mutableStateOf<Claim?>(null) }
 
     LaunchedEffect(message) {
         val text = message ?: return@LaunchedEffect
@@ -169,6 +171,49 @@ fun AdminClaimsScreen(
                     )
                 }
             }
+
+            // Bagian kedua: klaim yang sudah disetujui, menunggu barangnya
+            // benar-benar diserahkan. Inilah langkah penutup alur klaim.
+            item(key = "pickup-section") {
+                AdminReveal(index = claims.size + 4) {
+                    AdminSectionHeader(
+                        title = stringResource(R.string.admin_pickup_section),
+                        modifier = Modifier.padding(top = 16.dp),
+                        trailing = {
+                            Text(
+                                text = stringResource(R.string.admin_claims_queue_count, siapDiambil.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
+            }
+
+            if (siapDiambil.isEmpty()) {
+                item(key = "pickup-empty") {
+                    AdminReveal(index = claims.size + 5) { PickupEmptyCard() }
+                }
+            } else {
+                itemsIndexed(items = siapDiambil, key = { _, claim -> "pickup-${claim.id}" }) { index, claim ->
+                    AdminReveal(index = claims.size + 5 + index, modifier = Modifier.animateItem()) {
+                        PickupCard(
+                            claim = claim,
+                            posName = reportsById[claim.reportId]?.pos?.name,
+                            onHandover = { handoverTarget = claim }
+                        )
+                    }
+                }
+            }
+
+            item(key = "pickup-hint") {
+                AdminReveal(index = claims.size + siapDiambil.size + 5) {
+                    AdminHintRow(
+                        text = stringResource(R.string.admin_pickup_hint),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 
@@ -187,6 +232,196 @@ fun AdminClaimsScreen(
             onDismiss = { selected = null }
         )
     }
+
+    handoverTarget?.let { claim ->
+        HandoverDialog(
+            claim = claim,
+            posName = reportsById[claim.reportId]?.pos?.name,
+            onConfirm = { code ->
+                viewModel.completeHandover(claim, code)
+                handoverTarget = null
+            },
+            onDismiss = { handoverTarget = null }
+        )
+    }
+}
+
+/**
+ * Keadaan kosong untuk bagian "Menunggu pengambilan".
+ *
+ * Dipisahkan dari [ClaimsEmptyCard] karena artinya berbeda: di sini tidak ada
+ * pekerjaan yang tertunda, bukan berarti belum ada klaim masuk.
+ */
+@Composable
+private fun PickupEmptyCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.admin_pickup_empty),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.admin_pickup_empty_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * Satu klaim yang barangnya sudah siap diambil.
+ *
+ * Petugas memakai kartu ini di meja pos: lihat siapa pemiliknya, di pos mana
+ * barangnya, lalu tekan "Serah terima" untuk mencatat pengambilan.
+ */
+@Composable
+private fun PickupCard(
+    claim: Claim,
+    posName: String?,
+    onHandover: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tones = rememberAdminTones()
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    color = tones.mint.container,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = stringResource(R.string.admin_pickup_badge),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tones.mint.content,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = RelativeTime.format(claim.decidedAt ?: claim.createdAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = claim.reportTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            ClaimInfoRow(
+                label = stringResource(R.string.admin_pickup_owner),
+                value = claim.claimantName
+            )
+
+            if (!posName.isNullOrBlank()) {
+                ClaimInfoRow(
+                    label = stringResource(R.string.admin_claim_pos_label),
+                    value = posName
+                )
+            }
+
+            Button(
+                onClick = onHandover,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = stringResource(R.string.admin_action_handover))
+            }
+        }
+    }
+}
+
+/**
+ * Dialog pencatatan serah terima.
+ *
+ * Kode pengambilan bersifat opsional: petugas boleh mengosongkannya ketika
+ * identitas sudah diperiksa lewat KTM. Validasi kode dilakukan database, jadi
+ * dialog ini tidak menebak sendiri sah/tidaknya.
+ */
+@Composable
+private fun HandoverDialog(
+    claim: Claim,
+    posName: String?,
+    onConfirm: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var code by remember(claim.id) { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.admin_pickup_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = claim.reportTitle,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.admin_pickup_owner) + ": " + claim.claimantName,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (!posName.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.admin_claim_pos_label) + ": " + posName,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.uppercase().take(6) },
+                    label = { Text(stringResource(R.string.admin_pickup_code_label)) },
+                    placeholder = { Text(stringResource(R.string.admin_pickup_code_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = stringResource(R.string.admin_pickup_code_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(code.trim().ifEmpty { null }) }) {
+                Text(text = stringResource(R.string.admin_pickup_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.admin_close))
+            }
+        }
+    )
 }
 
 /**

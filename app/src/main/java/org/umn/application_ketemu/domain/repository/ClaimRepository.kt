@@ -37,4 +37,18 @@ interface ClaimRepository {
         decidedBy: String,
         note: String? = null
     ): Claim?
+
+    /**
+     * Mencatat serah terima barang kepada pengklaim (tahap terakhir alur).
+     *
+     * Setelah berhasil: laporan temuan menjadi SELESAI_DIKLAIM, laporan hilang
+     * pasangannya ikut ditutup, dan pemilik menerima notifikasi. Aturan siapa
+     * yang boleh dan kode apa yang sah ditegakkan database (db/0028).
+     *
+     * @param code kode pengambilan yang disebut pemilik; `null`/kosong berarti
+     *   petugas memverifikasi identitas secara manual.
+     * @return `true` bila server menerima pencatatan serah terima.
+     */
+    suspend fun completeHandover(claimId: String, code: String? = null): Boolean =
+        throw UnsupportedOperationException("Serah terima belum didukung penyimpanan ini.")
 }

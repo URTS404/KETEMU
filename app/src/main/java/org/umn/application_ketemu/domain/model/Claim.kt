@@ -20,5 +20,12 @@ data class Claim(
     val decidedAt: Long? = null,
     val decidedBy: String? = null,
     val decisionNote: String? = null,
-    val pickupCode: String? = null
+    val pickupCode: String? = null,
+    /**
+     * Status laporan temuan yang diklaim. Dipakai panel petugas untuk memisahkan
+     * klaim yang menunggu keputusan dari klaim yang barangnya sudah siap diambil.
+     */
+    val reportStatus: ReportStatus? = null,
+    /** Waktu petugas benar-benar menyerahkan barang (db/0028), `null` bila belum. */
+    val handedOverAt: Long? = null
 )

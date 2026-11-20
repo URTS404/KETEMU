@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ketemu</string>
     <string name="app_tagline">Campus Lost &amp; Found Hub</string>
@@ -310,6 +310,20 @@
     <string name="admin_claims_queue_count">%1$d klaim</string>
     <string name="admin_claims_card_status">Menunggu verifikasi</string>
     <string name="admin_claims_hint">Periksa identitas dan jawaban verifikasi sebelum menyetujui pengambilan.</string>
+
+    <!-- Serah terima barang: tahap terakhir alur klaim (db/0028). -->
+    <string name="admin_pickup_section">Menunggu pengambilan</string>
+    <string name="admin_pickup_empty">Tidak ada barang yang menunggu diambil.</string>
+    <string name="admin_pickup_empty_desc">Klaim yang sudah disetujui muncul di sini sampai barangnya diserahkan.</string>
+    <string name="admin_pickup_hint">Serahkan barang hanya setelah KTM atau kode pengambilan cocok. Setelah dicatat, laporan temuan dan laporan hilang terkait ditutup.</string>
+    <string name="admin_action_handover">Serah terima</string>
+    <string name="admin_pickup_dialog_title">Serah terima barang</string>
+    <string name="admin_pickup_owner">Pemilik</string>
+    <string name="admin_pickup_code_label">Kode pengambilan (opsional)</string>
+    <string name="admin_pickup_code_placeholder">6 karakter dari pemilik</string>
+    <string name="admin_pickup_code_hint">Kosongkan bila KTM sudah diperiksa dan dicatat manual.</string>
+    <string name="admin_pickup_confirm">Catat serah terima</string>
+    <string name="admin_pickup_badge">Siap diambil</string>
     <string name="admin_audit_empty">Belum ada aktivitas</string>
     <string name="admin_audit_empty_desc">Setiap verifikasi atau keputusan klaim akan tercatat di sini.</string>
     <string name="admin_users_desc">Hanya admin yang boleh mengubah peran, memverifikasi, atau memblokir akun. Staf hanya dapat melihat daftar.</string>
@@ -334,6 +348,7 @@
     <string name="admin_audit_action_archive">Arsipkan laporan</string>
     <string name="admin_audit_action_unarchive">Buka arsip laporan</string>
     <string name="admin_audit_action_approve_claim">Setujui klaim</string>
+    <string name="admin_audit_action_handover">Serah terima barang</string>
     <string name="admin_audit_action_reject_claim">Tolak klaim</string>
     <string name="admin_audit_subtitle">Riwayat keputusan moderator, tercatat permanen.</string>
     <string name="admin_audit_total_label">Total catatan</string>

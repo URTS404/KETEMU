@@ -493,6 +493,8 @@ private fun auditActionTone(action: AuditAction): AdminTone {
         AuditAction.ARSIP_LAPORAN -> tones.amber
         AuditAction.BUKA_ARSIP_LAPORAN -> tones.blue
         AuditAction.SETUJUI_KLAIM -> tones.violet
+        // Serah terima menutup alur klaim, jadi memakai warna hijau "selesai".
+        AuditAction.SERAH_TERIMA_BARANG -> tones.mint
         AuditAction.TOLAK_KLAIM -> AdminTone(
             container = MaterialTheme.colorScheme.errorContainer,
             content = MaterialTheme.colorScheme.onErrorContainer
@@ -511,6 +513,7 @@ private fun auditActionIcon(action: AuditAction): Int = when (action) {
     AuditAction.ARSIP_LAPORAN -> R.drawable.ic_admin_archive
     AuditAction.BUKA_ARSIP_LAPORAN -> R.drawable.ic_admin_unarchive
     AuditAction.SETUJUI_KLAIM -> R.drawable.ic_admin_check_circle
+    AuditAction.SERAH_TERIMA_BARANG -> R.drawable.ic_admin_bag
     AuditAction.TOLAK_KLAIM -> R.drawable.ic_admin_cancel
     AuditAction.UBAH_PERAN,
     AuditAction.VERIFIKASI_AKUN,

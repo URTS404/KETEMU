@@ -5,6 +5,9 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +21,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.umn.application_ketemu.domain.model.Claim
 import org.umn.application_ketemu.domain.model.ClaimStatus
+import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.domain.repository.ClaimRepository
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -112,14 +116,138 @@ class SupabaseClaimRepository(
         return getClaim(claimId)
     }
 
+    /**
+     * Mencatat serah terima barang.
+     *
+     * Jalur utama memakai RPC `complete_handover` (db/0028) supaya seluruh aturan
+     * bisnis dan audit berada di database. Bila migrasi itu belum dijalankan,
+     * fungsi tersebut tidak ada dan PostgREST membalas galat "Could not find the
+     * function"; pada kondisi itu langkah yang sama dikerjakan dari klien memakai
+     * hak akses petugas (RLS `reports_update`). Bedanya hanya pencatatan audit di
+     * server, sehingga jalur klien ditandai sebagai cadangan, bukan pengganti.
+     */
+    override suspend fun completeHandover(claimId: String, code: String?): Boolean {
+        val kode = code?.trim().orEmpty()
+        val galat = runCatching {
+            client.postgrest.rpc(
+                function = "complete_handover",
+                parameters = buildJsonObject {
+                    put("p_claim_id", claimId)
+                    // Parameter opsional: dikirim hanya bila petugas mengetik kode.
+                    if (kode.isNotEmpty()) put("p_code", kode)
+                }
+            )
+        }.exceptionOrNull()
+
+        if (galat == null) {
+            refresh()
+            return true
+        }
+
+        val pesan = galat.message.orEmpty()
+        android.util.Log.w("Claims", "complete_handover gagal: $pesan", galat)
+        if (!pesan.contains("Could not find the function") &&
+            !pesan.contains("PGRST202") &&
+            !pesan.contains("404")
+        ) {
+            // Aturan bisnis menolak (kode salah, klaim belum disetujui, dsb.).
+            throw galat
+        }
+
+        return serahTerimaDiKlien(claimId, kode)
+    }
+
+    /**
+     * Cadangan ketika db/0028 belum dijalankan.
+     *
+     * Urutannya sengaja sama dengan RPC: periksa klaim, cocokkan kode, tutup
+     * laporan temuan, tutup juga laporan hilang pasangannya, lalu beri tahu
+     * pemiliknya. Kegagalan satu langkah opsional tidak membatalkan yang lain.
+     */
+    private suspend fun serahTerimaDiKlien(claimId: String, kode: String): Boolean {
+        val klaim = client.postgrest
+            .from(TABLE)
+            .select(columns = Columns.raw("id,status,pickup_code,report_id,claimant_id")) {
+                filter { eq("id", claimId) }
+            }
+            .decodeSingleOrNull<HandoverClaimRow>()
+            ?: error("klaim tidak ditemukan")
+
+        if (runCatching { ClaimStatus.valueOf(klaim.status) }.getOrNull() != ClaimStatus.DISETUJUI) {
+            error("klaim belum disetujui")
+        }
+
+        val kodeTersimpan = klaim.pickupCode.orEmpty()
+        if (kode.isNotEmpty() && kodeTersimpan.isNotEmpty() &&
+            !kode.equals(kodeTersimpan, ignoreCase = true)
+        ) {
+            error("kode pengambilan tidak cocok")
+        }
+
+        client.postgrest.from(REPORT_TABLE).update({
+            set("status", ReportStatus.SELESAI_DIKLAIM.name)
+        }) {
+            filter { eq("id", klaim.reportId) }
+        }
+
+        // Laporan hilang milik pengklaim yang berpasangan dengan temuan ini ikut
+        // ditutup supaya keduanya selesai pada saat yang sama.
+        val laporanHilang = runCatching {
+            client.postgrest
+                .from("matches")
+                .select(columns = Columns.raw("lost_report_id")) {
+                    filter { eq("found_report_id", klaim.reportId) }
+                }
+                .decodeList<HandoverMatchRow>()
+                .map { it.lostReportId }
+        }.getOrDefault(emptyList())
+
+        laporanHilang.forEach { idHilang ->
+            val milikPengklaim = runCatching {
+                client.postgrest
+                    .from(REPORT_TABLE)
+                    .select(columns = Columns.raw("id,owner_id,title,status")) {
+                        filter { eq("id", idHilang) }
+                    }
+                    .decodeSingleOrNull<HandoverReportRow>()
+            }.getOrNull()?.takeIf { it.ownerId == klaim.claimantId } ?: return@forEach
+
+            runCatching {
+                client.postgrest.from(REPORT_TABLE).update({
+                    set("status", ReportStatus.SELESAI_DIKLAIM.name)
+                }) {
+                    filter { eq("id", milikPengklaim.id) }
+                }
+            }
+        }
+
+        runCatching {
+            client.postgrest.from("notifications").insert(
+                HandoverNotificationInsert(
+                    recipientId = klaim.claimantId,
+                    actorId = klaim.claimantId,
+                    type = "REPORT_STATUS_CHANGED",
+                    title = "Barang sudah diambil",
+                    message = "Serah terima barang sudah dicatat petugas. Laporan ditutup.",
+                    reportId = klaim.reportId
+                )
+            )
+        }
+
+        refresh()
+        return true
+    }
+
     private companion object {
         const val TABLE = "claims"
+        const val REPORT_TABLE = "reports"
         const val REFRESH_INTERVAL_MS = 20_000L
 
         /** `profiles` harus diberi nama constraint karena tabel ini punya dua FK ke sana. */
         const val SELECT_COLUMNS =
             "id,report_id,claimant_id,answer,status,decision_note,pickup_code,created_at,decided_at," +
-                "reports(title)," +
+                
+                "reports(id,title,status)," +
                 "profiles!claims_claimant_id_fkey(full_name,email)"
     }
 }
@@ -142,9 +270,49 @@ internal fun ClaimRow.toDomain(): Claim? {
         decidedAt = decidedAt?.toEpochMillisOrNull(),
         decidedBy = null,
         decisionNote = decisionNote,
-        pickupCode = pickupCode
+        pickupCode = pickupCode,
+        reportStatus = reports?.status?.let { runCatching { ReportStatus.valueOf(it) }.getOrNull() },
+        handedOverAt = handedOverAt?.toEpochMillisOrNull()
     )
 }
 
 private fun String.toEpochMillisOrNull(): Long? =
     runCatching { OffsetDateTime.parse(this).toInstant().toEpochMilli() }.getOrNull()
+
+/** Baris minimal yang dibaca saat mencatat serah terima di sisi klien. */
+@kotlinx.serialization.Serializable
+private data class HandoverClaimRow(
+    val id: String = "",
+    val status: String = "",
+    @kotlinx.serialization.SerialName("pickup_code") val pickupCode: String? = null,
+    @kotlinx.serialization.SerialName("report_id") val reportId: String = "",
+    @kotlinx.serialization.SerialName("claimant_id") val claimantId: String = ""
+)
+
+
+/** Laporan hilang milik pengklaim yang ikut ditutup. */
+@kotlinx.serialization.Serializable
+private data class HandoverReportRow(
+    val id: String = "",
+    @kotlinx.serialization.SerialName("owner_id") val ownerId: String = "",
+    val title: String = "",
+    val status: String = ""
+)
+
+/** Notifikasi penutup alur untuk pemilik barang. */
+@kotlinx.serialization.Serializable
+private data class HandoverNotificationInsert(
+    @kotlinx.serialization.SerialName("recipient_id") val recipientId: String,
+    @kotlinx.serialization.SerialName("actor_id") val actorId: String,
+    val type: String,
+    val title: String,
+    val message: String,
+    @kotlinx.serialization.SerialName("report_id") val reportId: String
+)
+
+
+/** Pasangan cocok minimal yang dibaca saat menutup laporan hilang. */
+@kotlinx.serialization.Serializable
+private data class HandoverMatchRow(
+    @kotlinx.serialization.SerialName("lost_report_id") val lostReportId: String = ""
+)

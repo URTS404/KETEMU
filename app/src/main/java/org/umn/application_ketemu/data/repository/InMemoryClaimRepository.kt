@@ -54,4 +54,20 @@ class InMemoryClaimRepository(
         claims.value = claims.value.map { if (it.id == claimId) updated else it }
         return updated
     }
+
+    /**
+     * Versi demo: hanya menandai waktu serah terima di memori. Status laporan
+     * tetap diubah pemanggil ([AdminClaimsViewModel]) karena repositori demo ini
+     * tidak memegang daftar laporan.
+     */
+    override suspend fun completeHandover(claimId: String, code: String?): Boolean {
+        val existing = claims.value.firstOrNull { it.id == claimId } ?: return false
+        if (existing.status != ClaimStatus.DISETUJUI) return false
+        val kode = code?.trim().orEmpty()
+        if (kode.isNotEmpty() && !kode.equals(existing.pickupCode, ignoreCase = true)) return false
+
+        val updated = existing.copy(handedOverAt = System.currentTimeMillis())
+        claims.value = claims.value.map { if (it.id == claimId) updated else it }
+        return true
+    }
 }

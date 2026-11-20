@@ -77,6 +77,7 @@ CLIP + pgvector ± 1–2 minggu.
 - **Indikator "sedang menulis…"** (`0027`) beserta gulir otomatis pesan masuk — 20 November 2026.
 - **Room/offline-first untuk laporan** (#2): daftar laporan terbaca tanpa jaringan, aksi tulis masuk antrean `outbox` dan terkirim otomatis — 20 November 2026.
 - **Unit test**: 105 `@Test` di `app/src/test` (22 berkas).
+- **Serah terima barang + penutupan dua laporan** — 20 November 2026: bagian "Menunggu pengambilan" di layar Verifikasi klaim, dialog kode pengambilan opsional, laporan temuan & laporan hilang pasangannya menjadi `SELESAI_DIKLAIM`, notifikasi ke pengklaim. Fungsi `complete_handover` ada di `db/0028_serah_terima.sql` (belum dijalankan di project Supabase; aplikasi memakai jalur cadangan sampai skrip itu dijalankan).
 
 ## Riwayat pembaruan berkas ini
 
@@ -87,3 +88,4 @@ CLIP + pgvector ± 1–2 minggu.
 | 19 Nov 2026 23.05 | Status kedua: lima selesai (#1, #3, #4, #5, #7), #6 sebagian, #2 belum |
 | 20 Nov 2026 | Berkas ini dibuat; status diperiksa ulang ke kode pada commit `a1cb094`. Tidak ada perubahan status sejak 19 Nov |
 | 20 Nov 2026 13.40 | #2 Room selesai (opsi A) dan diuji di emulator dengan mode pesawat; status menjadi 6 selesai, 1 sebagian |
+| 20 Nov 2026 18.40 | Alur klaim dilengkapi tahap serah terima; diuji end-to-end di tiga emulator (Siti, Rahmat, Budi) sampai kedua laporan `SELESAI_DIKLAIM` |
