@@ -17,6 +17,9 @@ internal object ClaimUiText {
         "Klaim hanya bisa diajukan untuk barang temuan yang sudah dititipkan di pos."
     const val ALREADY_SUBMITTED =
         "Anda sudah mengajukan klaim untuk barang ini. Tunggu keputusan petugas."
+    /** Klaim lama masih MENUNGGU/DISETUJUI, jadi belum boleh mengajukan lagi. */
+    const val ALREADY_ACTIVE =
+        "Klaim Anda untuk barang ini masih aktif. Cek statusnya di halaman ini."
     const val ANSWER_TOO_SHORT =
         "Tulis ciri barang minimal 15 karakter agar petugas bisa memverifikasi."
     const val SUBMITTED =

@@ -177,7 +177,14 @@ class ReportDetailViewModel(
             throw cancelled
         } catch (e: Exception) {
             android.util.Log.e("ReportDetail", "pengajuan klaim gagal: ${e.message}", e)
-            _message.value = ClaimUiText.SUBMIT_FAILED
+            // Pelanggaran indeks unik parsial (db/0029) berarti klaim aktif sudah
+            // ada — biasanya karena dua percobaan cepat beruntun atau layar lain
+            // sudah mengajukan lebih dulu. Pesan kuncinya tidak layak ditampilkan.
+            _message.value = if (e.isDuplicateClaim()) {
+                ClaimUiText.ALREADY_ACTIVE
+            } else {
+                ClaimUiText.SUBMIT_FAILED
+            }
         }
     }
 
@@ -192,4 +199,18 @@ class ReportDetailViewModel(
             ReportStatus.SIAP_DIAMBIL
         )
     }
+}
+
+/**
+ * Apakah kegagalan ini berasal dari indeks unik klaim aktif (db/0029)?
+ *
+ * PostgREST membalas kode `23505` dengan pesan yang menyebut nama indeksnya,
+ * jadi dua penanda itu dipakai. Pemeriksaan sengaja longgar karena pesan bisa
+ * berubah antar versi Supabase.
+ */
+private fun Throwable.isDuplicateClaim(): Boolean {
+    val pesan = message.orEmpty()
+    return pesan.contains("23505") ||
+        pesan.contains("claims_one_active_per_user") ||
+        pesan.contains("claims_unique_active")
 }
