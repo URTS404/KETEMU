@@ -3,6 +3,7 @@ package org.umn.application_ketemu
 import android.app.Application
 
 import org.umn.application_ketemu.core.notification.KetemuNotificationChannels
+import org.umn.application_ketemu.core.visual.PencariVisual
 import org.umn.application_ketemu.data.AppContainer
 import org.umn.application_ketemu.data.remote.SupabaseProvider
 import org.umn.application_ketemu.data.sync.SinkronLaporan
@@ -35,6 +36,26 @@ class KetemuApp : Application() {
         // berkala memastikan antrean laporan offline tetap terkirim walau
         // aplikasi sudah ditutup pengguna.
         SinkronLaporan.jadwalkan(this)
+
+        // Sementara: memuat model visual sekali dan menjalankan satu percobaan
+        // hitung agar jalur bitmap -> vektor terbukti hidup di perangkat ini
+        // (lihat docs/lens-catatan.md). Dihapus setelah layar cari-dengan-foto
+        // memakai model ini secara langsung.
+        runCatching {
+            val pencari = PencariVisual.ambil(applicationContext)
+            val uji = android.graphics.Bitmap
+                .createBitmap(32, 32, android.graphics.Bitmap.Config.ARGB_8888)
+                .apply { eraseColor(android.graphics.Color.GRAY) }
+            val vektor = pencari.vektor(uji)
+            uji.recycle()
+            val norma = kotlin.math.sqrt(vektor.sumOf { (it * it).toDouble() })
+            android.util.Log.d(
+                "Lens",
+                "uji vektor: dimensi=${vektor.size} norma=${"%.3f".format(norma)}",
+            )
+        }.onFailure {
+            android.util.Log.w("Lens", "uji vektor gagal: ${it.message}")
+        }
     }
 
 }

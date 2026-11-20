@@ -345,6 +345,8 @@ Skrip SQL dijalankan berurutan di Supabase -> SQL Editor:
   0028_serah_terima.sql          kolom serah terima + fungsi complete_handover
   0029_claim_resubmit.sql        klaim ditolak boleh diajukan ulang
   0030_pengingat_pengambilan.sql pengingat pengambilan (jadwal pg_cron)
+0031_hapus_laporan.sql        pemilik boleh menghapus laporannya sendiri
+0032_lens.sql                 pencarian barang dengan foto (pgvector + MobileNetV3)
 
 Konfigurasi aplikasi ada di local.properties (tidak ikut repositori):
   SUPABASE_URL=...              URL proyek

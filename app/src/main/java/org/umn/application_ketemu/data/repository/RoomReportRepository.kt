@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +23,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.umn.application_ketemu.core.network.NetworkMonitor
 import org.umn.application_ketemu.data.local.KetemuDatabase
 import org.umn.application_ketemu.data.local.OutboxEntity
@@ -178,6 +183,30 @@ class RoomReportRepository(
      * Server tetap bisa menolak (klaim masih aktif) — galat dari PostgREST
      * diteruskan apa adanya supaya pesannya bisa diterjemahkan layer UI.
      */
+    override suspend fun simpanVektorFoto(reportId: String, vektor: FloatArray): Boolean {
+        if (vektor.isEmpty()) return false
+        val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
+        if (!daring) {
+            Log.d(TAG, "simpanVektorFoto: offline, sidik foto $reportId ditunda")
+            return false
+        }
+
+        return runCatching {
+            val angka = vektor.map { it.toDouble() }
+            client.postgrest.rpc(
+                "simpan_vektor_foto",
+                buildJsonObject {
+                    put("p_report_id", reportId)
+                    putJsonArray("p_vektor") { angka.forEach { nilai -> add(JsonPrimitive(nilai)) } }
+                },
+            ).decodeAs<Boolean>()
+        }.onFailure {
+            // Fungsi belum dipasang (db/0032 belum dijalankan) bukan alasan
+            // menggagalkan simpan laporan; cukup dicatat untuk penelusuran.
+            Log.w(TAG, "simpanVektorFoto gagal untuk $reportId: ${it.message}")
+        }.getOrDefault(false)
+    }
+
     override suspend fun hapusLaporan(reportId: String) {
         val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
         if (!daring) {

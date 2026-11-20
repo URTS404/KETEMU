@@ -100,7 +100,8 @@ fun createReportViewModelFactory(container: AppContainer): ViewModelProvider.Fac
                 reportRepository = container.reportRepository,
                 networkMonitor = container.networkMonitor,
                 session = container.session,
-                notificationRepository = container.notificationRepository
+                notificationRepository = container.notificationRepository,
+                hitungVektorFoto = container.hitungVektorFoto
             )
         }
     }

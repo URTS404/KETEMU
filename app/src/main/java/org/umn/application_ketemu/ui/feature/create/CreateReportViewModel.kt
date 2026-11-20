@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.create
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -74,7 +75,12 @@ class CreateReportViewModel(
     private val reportRepository: ReportRepository,
     private val notificationRepository: NotificationRepository,
     networkMonitor: NetworkMonitor,
-    private val session: SessionStore
+    private val session: SessionStore,
+    /**
+     * Penghitung sidik rupa foto (fitur "Lens"). Disuntikkan sebagai lambda agar
+     * ViewModel tidak memegang Context; `null` berarti fitur dimatikan.
+     */
+    private val hitungVektorFoto: (suspend (String) -> FloatArray?)? = null
 ) : ViewModel() {
 
     private val _saveState = MutableStateFlow<SaveUiState>(SaveUiState.Idle)
@@ -167,6 +173,7 @@ class CreateReportViewModel(
                 )
 
                 reportRepository.addReport(report)
+                simpanVektorFoto(report, online)
                 notifyReportCreated(report, savedOffline = !online)
                 waitForMinimumFeedback(startedAt)
 
@@ -272,7 +279,28 @@ class CreateReportViewModel(
         if (remaining > 0) delay(remaining)
     }
 
+    /**
+     * Menghitung sidik rupa foto lalu menyimpannya ke server (db/0032).
+     *
+     * Sengaja TIDAK fatal: bila model visual belum siap, foto tidak terbaca, atau
+     * jaringan bermasalah, laporan tetap tersimpan. Akibatnya paling buruk
+     * laporan itu tidak ikut ditemukan lewat pencarian foto.
+     */
+    private suspend fun simpanVektorFoto(report: Report, online: Boolean) {
+        val uri = report.photoUri ?: return
+        if (!online) {
+            // Laporan masuk antrean offline; sidik foto baru dibuat saat daring.
+            Log.d(TAG, "sidik foto dilewati: laporan disimpan offline")
+            return
+        }
+        val penghitung = hitungVektorFoto ?: return
+        val vektor = runCatching { penghitung(uri) }.getOrNull() ?: return
+        val tersimpan = reportRepository.simpanVektorFoto(report.id, vektor)
+        Log.d(TAG, "sidik foto ${report.id}: ${if (tersimpan) "tersimpan" else "tidak tersimpan"}")
+    }
+
     private companion object {
         const val MIN_SAVING_FEEDBACK_MS = 450L
+        const val TAG = "Laporan"
     }
 }

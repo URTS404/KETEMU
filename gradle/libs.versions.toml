@@ -16,7 +16,7 @@ composeBom = "2026.09.00"
 # Material Icons: baris artifact ini dibekukan di 1.7.8 dan tidak ikut lagi di
 # BOM 2026.09.00 (material3 1.12.1 tidak lagi menariknya). API-nya stabil dan
 # hanya memuat ikon inti yang kita butuhkan (Home, List, Person, Place, Warning),
-# serta hanya bergantung pada compose.ui — bukan Material 2.
+# serta hanya bergantung pada compose.ui Ã¢â‚¬â€ bukan Material 2.
 # Rencana penggantian: vector drawable milik sendiri saat tahap penyempurnaan aset.
 materialIcons = "1.7.8"
 coroutines = "1.11.0"
@@ -34,6 +34,9 @@ ksp = "2.3.12"
 room = "2.8.5"
 hilt = "2.60.1"
 workManager = "2.11.0"
+# TensorFlow Lite: menjalankan model embedding di dalam HP untuk fitur cari-dengan-foto.
+# Tanpa layanan awan, tanpa kunci API, dan tanpa akun tambahan.
+tflite = "2.16.1"
 datastore = "1.2.0"
 kotlinxSerialization = "1.11.0"
 
@@ -84,6 +87,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 
 # --- WorkManager (sinkronisasi latar belakang) ---
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
+tflite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

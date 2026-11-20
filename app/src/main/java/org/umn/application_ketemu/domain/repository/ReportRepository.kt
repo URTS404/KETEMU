@@ -85,4 +85,15 @@ interface ReportRepository {
      * jaringan dan perangkat sedang offline.
      */
     suspend fun hapusLaporan(reportId: String)
+
+    /**
+     * Menyimpan sidik rupa foto laporan (db/0032) agar bisa ditemukan lewat
+     * pencarian "Lens".
+     *
+     * Vektor dihitung di dalam HP ([org.umn.application_ketemu.core.visual.PencariVisual]),
+     * bukan dikirim ke layanan luar. Bila perangkat offline atau server menolak,
+     * metode ini cukup mengembalikan `false` — laporan tetap sah, hanya tidak
+     * ikut serta dalam pencarian berbasis foto.
+     */
+    suspend fun simpanVektorFoto(reportId: String, vektor: FloatArray): Boolean = false
 }

@@ -132,6 +132,10 @@ dependencies {
     // Sinkronisasi antrean laporan saat aplikasi di latar belakang.
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Model embedding visual (fitur cari-dengan-foto). Berjalan di dalam HP,
+    // tanpa layanan awan maupun kunci API.
+    implementation(libs.tflite)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

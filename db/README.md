@@ -35,6 +35,7 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0029_claim_resubmit.sql` | Indeks unik parsial `claims_one_active_per_user` menggantikan `claims_unique_active`, agar klaim yang ditolak boleh diajukan ulang |
 | `0030_pengingat_pengambilan.sql` | Tabel `pickup_reminders` + fungsi `kirim_pengingat_pengambilan()` yang dijadwalkan `pg_cron` tiap jam: pengingat hari ke-3 dan ke-6 untuk klaim yang disetujui tapi barangnya belum diambil |
 | `0031_hapus_laporan.sql` | Kebijakan `reports_delete_own`: pemilik boleh menghapus laporannya sendiri selama tidak ada klaim `MENUNGGU`/`DISETUJUI` |
+| `0032_lens.sql` | Cari barang dengan foto: ekstensi pgvector, kolom `photo_embedding`, fungsi `simpan_vektor_foto` & `cari_barang_mirip` |
 
 ## 1. Buat project
 
@@ -69,6 +70,7 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 13. `db/0029_claim_resubmit.sql` - klaim yang ditolak boleh diajukan ulang
 14. `db/0030_pengingat_pengambilan.sql` - pengingat pengambilan otomatis (butuh ekstensi `pg_cron`)
 15. `db/0031_hapus_laporan.sql` - pemilik boleh menghapus laporan sendiri
+16. `db/0032_lens.sql` - mesin pencarian foto (pgvector)
 
 Berkas `0004`–`0009` serta `0021` dan `0025` hanya berisi data contoh dan
 pemeriksaan; jalankan bila perlu.

@@ -17,6 +17,7 @@ import org.umn.application_ketemu.core.notification.NotificationTapRequests
 import org.umn.application_ketemu.core.notification.SharedPreferencesSystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotifier
+import org.umn.application_ketemu.core.visual.VektorFoto
 import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.auth.SupabaseAuthRepository
@@ -61,6 +62,17 @@ import org.umn.application_ketemu.domain.repository.UserRepository
  * disusun sama seperti rencana versi Hilt agar perpindahannya murni mekanis.
  */
 class AppContainer(context: Context) {
+
+    /**
+     * Penghitung sidik rupa foto untuk fitur "Lens" (db/0032).
+     *
+     * Berbentuk lambda agar lapisan UI tidak perlu memegang Context sekaligus
+     * memudahkan pengujian: di unit test cukup diberi lambda palsu yang
+     * mengembalikan vektor tetap.
+     */
+    val hitungVektorFoto: suspend (String) -> FloatArray? = { uri ->
+        VektorFoto.hitung(context, uri)
+    }
 
     /**
      * Sesi pengguna aktif.
