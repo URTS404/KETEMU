@@ -173,6 +173,12 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
     val pendingCount by mainViewModel.pendingCount.collectAsStateWithLifecycle()
     val currentUser by mainViewModel.currentUser.collectAsStateWithLifecycle()
 
+    // Lonceng di Aktivitas dan Pesan memakai sumber yang sama dengan Beranda supaya
+    // badge-nya tidak pernah berbeda antar tab.
+    val kabar by container.notificationRepository.observeNotifications()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val belumDibaca = kabar.count { !it.isRead }
+
     // Ketukan pada kartu notifikasi panel sistem membuka kotak masuk. Permintaan
     // disimpan di container sehingga tidak hilang bila aplikasi baru dibuka dari
     // keadaan mati; setelah navigasi dijalankan, permintaan dikonsumsi.
@@ -276,6 +282,10 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     )
                     MyReportsScreen(
                         viewModel = viewModel,
+                        onOpenNotifications = {
+                            navController.navigate(KetemuRoutes.NOTIFICATIONS) { launchSingleTop = true }
+                        },
+                        unreadNotifications = belumDibaca,
                         onReportClick = { reportId ->
                             navController.navigate(KetemuRoutes.reportDetail(reportId))
                         }
@@ -288,6 +298,10 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
                     )
                     MessageScreen(
                         viewModel = viewModel,
+                        onOpenNotifications = {
+                            navController.navigate(KetemuRoutes.NOTIFICATIONS) { launchSingleTop = true }
+                        },
+                        unreadNotifications = belumDibaca,
                         onThreadClick = { threadId ->
                             navController.navigate(KetemuRoutes.conversation(threadId))
                         }

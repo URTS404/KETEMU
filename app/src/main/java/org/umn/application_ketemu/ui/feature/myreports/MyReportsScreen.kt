@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import org.umn.application_ketemu.ui.components.LoncengNotifikasi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +55,8 @@ private enum class ReportsStateKind { LOADING, EMPTY, ERROR, SUCCESS }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyReportsScreen(
+    onOpenNotifications: () -> Unit = {},
+    unreadNotifications: Int = 0,
     viewModel: MyReportsViewModel,
     onReportClick: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -66,6 +69,9 @@ fun MyReportsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_my_reports)) },
+                actions = {
+                    LoncengNotifikasi(count = unreadNotifications, onClick = onOpenNotifications)
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
