@@ -745,6 +745,12 @@ private fun FilterSheet(
             }
 
             FilterGroup(title = stringResource(R.string.filter_group_kategori)) {
+                // Pilihan Semua selalu ada: melepas semua kategori berarti kembali ke Semua.
+                FilterChip(
+                    selected = draf.kategori.isEmpty(),
+                    onClick = { draf = draf.copy(kategori = emptySet()) },
+                    label = { Text(stringResource(R.string.filter_semua)) }
+                )
                 ReportCategory.entries.forEach { kategori ->
                     FilterChip(
                         selected = kategori in draf.kategori,
