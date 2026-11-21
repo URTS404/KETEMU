@@ -18,6 +18,7 @@ import org.umn.application_ketemu.core.notification.SharedPreferencesSystemNotif
 import org.umn.application_ketemu.core.notification.SystemNotificationSettings
 import org.umn.application_ketemu.core.notification.SystemNotifier
 import org.umn.application_ketemu.core.visual.VektorFoto
+import org.umn.application_ketemu.data.remote.ReportPhotoUploader
 import org.umn.application_ketemu.data.auth.FallbackAuthRepository
 import org.umn.application_ketemu.data.auth.LocalAuthRepository
 import org.umn.application_ketemu.data.auth.SupabaseAuthRepository

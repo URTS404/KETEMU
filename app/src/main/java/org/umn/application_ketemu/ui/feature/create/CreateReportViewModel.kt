@@ -80,7 +80,9 @@ class CreateReportViewModel(
      * Penghitung sidik rupa foto (fitur "Lens"). Disuntikkan sebagai lambda agar
      * ViewModel tidak memegang Context; `null` berarti fitur dimatikan.
      */
-    private val hitungVektorFoto: (suspend (String) -> FloatArray?)? = null
+    private val hitungVektorFoto: (suspend (String) -> FloatArray?)? = null,
+    /** Mengunggah foto laporan ke Storage; null = tanpa unggahan. */
+    private val unggahFoto: (suspend (String) -> String?)? = null,
 ) : ViewModel() {
 
     private val _saveState = MutableStateFlow<SaveUiState>(SaveUiState.Idle)
@@ -153,6 +155,14 @@ class CreateReportViewModel(
                 val now = System.currentTimeMillis()
                 val owner = session.currentUser.value
 
+                // Foto diunggah lebih dulu: baris laporan harus menyimpan URL
+                // https, bukan URI lokal HP yang tak terbaca perangkat lain.
+                val fotoTerunggah = if (online && input.photoUri != null) {
+                    unggahFoto?.invoke(input.photoUri) ?: input.photoUri
+                } else {
+                    input.photoUri
+                }
+
                 val report = Report(
                     // UUID dibuat di klien supaya pengiriman ulang bersifat idempoten.
                     id = UUID.randomUUID().toString(),
@@ -162,7 +172,7 @@ class CreateReportViewModel(
                     title = input.title.trim(),
                     description = input.description.trim(),
                     category = input.category,
-                    photoUri = input.photoUri,
+                    photoUri = fotoTerunggah,
                     lastSeenLocation = input.location.trim(),
                     // Titik GPS hanya disimpan bila valid; kolom teks lokasi tetap
                     // menjadi deskripsi utama yang dibaca petugas.
