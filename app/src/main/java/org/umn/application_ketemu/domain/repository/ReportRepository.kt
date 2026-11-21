@@ -85,6 +85,16 @@ interface ReportRepository {
      * Implementasi boleh melempar [IllegalStateException] bila memerlukan
      * jaringan dan perangkat sedang offline.
      */
+    /**
+     * Nama seluruh Pos yang terdaftar di server (tabel pos_locations).
+     *
+     * Dipakai filter "Dititipkan di Pos" agar pilihannya lengkap, bukan hanya Pos
+     * yang kebetulan sudah punya laporan. Implementasi tanpa jaringan boleh
+     * mengembalikan daftar kosong: pemanggil tetap menggabungkannya dengan nama
+     * Pos yang diambil dari laporan.
+     */
+    suspend fun daftarNamaPos(): List<String> = emptyList()
+
     suspend fun hapusLaporan(reportId: String)
 
     /**

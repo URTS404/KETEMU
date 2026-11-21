@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -203,9 +204,14 @@ class HomeViewModel(
      * Diambil dari seluruh laporan (bukan hasil filter) supaya pilihan Pos tidak
      * ikut menyusut saat pengguna menyaring jenis atau waktu.
      */
-    val posTersedia: StateFlow<List<String>> = reportRepository.observeReports()
-        .map { daftar -> daftar.mapNotNull { it.pos?.name }.distinct().sorted() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val posTersedia: StateFlow<List<String>> = combine(
+        reportRepository.observeReports(),
+        // Diambil sekali dari tabel pos_locations; kalau jaringan gagal, daftar
+        // tetap diisi dari nama Pos yang muncul di laporan.
+        flow { emit(reportRepository.daftarNamaPos()) }
+    ) { daftarLaporan, dariServer ->
+        (dariServer + daftarLaporan.mapNotNull { it.pos?.name }).distinct().sorted()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun onSearchQueryChange(value: String) {
         searchQuery.value = value

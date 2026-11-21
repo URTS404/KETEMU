@@ -256,6 +256,18 @@ class RoomReportRepository(
         }.getOrDefault(emptyList())
     }
 
+    override suspend fun daftarNamaPos(): List<String> = runCatching {
+        client.postgrest.from("pos_locations")
+            .select(Columns.list("name"))
+            .decodeList<NamaPosRow>()
+            .map { it.name }
+            .distinct()
+            .sorted()
+    }.getOrElse {
+        Log.w(TAG, "daftarNamaPos gagal: ${'$'}{it.message}")
+        emptyList()
+    }
+
     override suspend fun hapusLaporan(reportId: String) {
         val daring = runCatching { networkMonitor.isOnline.first() }.getOrDefault(false)
         if (!daring) {
@@ -288,6 +300,10 @@ class RoomReportRepository(
     /** Baris minimal untuk memastikan server benar-benar menghapus data. */
     @Serializable
     private data class IdBaris(val id: String)
+
+    /** Baris minimal tabel `pos_locations` (hanya nama yang dipakai filter). */
+    @Serializable
+    private data class NamaPosRow(val name: String)
 
     /**
      * Satu baris keluaran RPC `cari_barang_mirip` (db/0032).
