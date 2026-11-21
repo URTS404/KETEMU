@@ -47,6 +47,15 @@ class LaporanSyncWorker(
 
         return try {
             repositori.sinkronkanSekarang()
+
+            // Foto laporan yang gagal diunggah saat laporan dibuat tersimpan
+            // sebagai URI lokal di perangkat. Dicoba lagi di sini supaya foto
+            // naik ke server tanpa menunggu aplikasi dibuka pengguna.
+            val fotoTerunggah = repositori.perbaikiFotoLokalSekarang()
+            if (fotoTerunggah > 0) {
+                Log.d(TAG, "sinkron latar: $fotoTerunggah foto laporan tersusul diunggah")
+            }
+
             Log.d(TAG, "sinkron latar: selesai")
             Result.success()
         } catch (cancelled: kotlinx.coroutines.CancellationException) {

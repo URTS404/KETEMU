@@ -400,18 +400,18 @@ class RoomReportRepository(
      * pemilik di perangkat yang masih bisa membaca berkasnya, jadi dijalankan
      * sekali setiap aplikasi dibuka dan berhenti setelah satu putaran.
      */
-    private suspend fun perbaikiFotoLokal() {
-        val unggah = unggahFoto ?: return
-        if (sudahPerbaikiFoto) return
+    private suspend fun perbaikiFotoLokal(): Int {
+        val unggah = unggahFoto ?: return 0
+        if (sudahPerbaikiFoto) return 0
 
         val pengguna = runCatching { client.auth.currentUserOrNull()?.id }.getOrNull()
-        if (pengguna == null) return
+        if (pengguna == null) return 0
 
         val baris = laporan.fotoLokalMilik(pengguna)
         sudahPerbaikiFoto = true
         if (baris.isEmpty()) {
             Log.d(TAG, "perbaikiFoto: tidak ada foto lokal yang perlu diunggah")
-            return
+            return 0
         }
 
         var berhasil = 0
@@ -435,6 +435,18 @@ class RoomReportRepository(
         }
 
         Log.d(TAG, "perbaikiFoto: $berhasil dari ${baris.size} foto lokal diunggah ulang")
+        return berhasil
+    }
+
+    /**
+     * Dipakai pekerja latar: mencoba lagi mengunggah foto laporan yang masih
+     * menunjuk berkas lokal, tanpa menunggu aplikasi dibuka pengguna.
+     *
+     * Mengembalikan jumlah foto yang berhasil diunggah.
+     */
+    suspend fun perbaikiFotoLokalSekarang(): Int {
+        sudahPerbaikiFoto = false
+        return runCatching { perbaikiFotoLokal() }.getOrDefault(0)
     }
 
     /** Mengirim isi `outbox` berurutan; berhenti pada kegagalan pertama agar urutan tetap. */
