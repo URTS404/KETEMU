@@ -76,6 +76,18 @@ class AppContainer(context: Context) {
     }
 
     /**
+     * Mengunggah foto laporan ke Supabase Storage dan mengembalikan URL publiknya.
+     *
+     * Berbentuk lambda dengan alasan yang sama seperti [hitungVektorFoto]:
+     * lapisan UI tidak memegang Context dan mudah diganti di unit test.
+     * Mengembalikan null bila unggahan gagal, sehingga pemanggil dapat jatuh
+     * kembali ke URI asal.
+     */
+    val unggahFotoLaporan: suspend (String) -> String? = { uri ->
+        ReportPhotoUploader.unggah(context, uri)
+    }
+
+    /**
      * Sesi pengguna aktif.
      *
      * Diletakkan paling atas karena dipakai dekorator notifikasi di bawah

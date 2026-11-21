@@ -102,6 +102,9 @@ fun createReportViewModelFactory(container: AppContainer): ViewModelProvider.Fac
                 networkMonitor = container.networkMonitor,
                 session = container.session,
                 notificationRepository = container.notificationRepository,
+                // Tanpa ini foto laporan tersimpan sebagai URI galeri perangkat
+                // sendiri (content://), sehingga perangkat lain tidak bisa melihatnya.
+                unggahFoto = container.unggahFotoLaporan,
                 hitungVektorFoto = container.hitungVektorFoto
             )
         }
