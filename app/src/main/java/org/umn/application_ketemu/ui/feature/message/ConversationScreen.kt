@@ -52,6 +52,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import org.umn.application_ketemu.ui.components.PesanSnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -122,6 +124,16 @@ fun ConversationScreen(
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val canSend by viewModel.canSend.collectAsStateWithLifecycle()
     val isSending by viewModel.isSending.collectAsStateWithLifecycle()
+    val pesanGalat by viewModel.pesan.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(pesanGalat) {
+        val teks = pesanGalat
+        if (teks != null) {
+            snackbarHostState.showSnackbar(teks)
+            viewModel.pesanDibaca()
+        }
+    }
 
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -175,6 +187,7 @@ fun ConversationScreen(
         // edge-to-edge Android 15+ tombol kirim tertutup keyboard.
         modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { PesanSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {

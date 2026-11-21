@@ -89,6 +89,18 @@ class ConversationViewModel(
         }
     }
 
+    /**
+     * Pesan galat sekali-tampil. Sebelumnya kegagalan di layar ini hanya masuk
+     * logcat, jadi dari sisi pengguna tombol kirim/hapus tampak tidak bekerja.
+     */
+    private val _pesan = MutableStateFlow<String?>(null)
+    val pesan: StateFlow<String?> = _pesan.asStateFlow()
+
+    /** Dipanggil layar setelah kartu pesan ditampilkan agar tidak muncul berulang. */
+    fun pesanDibaca() {
+        _pesan.value = null
+    }
+
     fun onSend(isTemplate: Boolean = false) {
         val text = _draft.value.trim()
         if (text.isEmpty() || _isSending.value) return
@@ -96,7 +108,12 @@ class ConversationViewModel(
         _draft.value = ""
         _isSending.value = true
         viewModelScope.launch {
-            chatRepository.send(conversationId, text, isTemplate)
+            runCatching { chatRepository.send(conversationId, text, isTemplate) }
+                .onFailure {
+                    android.util.Log.e("Chat", "kirim pesan gagal", it)
+                    _pesan.value = "Pesan gagal dikirim. Periksa koneksi lalu coba lagi."
+                    _draft.value = text
+                }
             _isSending.value = false
         }
     }
@@ -111,13 +128,18 @@ class ConversationViewModel(
         _isSending.value = true
         viewModelScope.launch {
             android.util.Log.d("Chat", "onImagePicked: memanggil sendImage")
-            chatRepository.sendImage(
-                conversationId = conversationId,
-                bytes = bytes,
-                width = width,
-                height = height,
-                caption = _draft.value.trim()
-            )
+            runCatching {
+                chatRepository.sendImage(
+                    conversationId = conversationId,
+                    bytes = bytes,
+                    width = width,
+                    height = height,
+                    caption = _draft.value.trim()
+                )
+            }.onFailure {
+                android.util.Log.e("Chat", "kirim gambar gagal", it)
+                _pesan.value = "Gambar gagal dikirim. Periksa koneksi lalu coba lagi."
+            }
             _draft.value = ""
             _isSending.value = false
         }
@@ -132,8 +154,15 @@ class ConversationViewModel(
     fun onDelete(messageId: String) {
         android.util.Log.d("Chat", "onDelete dipanggil: " + messageId)
         viewModelScope.launch {
-            val hasil = chatRepository.deleteMessage(messageId)
+            val hasil = runCatching { chatRepository.deleteMessage(messageId) }
+                .getOrElse {
+                    android.util.Log.e("Chat", "hapus pesan gagal", it)
+                    false
+                }
             android.util.Log.d("Chat", "hasil hapus " + messageId + " = " + hasil)
+            if (!hasil) {
+                _pesan.value = "Pesan tidak bisa dihapus sekarang. Coba lagi sebentar."
+            }
         }
     }
 
