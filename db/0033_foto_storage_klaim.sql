@@ -34,7 +34,8 @@ create policy foto_laporan_hapus on storage.objects for delete to authenticated
     using (bucket_id = 'foto-laporan' and owner = auth.uid());
 
 -- ── 2. Alasan penolakan klaim ──────────────────────────────────────────────
-alter table public.claims add column if not exists rejection_reason text;
+-- Catatan: aplikasi sudah memakai claims.decision_note untuk ini, jadi tidak
+-- perlu kolom baru. Bagian ini sengaja dikosongkan.
 
 -- ── 3. Pengklaim membatalkan pengajuannya ──────────────────────────────────
 -- Batal = hapus baris selama petugas belum memutuskan. Klaim yang sudah
