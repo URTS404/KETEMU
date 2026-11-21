@@ -62,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.common.UiState
 import org.umn.application_ketemu.core.util.RelativeTime
@@ -613,7 +614,11 @@ private fun MatchSection(
 
 @Composable
 private fun ReportPhoto(report: Report) {
-    if (report.photoUri.isNullOrBlank()) {
+    // Foto bisa gagal dimuat (URI lokal perangkat pembuat laporan yang sudah tidak
+    // bisa diakses). Lebih jujur menampilkan "belum ada foto" daripada kotak kosong.
+    var gagalMuat by remember(report.photoUri) { mutableStateOf(false) }
+
+    if (report.photoUri.isNullOrBlank() || gagalMuat) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -640,7 +645,10 @@ private fun ReportPhoto(report: Report) {
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
-                .clickable { tampilZoom = true }
+                .clickable { tampilZoom = true },
+            onState = { keadaan ->
+                if (keadaan is AsyncImagePainter.State.Error) gagalMuat = true
+            }
         )
 
         if (tampilZoom) {

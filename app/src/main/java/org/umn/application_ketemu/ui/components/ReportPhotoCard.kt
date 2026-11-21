@@ -28,6 +28,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import coil3.compose.AsyncImagePainter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -188,13 +191,18 @@ private fun MetaLine(text: String) {
 /** Area gambar + badge jenis barang di sudut kiri atas. */
 @Composable
 private fun ReportPhoto(report: Report, compact: Boolean) {
+    // Foto yang gagal dimuat (mis. URI lokal perangkat pembuat laporan yang sudah
+    // tidak bisa diakses) harus jatuh ke tampilan "belum ada foto", bukan kotak
+    // kosong tanpa keterangan.
+    var gagalMuat by remember(report.photoUri) { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(if (compact) 4f / 3f else 16f / 9f)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
-        if (report.photoUri.isNullOrBlank()) {
+        if (report.photoUri.isNullOrBlank() || gagalMuat) {
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -217,7 +225,10 @@ private fun ReportPhoto(report: Report, compact: Boolean) {
                 model = report.photoUri,
                 contentDescription = report.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onState = { keadaan ->
+                    if (keadaan is AsyncImagePainter.State.Error) gagalMuat = true
+                }
             )
         }
 
