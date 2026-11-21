@@ -435,6 +435,11 @@
     <string name="lens_error_desc">Coba pilih foto lain dari galeri.</string>
     <string name="lens_similar">Mirip %1$d%%</string>
     <string name="create_error_photo">Laporan barang temuan wajib memakai foto agar bisa dicocokkan.</string>
+    <string name="camera_close">Tutup kamera</string>
+    <string name="camera_capture">Ambil foto</string>
+    <string name="camera_saving">Menyimpan foto…</string>
+    <string name="camera_error">Kamera tidak bisa dibuka di perangkat ini.</string>
+    <string name="camera_use_gallery">Pakai foto dari galeri</string>
     <string name="create_photo_gallery">Pilih dari galeri</string>
     <string name="create_photo_found_hint">Foto wajib untuk laporan barang temuan.</string>
     <!-- Filter detail Beranda -->

@@ -29,7 +29,7 @@ android {
 
     defaultConfig {
         applicationId = "org.umn.application_ketemu"
-        minSdk = 26              // ditetapkan supabase-kt (minimum Android SDK 26)
+        minSdk = 27              // API 27 sesuai modul lab; supabase-kt sendiri minimal 26
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
@@ -108,9 +108,17 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // CameraX: pratinjau + ambil foto langsung di dalam aplikasi (Modul 9 & 10).
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.exifinterface)
     // Peta OpenStreetMap + penanda lokasi barang (tanpa API key).
     implementation(libs.osmdroid.android)
     // Supabase Auth (M2): menggantikan autentikasi lokal dengan Supabase.

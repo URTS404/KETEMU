@@ -22,6 +22,8 @@ materialIcons = "1.7.8"
 coroutines = "1.11.0"
 junit = "4.13.2"
 coil = "3.6.3"
+camera = "1.4.2"
+exifinterface = "1.3.7"
 # Peta OpenStreetMap tanpa API key. Google Maps SDK sengaja tidak dipakai karena
 # memerlukan kunci berbayar + Google Play Services di perangkat.
 osmdroid = "6.1.20"
@@ -61,6 +63,11 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camera" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 # --- Peta (OpenStreetMap) ---
 osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }

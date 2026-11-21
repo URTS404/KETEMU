@@ -53,21 +53,11 @@ fun PhotoPickerField(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var pendingFile by remember { mutableStateOf<File?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    var tampilKamera by remember { mutableStateOf(false) }
 
     val deniedMessage = stringResource(R.string.create_camera_denied)
-    val unavailableMessage = stringResource(R.string.create_camera_unavailable)
     val shape = MaterialTheme.shapes.medium
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        val file = pendingFile
-        if (success && file != null && file.exists()) {
-            onPhotoTaken(Uri.fromFile(file).toString())
-        }
-    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -75,8 +65,8 @@ fun PhotoPickerField(
         if (!granted) {
             message = deniedMessage
         } else {
-            pendingFile = createPhotoFile(context)
-            pendingFile?.let { file -> cameraLauncher.launch(file.toShareableUri(context)) }
+            // Izin sudah ada: buka layar kamera CameraX milik aplikasi sendiri.
+            tampilKamera = true
         }
     }
 
@@ -103,13 +93,7 @@ fun PhotoPickerField(
             return
         }
 
-        pendingFile = createPhotoFile(context)
-        val file = pendingFile
-        if (file == null) {
-            message = unavailableMessage
-        } else {
-            cameraLauncher.launch(file.toShareableUri(context))
-        }
+        tampilKamera = true
     }
 
     Column(
@@ -175,15 +159,15 @@ fun PhotoPickerField(
             )
         }
     }
-}
 
-/** Membuat berkas tujuan di cache/photos/ (lihat res/xml/file_paths.xml). */
-private fun createPhotoFile(context: Context): File? {
-    val directory = File(context.cacheDir, "photos")
-    if (!directory.exists() && !directory.mkdirs()) return null
-    return File(directory, "ketemu_${System.currentTimeMillis()}.jpg")
+    if (tampilKamera) {
+        KameraAmbilFoto(
+            onFoto = { uri ->
+                tampilKamera = false
+                message = null
+                onPhotoTaken(uri)
+            },
+            onTutup = { tampilKamera = false }
+        )
+    }
 }
-
-/** Menghasilkan content URI yang aman dibagikan ke aplikasi kamera. */
-private fun File.toShareableUri(context: Context): Uri =
-    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", this)
