@@ -45,4 +45,15 @@ interface ReportDao {
 
     @Query("SELECT COUNT(*) FROM reports_cache")
     suspend fun count(): Int
+
+    /**
+     * Laporan milik pengguna yang fotonya masih menunjuk berkas lokal perangkat
+     * (`content://` / `file://`). Baris seperti ini tidak bisa dibuka di perangkat
+     * lain, jadi dicoba diunggah ulang ke Storage saat aplikasi dibuka pemiliknya.
+     */
+    @Query(
+        "SELECT * FROM reports_cache " +
+            "WHERE ownerId = :ownerId AND photoUri IS NOT NULL AND photoUri NOT LIKE 'http%'"
+    )
+    suspend fun fotoLokalMilik(ownerId: String): List<ReportEntity>
 }

@@ -141,7 +141,8 @@ class AppContainer(context: Context) {
         RoomReportRepository(
             client = SupabaseProvider.client,
             db = KetemuDatabase.get(context),
-            networkMonitor = networkMonitor
+            networkMonitor = networkMonitor,
+            unggahFoto = unggahFotoLaporan
         )
     } else {
         InMemoryReportRepository(DummyData.reports())

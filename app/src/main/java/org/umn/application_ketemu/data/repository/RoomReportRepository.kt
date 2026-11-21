@@ -2,6 +2,7 @@ package org.umn.application_ketemu.data.repository
 
 import android.util.Log
 import androidx.room.withTransaction
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -66,7 +67,12 @@ import java.util.UUID
 class RoomReportRepository(
     private val client: SupabaseClient,
     private val db: KetemuDatabase,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    /**
+     * Pengunggah foto laporan (URI lokal -> URL Storage). Null berarti perbaikan
+     * foto lama dilewati, mis. pada unit test yang tidak memakai jaringan.
+     */
+    private val unggahFoto: (suspend (String) -> String?)? = null
 ) : ReportRepository {
 
     private val laporan = db.reportDao()
@@ -75,6 +81,9 @@ class RoomReportRepository(
 
     /** Mencegah dua sinkronisasi berjalan bersamaan (mis. timer + jaringan pulih). */
     private val kunciSinkron = Mutex()
+
+    /** Penjaga agar perbaikan foto lama tidak diulang terus-menerus tiap sinkron. */
+    private var sudahPerbaikiFoto = false
 
     init {
         scope.launch {
@@ -376,7 +385,56 @@ class RoomReportRepository(
                 .onFailure { Log.e(TAG, "dorong antrean gagal: ${it.message}") }
             runCatching { tarikDariServer() }
                 .onFailure { Log.e(TAG, "tarik laporan gagal: ${it.message}") }
+            runCatching { perbaikiFotoLokal() }
+                .onFailure { Log.e(TAG, "perbaiki foto lokal gagal: ${it.message}") }
         }
+    }
+
+    /**
+     * Mengunggah ulang foto laporan lama yang masih menunjuk berkas lokal perangkat.
+     *
+     * Laporan yang dibuat sebelum fitur unggah Storage menyimpan `photo_url`
+     * berisi `content://`/`file://`. URI itu hanya hidup di perangkat pembuatnya,
+     * sehingga pengguna lain (dan pengguna itu sendiri setelah cache dibersihkan)
+     * melihat "Foto belum tersedia". Perbaikan hanya mungkin dilakukan oleh
+     * pemilik di perangkat yang masih bisa membaca berkasnya, jadi dijalankan
+     * sekali setiap aplikasi dibuka dan berhenti setelah satu putaran.
+     */
+    private suspend fun perbaikiFotoLokal() {
+        val unggah = unggahFoto ?: return
+        if (sudahPerbaikiFoto) return
+
+        val pengguna = runCatching { client.auth.currentUserOrNull()?.id }.getOrNull()
+        if (pengguna == null) return
+
+        val baris = laporan.fotoLokalMilik(pengguna)
+        sudahPerbaikiFoto = true
+        if (baris.isEmpty()) {
+            Log.d(TAG, "perbaikiFoto: tidak ada foto lokal yang perlu diunggah")
+            return
+        }
+
+        var berhasil = 0
+        for (entri in baris) {
+            val uri = entri.photoUri ?: continue
+            val url = runCatching { unggah(uri) }
+                .onFailure { Log.w(TAG, "perbaikiFoto: ${entri.id} tidak bisa dibaca: ${it.message}") }
+                .getOrNull() ?: continue
+
+            runCatching {
+                client.postgrest.from(TABLE).update({ set("photo_url", url) }) {
+                    filter { eq("id", entri.id) }
+                }
+            }.onFailure {
+                Log.w(TAG, "perbaikiFoto: gagal menyimpan ${entri.id}: ${it.message}")
+                continue
+            }
+
+            runCatching { laporan.upsert(entri.copy(photoUri = url)) }
+            berhasil++
+        }
+
+        Log.d(TAG, "perbaikiFoto: $berhasil dari ${baris.size} foto lokal diunggah ulang")
     }
 
     /** Mengirim isi `outbox` berurutan; berhenti pada kegagalan pertama agar urutan tetap. */
