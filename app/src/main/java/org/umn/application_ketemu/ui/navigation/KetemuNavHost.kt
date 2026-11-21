@@ -44,6 +44,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -653,11 +655,17 @@ private fun BottomBarItem(
                 icon(tint)
             }
         }
+        // Label dipotong elipsis di dalam slotnya: pada layar sempit atau font
+        // besar, "Aktivitas" dulu menabrak label tab sebelahnya.
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = tint,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

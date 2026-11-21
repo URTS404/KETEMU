@@ -193,7 +193,11 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                // Adaptive, bukan Fixed(2): di HP sempit (<=360dp) dua kolom
+                // membuat kartu terlalu sempit sehingga judul terpotong, jadi
+                // grid otomatis turun ke satu kolom; tablet justru dapat lebih
+                // dari dua kolom.
+                columns = GridCells.Adaptive(minSize = 160.dp),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 20.dp,
