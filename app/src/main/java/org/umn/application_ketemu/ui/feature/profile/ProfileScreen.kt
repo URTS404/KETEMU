@@ -151,40 +151,11 @@ fun ProfileScreen(
                 }
             }
 
-            Text(
-                text = stringResource(R.string.profile_settings_title),
-                style = MaterialTheme.typography.labelLarge
-            )
-
-            SystemNotificationsSetting(
-                enabled = systemNotificationsEnabled,
-                onEnabledChange = onSystemNotificationsEnabledChange
-            )
-
-            HorizontalDivider()
-
-            Text(
-                text = stringResource(R.string.profile_role_simulation_title),
-                style = MaterialTheme.typography.labelLarge
-            )
-            Text(
-                text = stringResource(R.string.profile_role_simulation_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                UserRole.entries.forEach { role ->
-                    FilterChip(
-                        selected = user.role == role,
-                        onClick = { onSwitchRole(role) },
-                        label = { Text(role.name) }
-                    )
-                }
-            }
-
-            // Pintu masuk panel moderasi: hanya dirender untuk STAFF/ADMIN.
-            // Lapis kedua ada di ViewModel (menolak aksi bila peran berubah).
+            // Pintu masuk panel moderasi ditaruh langsung di bawah kartu akun:
+            // sebelumnya letaknya di bawah "Simulasi peran", sehingga di layar HP
+            // tombolnya berada di luar layar dan pengguna ADMIN mengira fitur
+            // admin tidak ada. Lapis kedua tetap di ViewModel (menolak aksi bila
+            // peran berubah saat layar sudah terbuka).
             if (user.role.canModerate) {
                 Button(
                     onClick = onOpenAdmin,
@@ -218,6 +189,38 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            Text(
+                text = stringResource(R.string.profile_settings_title),
+                style = MaterialTheme.typography.labelLarge
+            )
+
+            SystemNotificationsSetting(
+                enabled = systemNotificationsEnabled,
+                onEnabledChange = onSystemNotificationsEnabledChange
+            )
+
+            HorizontalDivider()
+
+            Text(
+                text = stringResource(R.string.profile_role_simulation_title),
+                style = MaterialTheme.typography.labelLarge
+            )
+            Text(
+                text = stringResource(R.string.profile_role_simulation_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                UserRole.entries.forEach { role ->
+                    FilterChip(
+                        selected = user.role == role,
+                        onClick = { onSwitchRole(role) },
+                        label = { Text(role.name) }
+                    )
+                }
             }
 
             OutlinedButton(
