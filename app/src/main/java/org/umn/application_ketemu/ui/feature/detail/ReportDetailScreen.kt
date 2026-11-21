@@ -2,6 +2,15 @@ package org.umn.application_ketemu.ui.feature.detail
 
 import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -224,7 +233,7 @@ fun ReportDetailScreen(
  * Konfirmasi hapus laporan milik sendiri.
  *
  * Penghapusan bersifat permanen (baris di server ikut hilang beserta klaim dan
- * pencocokan yang menunjuknya), jadi selalu lewat dialog â€” bukan sekali tekan.
+ * pencocokan yang menunjuknya), jadi selalu lewat dialog Ã¢â‚¬â€ bukan sekali tekan.
  * Kasus pemakaiannya: salah kirim laporan, atau barang hilang sudah ditemukan
  * sendiri sehingga laporannya tidak perlu dicari lagi.
  */
@@ -479,7 +488,7 @@ private fun DetailContent(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = report.pos?.let { "${it.name} Â· ${it.building}" }
+                    text = report.pos?.let { "${it.name} Ã‚Â· ${it.building}" }
                         ?: report.lastSeenLocation,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -497,7 +506,7 @@ private fun DetailContent(
             }
 
             Text(
-                text = "Dilaporkan oleh ${report.ownerName} Â· " +
+                text = "Dilaporkan oleh ${report.ownerName} Ã‚Â· " +
                     RelativeTime.format(report.createdAt),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -619,6 +628,10 @@ private fun ReportPhoto(report: Report) {
             )
         }
     } else {
+        // Foto bisa diketuk untuk diperbesar, supaya pengguna dapat memeriksa
+        // rincian barang (jahitan, logo, warna) sebelum mengajukan klaim.
+        var tampilZoom by remember { mutableStateOf(false) }
+
         AsyncImage(
             model = report.photoUri,
             contentDescription = report.title,
@@ -627,6 +640,78 @@ private fun ReportPhoto(report: Report) {
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
+                .clickable { tampilZoom = true }
         )
+
+        if (tampilZoom) {
+            FotoZoomDialog(
+                uri = report.photoUri,
+                judul = report.title,
+                onDismiss = { tampilZoom = false }
+            )
+        }
+    }
+}
+
+/**
+ * Menampilkan foto laporan ukuran penuh dengan cubit/geser untuk memperbesar.
+ * Latar hitam dipakai agar detail foto lebih mudah diperiksa.
+ */
+@Composable
+private fun FotoZoomDialog(uri: String, judul: String, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        var skala by remember { mutableStateOf(1f) }
+        var geser by remember { mutableStateOf(Offset.Zero) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            AsyncImage(
+                model = uri,
+                contentDescription = judul,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            skala = (skala * zoom).coerceIn(1f, 5f)
+                            geser = if (skala > 1f) geser + pan else Offset.Zero
+                        }
+                    }
+                    .graphicsLayer {
+                        scaleX = skala
+                        scaleY = skala
+                        translationX = geser.x
+                        translationY = geser.y
+                    }
+            )
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.report_photo_close),
+                    tint = Color.White
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.report_photo_zoom_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(24.dp)
+            )
+        }
     }
 }

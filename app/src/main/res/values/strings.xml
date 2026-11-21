@@ -56,6 +56,8 @@
     <string name="report_timeline_title">Perjalanan Barang</string>
     <string name="report_timeline_waiting">Menunggu</string>
     <string name="report_timeline_recorded">Tercatat di sistem</string>
+    <string name="report_photo_close">Tutup foto</string>
+    <string name="report_photo_zoom_hint">Cubit atau geser untuk memperbesar</string>
     <string name="report_photo_empty">Foto belum tersedia</string>
     <string name="report_description_empty">Belum ada deskripsi.</string>
     <string name="report_location_title">Lokasi di peta</string>
