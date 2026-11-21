@@ -56,7 +56,8 @@ class HomeViewModel(
 
     private val searchQuery = MutableStateFlow("")
     private val typeFilter = MutableStateFlow<ItemType?>(null)
-    private val categoryFilter = MutableStateFlow<ReportCategory?>(null)
+    /** Seluruh isian filter Beranda dalam satu objek (lihat [FilterBeranda]). */
+    private val filter = MutableStateFlow(FilterBeranda())
 
     /** Sumber status online — menggerakkan banner offline di seluruh aplikasi. */
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
@@ -184,13 +185,12 @@ class HomeViewModel(
     val uiState: StateFlow<UiState<List<Report>>> = combine(
         reportRepository.observeReports(),
         searchQuery,
-        typeFilter,
-        categoryFilter
-    ) { reports, query, type, category ->
+        filter
+    ) { reports, query, isian ->
         // Beranda hanya menampilkan laporan yang sudah "publik": laporan hilang
         // langsung tampil, sedangkan laporan temuan baru tampil setelah petugas
         // memverifikasinya (lihat [Report.isPublished]).
-        applyFilter(reports.filter { it.isPublished() }, query, type, category)
+        applyFilter(reports.filter { it.isPublished() }, query, isian)
     }
         .map { filtered ->
             if (filtered.isEmpty()) UiState.Empty else UiState.Success(filtered)
@@ -203,31 +203,45 @@ class HomeViewModel(
 
     /** Mengubah filter jenis: null = semua, LOST = hilang, FOUND = ditemukan. */
     fun onTypeFilterChange(value: ItemType?) {
-        typeFilter.value = value
+        filter.value = filter.value.copy(type = value)
     }
 
-    /** Mengubah filter kategori: null = semua kategori. */
-    fun onCategoryFilterChange(value: ReportCategory?) {
-        categoryFilter.value = value
+    /** Tombol Terapkan: seluruh isian filter diganti sekaligus. */
+    fun terapkanFilter(nilai: FilterBeranda) {
+        filter.value = nilai
+    }
+
+    /** Tombol Reset: semua isian dikosongkan, urutan kembali terbaru. */
+    fun hapusSemuaFilter() {
+        filter.value = FilterBeranda()
     }
 
     private fun applyFilter(
         reports: List<Report>,
         query: String,
-        type: ItemType?,
-        category: ReportCategory?
+        isian: FilterBeranda
     ): List<Report> {
-        val normalizedQuery = query.trim().lowercase()
+        val normal = query.trim().lowercase()
+        val batasWaktu = isian.waktu.millis?.let { System.currentTimeMillis() - it }
 
-        return reports.filter { report ->
-            val matchesType = type == null || report.type == type
-            val matchesCategory = category == null || report.category == category
-            val matchesQuery = normalizedQuery.isEmpty() ||
-                report.title.lowercase().contains(normalizedQuery) ||
-                report.description.lowercase().contains(normalizedQuery) ||
-                report.lastSeenLocation.lowercase().contains(normalizedQuery)
+        val hasil = reports.filter { report ->
+            (isian.type == null || report.type == isian.type) &&
+                (isian.kategori.isEmpty() || report.category in isian.kategori) &&
+                (isian.status == null || report.status == isian.status) &&
+                (batasWaktu == null || report.createdAt >= batasWaktu) &&
+                (isian.pos == null || report.pos?.name == isian.pos) &&
+                (normal.isEmpty() ||
+                    report.title.lowercase().contains(normal) ||
+                    report.description.lowercase().contains(normal) ||
+                    report.lastSeenLocation.lowercase().contains(normal))
+        }
 
-            matchesType && matchesCategory && matchesQuery
+        // Pengurutan setelah penyaringan: terbaru berarti terbaru di antara
+        // hasil filter, bukan di antara seluruh laporan.
+        return when (isian.urutan) {
+            Urutan.TERBARU -> hasil.sortedByDescending { it.createdAt }
+            Urutan.TERLAMA -> hasil.sortedBy { it.createdAt }
+            Urutan.ABJAD -> hasil.sortedBy { it.title.lowercase() }
         }
     }
 

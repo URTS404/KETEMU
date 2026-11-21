@@ -435,4 +435,31 @@
     <string name="create_error_photo">Laporan barang temuan wajib memakai foto agar bisa dicocokkan.</string>
     <string name="create_photo_gallery">Pilih dari galeri</string>
     <string name="create_photo_found_hint">Foto wajib untuk laporan barang temuan.</string>
+    <!-- Filter detail Beranda -->
+    <string name="filter_jenis_hilang">Hilang</string>
+    <string name="filter_jenis_temuan">Ditemukan</string>
+    <string name="filter_semua">Semua</string>
+    <string name="filter_reset_semua">Hapus semua</string>
+    <string name="filter_group_jenis">Jenis laporan</string>
+    <string name="filter_group_status">Status barang</string>
+    <string name="filter_group_kategori">Kategori</string>
+    <string name="filter_group_waktu">Waktu dilaporkan</string>
+    <string name="filter_group_urutan">Urutkan</string>
+    <string name="filter_status_dilaporkan">Dilaporkan</string>
+    <string name="filter_status_di_pos">Di Pos</string>
+    <string name="filter_status_siap_diambil">Siap diambil</string>
+    <string name="filter_status_selesai">Selesai</string>
+    <string name="filter_kategori_elektronik">Elektronik</string>
+    <string name="filter_kategori_dokumen">Dokumen</string>
+    <string name="filter_kategori_aksesoris">Aksesoris</string>
+    <string name="filter_kategori_lainnya">Lainnya</string>
+    <string name="filter_waktu_semua">Semua waktu</string>
+    <string name="filter_waktu_24jam">24 jam terakhir</string>
+    <string name="filter_waktu_7hari">7 hari terakhir</string>
+    <string name="filter_waktu_30hari">30 hari terakhir</string>
+    <string name="filter_urutan_terbaru">Terbaru</string>
+    <string name="filter_urutan_terlama">Terlama</string>
+    <string name="filter_urutan_abjad">A-Z</string>
+    <string name="filter_terapkan">Terapkan filter</string>
+    <string name="filter_terapkan_hasil">Tampilkan %1$d laporan</string>
 </resources>

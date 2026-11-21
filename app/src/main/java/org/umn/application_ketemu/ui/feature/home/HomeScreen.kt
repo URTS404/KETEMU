@@ -7,6 +7,14 @@ import androidx.compose.animation.slideInVertically
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.InputChip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.heightIn
@@ -39,6 +47,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
@@ -84,6 +93,7 @@ import org.umn.application_ketemu.R
 import org.umn.application_ketemu.core.common.UiState
 import org.umn.application_ketemu.domain.model.ItemType
 import org.umn.application_ketemu.domain.model.ReportCategory
+import org.umn.application_ketemu.domain.model.ReportStatus
 import org.umn.application_ketemu.ui.components.EmptyState
 import org.umn.application_ketemu.ui.components.InitialsAvatar
 import org.umn.application_ketemu.ui.components.LoadingSkeletonList
@@ -92,6 +102,11 @@ import org.umn.application_ketemu.ui.components.label
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+/** Warna merek KETEMU: hijau tua (teks/aksi), hijau muda (latar terpilih), oranye (perlu perhatian). */
+private val HijauTua = Color(0xFF0E6B5C)
+private val HijauMuda = Color(0xFFCDE9E1)
+private val Oranye = Color(0xFFF2A03D)
 
 /**
  * Layar Beranda (Home Feed).
@@ -119,8 +134,7 @@ fun HomeScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     var query by rememberSaveable { mutableStateOf("") }
-    var selectedType by rememberSaveable { mutableStateOf<ItemType?>(null) }
-    var selectedCategory by rememberSaveable { mutableStateOf<ReportCategory?>(null) }
+    var filter by remember { mutableStateOf(FilterBeranda()) }
 
     val sedangMencariFoto by viewModel.sedangMencariFoto.collectAsStateWithLifecycle()
     val hasilCariFoto by viewModel.hasilCariFoto.collectAsStateWithLifecycle()
@@ -139,10 +153,9 @@ fun HomeScreen(
     }
 
     LaunchedEffect(query) { viewModel.onSearchQueryChange(query) }
-    LaunchedEffect(selectedType) { viewModel.onTypeFilterChange(selectedType) }
-    LaunchedEffect(selectedCategory) { viewModel.onCategoryFilterChange(selectedCategory) }
+    LaunchedEffect(filter) { viewModel.terapkanFilter(filter) }
 
-    val isFiltering = query.isNotBlank() || selectedType != null || selectedCategory != null
+    val isFiltering = query.isNotBlank() || !filter.kosong
 
     Scaffold(
         modifier = modifier,
@@ -220,10 +233,9 @@ fun HomeScreen(
                     SearchAndFilterBar(
                         query = query,
                         onQueryChange = { query = it },
-                        selectedType = selectedType,
-                        onTypeChange = { selectedType = it },
-                        selectedCategory = selectedCategory,
-                        onCategoryChange = { selectedCategory = it },
+                        filter = filter,
+                        onFilterChange = { filter = it },
+                        onResetFilter = { filter = FilterBeranda() },
                         onCariFotoClick = {
                             pilihFoto.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -459,193 +471,366 @@ private fun HasilFotoCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SearchAndFilterBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    selectedType: ItemType?,
-    onTypeChange: (ItemType?) -> Unit,
-    selectedCategory: ReportCategory?,
-    onCategoryChange: (ReportCategory?) -> Unit,
+    filter: FilterBeranda,
+    onFilterChange: (FilterBeranda) -> Unit,
+    onResetFilter: () -> Unit,
     onCariFotoClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            shape = MaterialTheme.shapes.small,
-            placeholder = { Text(stringResource(R.string.home_search_hint)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            // Ikon di kanan kotak pencarian: buka galeri lalu bandingkan fotonya
-            // dengan laporan temuan berfoto (fitur "Lens").
-            trailingIcon = {
-                IconButton(onClick = onCariFotoClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_cari_foto),
-                        contentDescription = stringResource(R.string.home_search_photo)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = MaterialTheme.shapes.small,
+                placeholder = { Text(stringResource(R.string.home_search_hint)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                // Ikon di kanan kotak pencarian: buka galeri lalu bandingkan fotonya
+                // dengan laporan temuan berfoto (fitur "Lens").
+                trailingIcon = {
+                    IconButton(onClick = onCariFotoClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cari_foto),
+                            contentDescription = stringResource(R.string.home_search_photo)
+                        )
+                    }
+                }
+            )
+
+            FilterBox(
+                filter = filter,
+                onFilterChange = onFilterChange
+            )
+        }
+
+        // Ringkasan filter aktif: bisa dilepas satu per satu tanpa membuka sheet.
+        if (!filter.kosong) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                filter.type?.let { jenis ->
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(type = null)) },
+                        label = {
+                            Text(
+                                if (jenis == ItemType.LOST) {
+                                    stringResource(R.string.filter_jenis_hilang)
+                                } else {
+                                    stringResource(R.string.filter_jenis_temuan)
+                                }
+                            )
+                        },
+                        trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = chipOranye()
                     )
                 }
+                filter.status?.let { status ->
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(status = null)) },
+                        label = { Text(statusLabel(status)) },
+                        trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = chipHijau()
+                    )
+                }
+                filter.kategori.forEach { kategori ->
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(kategori = filter.kategori - kategori)) },
+                        label = { Text(kategoriLabel(kategori)) },
+                        trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = chipHijau()
+                    )
+                }
+                if (filter.waktu != RentangWaktu.SEMUA) {
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(waktu = RentangWaktu.SEMUA)) },
+                        label = { Text(waktuLabel(filter.waktu)) },
+                        trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = chipHijau()
+                    )
+                }
+                if (filter.urutan != Urutan.TERBARU) {
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(urutan = Urutan.TERBARU)) },
+                        label = { Text(urutanLabel(filter.urutan)) },
+                        trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = chipHijau()
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.filter_reset_semua),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = HijauTua,
+                    modifier = Modifier
+                        .clickable(onClick = onResetFilter)
+                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                )
             }
-        )
-
-        // Kotak filter berdampingan dengan kotak pencarian.
-        FilterBox(
-            selectedType = selectedType,
-            onTypeChange = onTypeChange,
-            selectedCategory = selectedCategory,
-            onCategoryChange = onCategoryChange
-        )
+        }
     }
 }
 
-/**
- * Kotak filter di samping kotak pencarian.
- *
- * Menekannya membuka [ModalBottomSheet] berisi pilihan Jenis & Kategori —
- * lebih rapi daripada menu dropdown yang posisinya bergeser di tepi layar.
- * Saat ada filter aktif, kotak diberi warna aksen + titik penanda kecil.
- */
+/** Kotak filter di samping kotak pencarian, dengan badge jumlah filter aktif. */
 @Composable
 private fun FilterBox(
-    selectedType: ItemType?,
-    onTypeChange: (ItemType?) -> Unit,
-    selectedCategory: ReportCategory?,
-    onCategoryChange: (ReportCategory?) -> Unit
+    filter: FilterBeranda,
+    onFilterChange: (FilterBeranda) -> Unit
 ) {
-    var showSheet by remember { mutableStateOf(false) }
-    val active = selectedType != null || selectedCategory != null
+    val aktif = filter.aktif
+    // Status buka/tutup lembar disimpan lokal supaya tidak ikut tersimpan
+    // sebagai bagian isi filter.
+    var tampilkanLembar by remember { mutableStateOf(false) }
 
     Surface(
-        onClick = { showSheet = true },
         modifier = Modifier.size(56.dp),
         shape = MaterialTheme.shapes.small,
-        color = if (active) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        },
-        contentColor = if (active) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
+        color = if (aktif > 0) HijauMuda else MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = if (aktif > 0) HijauTua else MaterialTheme.colorScheme.onSurfaceVariant
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        // Surface di atas tidak dipakai sebagai pemicu: sentuhan ditangani Box
+        // di dalamnya supaya badge dan ikon tidak memecah area klik.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { tampilkanLembar = true },
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 painter = painterResource(R.drawable.ic_filter),
                 contentDescription = stringResource(R.string.home_filter_title),
                 modifier = Modifier.size(22.dp)
             )
-            if (active) {
+            if (aktif > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(9.dp)
-                        .size(8.dp)
+                        .padding(6.dp)
+                        .size(18.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.tertiary)
-                )
+                        .background(Oranye),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = aktif.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White
+                    )
+                }
             }
         }
     }
 
-    if (showSheet) {
+    if (tampilkanLembar) {
         FilterSheet(
-            selectedType = selectedType,
-            onTypeChange = onTypeChange,
-            selectedCategory = selectedCategory,
-            onCategoryChange = onCategoryChange,
-            onDismiss = { showSheet = false }
+            filter = filter,
+            onFilterChange = onFilterChange,
+            onDismiss = { tampilkanLembar = false }
         )
     }
 }
 
-/** Lembar filter (bottom sheet) berisi pilihan Jenis & Kategori. */
+/** Lembar filter lengkap: jenis, status, kategori, waktu, dan urutan. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun FilterSheet(
-    selectedType: ItemType?,
-    onTypeChange: (ItemType?) -> Unit,
-    selectedCategory: ReportCategory?,
-    onCategoryChange: (ReportCategory?) -> Unit,
+    filter: FilterBeranda,
+    onFilterChange: (FilterBeranda) -> Unit,
     onDismiss: () -> Unit
 ) {
+    // Draf lokal: perubahan baru berlaku setelah tombol Terapkan ditekan,
+    // sehingga daftar di belakang tidak "berkedip" setiap chip disentuh.
+    var draf by remember { mutableStateOf(filter) }
+    val jumlahHasil = 0
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = stringResource(R.string.home_filter_title),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    color = HijauTua,
+                    modifier = Modifier.weight(1f)
                 )
-                TextButton(
-                    onClick = {
-                        onTypeChange(null)
-                        onCategoryChange(null)
-                    }
-                ) {
-                    Text(text = stringResource(R.string.home_filter_reset))
+                Text(
+                    text = stringResource(R.string.filter_reset_semua),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Oranye,
+                    modifier = Modifier
+                        .clickable { draf = FilterBeranda() }
+                        .padding(4.dp)
+                )
+            }
+
+            FilterGroup(title = stringResource(R.string.filter_group_jenis)) {
+                FilterChip(
+                    selected = draf.type == null,
+                    onClick = { draf = draf.copy(type = null) },
+                    label = { Text(stringResource(R.string.filter_semua)) }
+                )
+                FilterChip(
+                    selected = draf.type == ItemType.LOST,
+                    onClick = { draf = draf.copy(type = ItemType.LOST) },
+                    label = { Text(stringResource(R.string.filter_jenis_hilang)) },
+                    colors = chipOranye()
+                )
+                FilterChip(
+                    selected = draf.type == ItemType.FOUND,
+                    onClick = { draf = draf.copy(type = ItemType.FOUND) },
+                    label = { Text(stringResource(R.string.filter_jenis_temuan)) },
+                    colors = chipHijau()
+                )
+            }
+
+            FilterGroup(title = stringResource(R.string.filter_group_status)) {
+                FilterChip(
+                    selected = draf.status == null,
+                    onClick = { draf = draf.copy(status = null) },
+                    label = { Text(stringResource(R.string.filter_semua)) }
+                )
+                ReportStatus.entries.forEach { status ->
+                    FilterChip(
+                        selected = draf.status == status,
+                        onClick = { draf = draf.copy(status = status) },
+                        label = { Text(statusLabel(status)) },
+                        colors = if (status == ReportStatus.SIAP_DIAMBIL) chipOranye() else chipHijau()
+                    )
                 }
             }
 
-            FilterGroup(title = stringResource(R.string.home_filter_type)) {
-                FilterChip(
-                    selected = selectedType == null,
-                    onClick = { onTypeChange(null) },
-                    label = { Text(stringResource(R.string.filter_all)) }
-                )
-                FilterChip(
-                    selected = selectedType == ItemType.LOST,
-                    onClick = { onTypeChange(ItemType.LOST) },
-                    label = { Text(stringResource(R.string.filter_lost)) }
-                )
-                FilterChip(
-                    selected = selectedType == ItemType.FOUND,
-                    onClick = { onTypeChange(ItemType.FOUND) },
-                    label = { Text(stringResource(R.string.filter_found)) }
-                )
+            FilterGroup(title = stringResource(R.string.filter_group_kategori)) {
+                ReportCategory.entries.forEach { kategori ->
+                    FilterChip(
+                        selected = kategori in draf.kategori,
+                        onClick = {
+                            draf = draf.copy(
+                                kategori = if (kategori in draf.kategori) {
+                                    draf.kategori - kategori
+                                } else {
+                                    draf.kategori + kategori
+                                }
+                            )
+                        },
+                        label = { Text(kategoriLabel(kategori)) },
+                        colors = chipHijau()
+                    )
+                }
             }
 
-            FilterGroup(title = stringResource(R.string.home_filter_category)) {
-                FilterChip(
-                    selected = selectedCategory == null,
-                    onClick = { onCategoryChange(null) },
-                    label = { Text(stringResource(R.string.home_filter_category_all)) }
-                )
-                ReportCategory.entries.forEach { category ->
+            FilterGroup(title = stringResource(R.string.filter_group_waktu)) {
+                RentangWaktu.entries.forEach { rentang ->
                     FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { onCategoryChange(category) },
-                        label = { Text(category.label()) }
+                        selected = draf.waktu == rentang,
+                        onClick = { draf = draf.copy(waktu = rentang) },
+                        label = { Text(waktuLabel(rentang)) },
+                        colors = chipHijau()
+                    )
+                }
+            }
+
+            FilterGroup(title = stringResource(R.string.filter_group_urutan)) {
+                Urutan.entries.forEach { urutan ->
+                    FilterChip(
+                        selected = draf.urutan == urutan,
+                        onClick = { draf = draf.copy(urutan = urutan) },
+                        label = { Text(urutanLabel(urutan)) },
+                        colors = chipHijau()
                     )
                 }
             }
 
             Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
+                onClick = {
+                    onFilterChange(draf)
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.buttonColors(containerColor = HijauTua)
             ) {
-                Text(text = stringResource(R.string.home_filter_apply))
+                Text(
+                    text = if (jumlahHasil > 0) {
+                        stringResource(R.string.filter_terapkan_hasil, jumlahHasil)
+                    } else {
+                        stringResource(R.string.filter_terapkan)
+                    },
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun chipHijau() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = HijauMuda,
+    selectedLabelColor = HijauTua
+)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun chipOranye() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = Oranye.copy(alpha = 0.22f),
+    selectedLabelColor = HijauTua
+)
+
+@Composable
+private fun statusLabel(status: ReportStatus): String = when (status) {
+    ReportStatus.DILAPORKAN -> stringResource(R.string.filter_status_dilaporkan)
+    ReportStatus.DISERAHKAN_KE_POS -> stringResource(R.string.filter_status_di_pos)
+    ReportStatus.SIAP_DIAMBIL -> stringResource(R.string.filter_status_siap_diambil)
+    ReportStatus.SELESAI_DIKLAIM -> stringResource(R.string.filter_status_selesai)
+}
+
+@Composable
+private fun kategoriLabel(kategori: ReportCategory): String = when (kategori) {
+    ReportCategory.ELEKTRONIK -> stringResource(R.string.filter_kategori_elektronik)
+    ReportCategory.DOKUMEN -> stringResource(R.string.filter_kategori_dokumen)
+    ReportCategory.AKSESORIS -> stringResource(R.string.filter_kategori_aksesoris)
+    ReportCategory.LAINNYA -> stringResource(R.string.filter_kategori_lainnya)
+}
+
+@Composable
+private fun waktuLabel(waktu: RentangWaktu): String = when (waktu) {
+    RentangWaktu.SEMUA -> stringResource(R.string.filter_waktu_semua)
+    RentangWaktu.HARI_INI -> stringResource(R.string.filter_waktu_24jam)
+    RentangWaktu.TUJUH_HARI -> stringResource(R.string.filter_waktu_7hari)
+    RentangWaktu.TIGA_PULUH_HARI -> stringResource(R.string.filter_waktu_30hari)
+}
+
+@Composable
+private fun urutanLabel(urutan: Urutan): String = when (urutan) {
+    Urutan.TERBARU -> stringResource(R.string.filter_urutan_terbaru)
+    Urutan.TERLAMA -> stringResource(R.string.filter_urutan_terlama)
+    Urutan.ABJAD -> stringResource(R.string.filter_urutan_abjad)
+}
 /** Kelompok pilihan pada lembar filter: judul + chip yang otomatis membungkus. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
