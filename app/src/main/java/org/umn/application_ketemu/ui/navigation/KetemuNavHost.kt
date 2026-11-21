@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -526,12 +528,22 @@ private fun KetemuBottomBar(
     onNavigate: (String) -> Unit,
     onScanClick: () -> Unit
 ) {
-    // Tinggi slot = tinggi bar + ruang tonjolan tombol scan.
+    // Latar bar ikut mengisi area navigasi sistem (tombol home/back/recent),
+    // sedangkan isi bar diangkat dengan windowInsetsPadding(WindowInsets.navigationBars).
+    // Tanpa ini, tombol sistem menimpa tab dan menyisakan pita gelap di area
+    // navigasi HP yang memakai tombol (bukan gestur).
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(BAR_HEIGHT + SCAN_OVERHANG)
+            .background(MaterialTheme.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
+        // Tinggi slot = tinggi bar + ruang tonjolan tombol scan.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(BAR_HEIGHT + SCAN_OVERHANG)
+        ) {
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -604,6 +616,7 @@ private fun KetemuBottomBar(
                 contentDescription = stringResource(R.string.nav_scan),
                 modifier = Modifier.size(28.dp)
             )
+        }
         }
     }
 }
