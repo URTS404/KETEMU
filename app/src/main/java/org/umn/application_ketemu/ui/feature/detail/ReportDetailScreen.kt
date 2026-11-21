@@ -85,6 +85,7 @@ fun ReportDetailScreen(
     val isOwner by viewModel.isOwner.collectAsStateWithLifecycle()
     val sedangHapus by viewModel.sedangHapus.collectAsStateWithLifecycle()
     val terhapus by viewModel.terhapus.collectAsStateWithLifecycle()
+    val sedangBatalKlaim by viewModel.sedangBatalKlaim.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -211,6 +212,8 @@ fun ReportDetailScreen(
                 onClaimClick = { showClaimForm = true },
                 onOpenReport = onOpenReport,
                 onChatClick = onChatClick,
+                sedangBatalKlaim = sedangBatalKlaim,
+                onBatalkanKlaim = { viewModel.batalkanKlaim() },
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -221,7 +224,7 @@ fun ReportDetailScreen(
  * Konfirmasi hapus laporan milik sendiri.
  *
  * Penghapusan bersifat permanen (baris di server ikut hilang beserta klaim dan
- * pencocokan yang menunjuknya), jadi selalu lewat dialog — bukan sekali tekan.
+ * pencocokan yang menunjuknya), jadi selalu lewat dialog â€” bukan sekali tekan.
  * Kasus pemakaiannya: salah kirim laporan, atau barang hilang sudah ditemukan
  * sendiri sehingga laporannya tidak perlu dicari lagi.
  */
@@ -323,7 +326,9 @@ private fun ClaimRequestDialog(
 @Composable
 private fun MyClaimCard(
     claim: Claim,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sedangBatal: Boolean = false,
+    onBatalkan: () -> Unit = {}
 ) {
     val sudahDiambil = claim.handedOverAt != null
     val (statusText, statusColor) = when {
@@ -426,6 +431,8 @@ private fun DetailContent(
     onClaimClick: () -> Unit,
     onChatClick: (String) -> Unit,
     onOpenReport: (String) -> Unit,
+    sedangBatalKlaim: Boolean,
+    onBatalkanKlaim: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -472,7 +479,7 @@ private fun DetailContent(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = report.pos?.let { "${it.name} · ${it.building}" }
+                    text = report.pos?.let { "${it.name} Â· ${it.building}" }
                         ?: report.lastSeenLocation,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -490,7 +497,7 @@ private fun DetailContent(
             }
 
             Text(
-                text = "Dilaporkan oleh ${report.ownerName} · " +
+                text = "Dilaporkan oleh ${report.ownerName} Â· " +
                     RelativeTime.format(report.createdAt),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -525,7 +532,11 @@ private fun DetailContent(
             // sudah diputuskan), tombol diganti kartu status supaya tidak ada
             // pengajuan ganda dan kode pengambilan tetap terlihat.
             if (myClaim != null) {
-                MyClaimCard(claim = myClaim)
+                MyClaimCard(
+                    claim = myClaim,
+                    sedangBatal = sedangBatalKlaim,
+                    onBatalkan = onBatalkanKlaim
+                )
             } else if (canClaim) {
                 Button(
                     onClick = { onClaimClick() },

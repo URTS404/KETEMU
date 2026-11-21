@@ -61,6 +61,15 @@ class InMemoryClaimRepository(
      * tetap diubah pemanggil ([AdminClaimsViewModel]) karena repositori demo ini
      * tidak memegang daftar laporan.
      */
+    override suspend fun batalkanKlaim(claimId: String) {
+        val existing = claims.value.firstOrNull { it.id == claimId }
+            ?: throw IllegalStateException("klaim tidak ditemukan")
+        if (existing.status != ClaimStatus.MENUNGGU) {
+            throw IllegalStateException("klaim sudah diputuskan petugas")
+        }
+        claims.value = claims.value.filterNot { it.id == claimId }
+    }
+
     override suspend fun completeHandover(claimId: String, code: String?): HandoverResult {
         val existing = claims.value.firstOrNull { it.id == claimId }
             ?: return HandoverResult(berhasil = false)

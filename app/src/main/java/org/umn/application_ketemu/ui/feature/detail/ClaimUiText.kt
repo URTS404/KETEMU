@@ -31,6 +31,13 @@ internal object ClaimUiText {
     const val DELETE_BLOCKED_BY_CLAIM =
         "Laporan belum bisa dihapus: masih ada klaim yang diproses petugas, atau laporan ini bukan milik akun Anda."
 
+    /** Pengklaim membatalkan pengajuannya sendiri (baris klaim dihapus). */
+    const val CANCEL_DONE =
+        "Pengajuan klaim dibatalkan. Anda bisa mengajukan lagi kapan saja."
+
+    const val CANCEL_FAILED =
+        "Klaim gagal dibatalkan. Klaim yang sudah diputuskan petugas tidak bisa dibatalkan."
+
     const val DELETE_FAILED =
         "Laporan gagal dihapus. Periksa koneksi lalu coba lagi."
 }

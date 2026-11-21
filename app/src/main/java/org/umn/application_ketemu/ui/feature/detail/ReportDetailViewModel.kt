@@ -1,5 +1,6 @@
 package org.umn.application_ketemu.ui.feature.detail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.util.UUID
@@ -220,6 +221,36 @@ class ReportDetailViewModel(
      * aktif, dan penolakan itu diterjemahkan menjadi pesan yang bisa dibaca
      * pengguna (bukan kode PostgREST).
      */
+    /** `true` selama permintaan batal klaim sedang diproses. */
+    private val _sedangBatalKlaim = MutableStateFlow(false)
+    val sedangBatalKlaim: StateFlow<Boolean> = _sedangBatalKlaim.asStateFlow()
+
+    /**
+     * Membatalkan pengajuan klaim milik pengguna pada laporan ini.
+     *
+     * Setelah berhasil, klaim hilang dari server sehingga pengguna bisa
+     * mengajukan lagi (db/0033 mengizinkan klaim baru setelah batal/ditolak).
+     */
+    fun batalkanKlaim() {
+        val klaim = myClaim.value ?: return
+        if (_sedangBatalKlaim.value) return
+
+        viewModelScope.launch {
+            _sedangBatalKlaim.value = true
+            try {
+                claimRepository.batalkanKlaim(klaim.id)
+                _message.value = ClaimUiText.CANCEL_DONE
+            } catch (galat: CancellationException) {
+                throw galat
+            } catch (galat: Exception) {
+                Log.e("ReportDetail", "batalkanKlaim gagal: ${galat.message}", galat)
+                _message.value = ClaimUiText.CANCEL_FAILED
+            } finally {
+                _sedangBatalKlaim.value = false
+            }
+        }
+    }
+
     fun hapusLaporan() {
         if (_sedangHapus.value) return
         _sedangHapus.value = true

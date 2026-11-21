@@ -21,6 +21,16 @@ interface ClaimRepository {
 
     suspend fun getClaim(id: String): Claim?
 
+    /**
+     * Membatalkan pengajuan klaim milik sendiri.
+     *
+     * Hanya berlaku selama klaim masih `MENUNGGU`; server (db/0033) menolak
+     * penghapusan klaim yang sudah diputuskan karena menyangkut barang fisik.
+     */
+    suspend fun batalkanKlaim(claimId: String) {
+        throw UnsupportedOperationException("batalkanKlaim belum didukung")
+    }
+
     /** Menambah klaim baru (dipakai pada tahap klaim sisi pengguna). */
     suspend fun submit(claim: Claim)
 

@@ -463,4 +463,5 @@
     <string name="filter_urutan_abjad">A-Z</string>
     <string name="filter_terapkan">Terapkan filter</string>
     <string name="filter_terapkan_hasil">Tampilkan %1$d laporan</string>
+    <string name="claim_cancel">Batalkan pengajuan</string>
 </resources>

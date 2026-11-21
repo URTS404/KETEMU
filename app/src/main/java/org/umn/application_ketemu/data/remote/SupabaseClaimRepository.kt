@@ -1,10 +1,12 @@
 package org.umn.application_ketemu.data.remote
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.Serializable
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -127,6 +129,37 @@ class SupabaseClaimRepository(
      * hak akses petugas (RLS `reports_update`). Bedanya hanya pencatatan audit di
      * server, sehingga jalur klien ditandai sebagai cadangan, bukan pengganti.
      */
+    /**
+     * Membatalkan pengajuan klaim sendiri dengan menghapus barisnya.
+     *
+     * RLS (`claims_delete_own_pending`) menolak tanpa galat â€” hanya 0 baris â€”
+     * sehingga hasilnya diperiksa lewat `select(id)` supaya ViewModel tidak
+     * mengira klaim sudah batal padahal masih ada di server.
+     */
+    override suspend fun batalkanKlaim(claimId: String) {
+        val terhapus = runCatching {
+            client.postgrest
+                .from(TABLE)
+                .delete {
+                    filter { eq("id", claimId) }
+                    select(Columns.list("id"))
+                }
+                .decodeList<BarisId>()
+        }.getOrElse { galat ->
+            Log.w("Claims", "batalkanKlaim gagal: ${galat.message}")
+            throw galat
+        }
+
+        if (terhapus.isEmpty()) {
+            throw IllegalStateException(
+                "klaim tidak bisa dibatalkan: sudah diputuskan petugas atau bukan milik akun ini"
+            )
+        }
+
+        Log.d("Claims", "batalkanKlaim: $claimId dibatalkan")
+        refresh()
+    }
+
     override suspend fun completeHandover(claimId: String, code: String?): HandoverResult {
         val kode = code?.trim().orEmpty()
         val galat = runCatching {
@@ -318,3 +351,7 @@ private data class HandoverNotificationInsert(
 private data class HandoverMatchRow(
     @kotlinx.serialization.SerialName("lost_report_id") val lostReportId: String = ""
 )
+
+/** Hanya dipakai untuk memastikan baris klaim benar-benar terhapus. */
+@Serializable
+private data class BarisId(val id: String)
