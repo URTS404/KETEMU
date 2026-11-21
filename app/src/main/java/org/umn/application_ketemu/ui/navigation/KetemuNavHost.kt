@@ -532,11 +532,15 @@ private fun KetemuBottomBar(
     // sedangkan isi bar diangkat dengan windowInsetsPadding(WindowInsets.navigationBars).
     // Tanpa ini, tombol sistem menimpa tab dan menyisakan pita gelap di area
     // navigasi HP yang memakai tombol (bukan gestur).
-    Box(
+    // Dipakai Surface (bukan Box + background) supaya area navigasi sistem
+    // mendapat warna tonal yang SAMA dengan bar: background polos tampak sebagai
+    // pita putih yang memotong bar yang bertona.
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.navigationBars)
+            .windowInsetsPadding(WindowInsets.navigationBars),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp
     ) {
         // Tinggi slot = tinggi bar + ruang tonjolan tombol scan.
         Box(
