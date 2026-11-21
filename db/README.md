@@ -36,6 +36,8 @@ Berkas SQL siap dijalankan manual di **Supabase SQL Editor**. Urutannya penting.
 | `0030_pengingat_pengambilan.sql` | Tabel `pickup_reminders` + fungsi `kirim_pengingat_pengambilan()` yang dijadwalkan `pg_cron` tiap jam: pengingat hari ke-3 dan ke-6 untuk klaim yang disetujui tapi barangnya belum diambil |
 | `0031_hapus_laporan.sql` | Kebijakan `reports_delete_own`: pemilik boleh menghapus laporannya sendiri selama tidak ada klaim `MENUNGGU`/`DISETUJUI` |
 | `0032_lens.sql` | Cari barang dengan foto: ekstensi pgvector, kolom `photo_embedding`, fungsi `simpan_vektor_foto` & `cari_barang_mirip` |
+| `0033_foto_storage_klaim.sql` | Bucket `foto-laporan` + kebijakan unggah/ubah/hapus, dan `claims_delete_own_pending` (pengklaim boleh membatalkan klaim selagi MENUNGGU) |
+| `0034_email_kampus.sql` | Trigger `wajib_email_kampus` di `auth.users`: pendaftaran wajib memakai email `@umn.ac.id`/`@student.umn.ac.id`, sementara verifikasi email tetap dimatikan |
 
 ## 1. Buat project
 
@@ -71,6 +73,8 @@ Di **SQL Editor**, buka berkas lalu copy-paste isinya, tekan **Run**, urut:
 14. `db/0030_pengingat_pengambilan.sql` - pengingat pengambilan otomatis (butuh ekstensi `pg_cron`)
 15. `db/0031_hapus_laporan.sql` - pemilik boleh menghapus laporan sendiri
 16. `db/0032_lens.sql` - mesin pencarian foto (pgvector)
+17. `db/0033_foto_storage_klaim.sql` - bucket foto laporan + batal klaim
+18. `db/0034_email_kampus.sql` - syarat email kampus saat mendaftar
 
 Berkas `0004`–`0009` serta `0021` dan `0025` hanya berisi data contoh dan
 pemeriksaan; jalankan bila perlu.
