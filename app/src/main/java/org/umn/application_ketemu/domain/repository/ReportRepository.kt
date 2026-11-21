@@ -95,6 +95,8 @@ interface ReportRepository {
      */
     suspend fun daftarNamaPos(): List<String> = emptyList()
 
+    suspend fun segarkanDariServer() = Unit
+
     suspend fun hapusLaporan(reportId: String)
 
     /**

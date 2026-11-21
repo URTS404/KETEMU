@@ -374,6 +374,9 @@ class RoomReportRepository(
      */
     suspend fun sinkronkanSekarang() = sinkronkan()
 
+    /** Dipakai pull-to-refresh di Beranda, Aktivitas, dan Pesan. */
+    override suspend fun segarkanDariServer() = sinkronkanSekarang()
+
     private suspend fun sinkronkan() {
         if (kunciSinkron.isLocked) return
         kunciSinkron.withLock {

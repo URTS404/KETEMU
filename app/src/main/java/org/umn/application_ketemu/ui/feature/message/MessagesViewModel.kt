@@ -2,6 +2,8 @@ package org.umn.application_ketemu.ui.feature.message
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -15,6 +17,7 @@ import org.umn.application_ketemu.domain.repository.ChatRepository
 class MessagesViewModel(
     private val chatRepository: ChatRepository
 ) : ViewModel() {
+    private val _isRefreshing = MutableStateFlow(false)
 
     val uiState: StateFlow<UiState<List<ChatThread>>> =
         chatRepository.observeThreads()
@@ -24,7 +27,10 @@ class MessagesViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
     /** Muat ulang manual (tanpa polling). */
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     fun onRefresh() {
-        viewModelScope.launch { chatRepository.refresh() }
+        _isRefreshing.value = true
+        viewModelScope.launch { try { chatRepository.refresh() } finally { _isRefreshing.value = false } }
     }
 }

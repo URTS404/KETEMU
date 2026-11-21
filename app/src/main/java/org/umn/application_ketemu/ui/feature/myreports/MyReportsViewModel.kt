@@ -2,6 +2,9 @@ package org.umn.application_ketemu.ui.feature.myreports
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -19,9 +22,25 @@ import org.umn.application_ketemu.domain.repository.ReportRepository
  * input pengguna), sehingga pengguna tidak mungkin melihat riwayat orang lain.
  */
 class MyReportsViewModel(
-    reportRepository: ReportRepository,
+    private val reportRepository: ReportRepository,
     session: SessionStore
 ) : ViewModel() {
+    private val _isRefreshing = MutableStateFlow(false)
+
+    /** Dipakai pull-to-refresh di layar Aktivitas. */
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun refresh() {
+        if (_isRefreshing.value) return
+        _isRefreshing.value = true
+        viewModelScope.launch {
+            try {
+                reportRepository.segarkanDariServer()
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
 
     val uiState: StateFlow<UiState<List<Report>>> = reportRepository
         .observeMyReports(session.currentUser.value.id)
