@@ -3,6 +3,7 @@ package org.umn.application_ketemu.ui.feature.detail
 import org.umn.application_ketemu.ui.components.PesanSnackbarHost
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -662,8 +663,9 @@ private fun ReportPhoto(report: Report) {
 }
 
 /**
- * Menampilkan foto laporan ukuran penuh dengan cubit/geser untuk memperbesar.
- * Latar hitam dipakai agar detail foto lebih mudah diperiksa.
+ * Menampilkan foto laporan ukuran penuh: cubit dua jari untuk memperbesar atau
+ * memperkecil, geser untuk menggeser, dan ketuk dua kali untuk bolak-balik
+ * antara ukuran pas layar dan 2,5x. Latar hitam agar detail foto lebih jelas.
  */
 @Composable
 private fun FotoZoomDialog(uri: String, judul: String, onDismiss: () -> Unit) {
@@ -687,9 +689,21 @@ private fun FotoZoomDialog(uri: String, judul: String, onDismiss: () -> Unit) {
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            skala = (skala * zoom).coerceIn(1f, 5f)
+                            skala = (skala * zoom).coerceIn(SKALA_MIN, SKALA_MAKS)
                             geser = if (skala > 1f) geser + pan else Offset.Zero
                         }
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                if (skala > 1.05f) {
+                                    skala = 1f
+                                    geser = Offset.Zero
+                                } else {
+                                    skala = 2.5f
+                                }
+                            }
+                        )
                     }
                     .graphicsLayer {
                         scaleX = skala
@@ -723,3 +737,7 @@ private fun FotoZoomDialog(uri: String, judul: String, onDismiss: () -> Unit) {
         }
     }
 }
+
+/** Batas pembesaran foto: 1 = pas layar, 6 = paling dekat. */
+private const val SKALA_MIN = 1f
+private const val SKALA_MAKS = 6f
