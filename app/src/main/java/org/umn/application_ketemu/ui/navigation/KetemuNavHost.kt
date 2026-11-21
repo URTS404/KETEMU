@@ -211,13 +211,15 @@ fun KetemuNavHost(modifier: Modifier = Modifier) {
             containerColor = MaterialTheme.colorScheme.background,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
-                if (currentRoute in topLevelRoutes) {
-                    KetemuBottomBar(
-                        currentRoute = currentRoute,
-                        onNavigate = { route -> navController.navigateToTopLevel(route) },
-                        onScanClick = { navController.navigate(KetemuRoutes.CREATE_REPORT) }
-                    )
-                }
+                // Bar bawah tampil di SEMUA layar supaya navigasi utama selalu
+                // bisa dijangkau dari mana pun (permintaan pengguna). Layar
+                // tingkat atas tetap menyorot tab yang sedang aktif; layar lain
+                // tidak menyorot apa pun.
+                KetemuBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navController.navigateToTopLevel(route) },
+                    onScanClick = { navController.navigate(KetemuRoutes.CREATE_REPORT) }
+                )
             }
         ) { innerPadding ->
             NavHost(
