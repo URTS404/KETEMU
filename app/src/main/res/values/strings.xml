@@ -443,6 +443,7 @@
     <string name="filter_group_jenis">Jenis laporan</string>
     <string name="filter_group_status">Status barang</string>
     <string name="filter_group_kategori">Kategori</string>
+    <string name="filter_group_pos">Dititipkan di Pos</string>
     <string name="filter_group_waktu">Waktu dilaporkan</string>
     <string name="filter_group_urutan">Urutkan</string>
     <string name="filter_status_dilaporkan">Dilaporkan</string>

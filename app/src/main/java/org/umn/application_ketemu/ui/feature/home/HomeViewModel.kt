@@ -197,6 +197,16 @@ class HomeViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
+    /**
+     * Nama Pos yang punya laporan, dipakai sebagai pilihan filter "Dititipkan di Pos".
+     *
+     * Diambil dari seluruh laporan (bukan hasil filter) supaya pilihan Pos tidak
+     * ikut menyusut saat pengguna menyaring jenis atau waktu.
+     */
+    val posTersedia: StateFlow<List<String>> = reportRepository.observeReports()
+        .map { daftar -> daftar.mapNotNull { it.pos?.name }.distinct().sorted() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun onSearchQueryChange(value: String) {
         searchQuery.value = value
     }

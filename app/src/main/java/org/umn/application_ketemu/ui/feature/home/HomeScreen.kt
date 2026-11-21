@@ -139,6 +139,7 @@ fun HomeScreen(
     val sedangMencariFoto by viewModel.sedangMencariFoto.collectAsStateWithLifecycle()
     val hasilCariFoto by viewModel.hasilCariFoto.collectAsStateWithLifecycle()
     val galatCariFoto by viewModel.galatCariFoto.collectAsStateWithLifecycle()
+    val posTersedia by viewModel.posTersedia.collectAsStateWithLifecycle()
     var tampilkanHasilFoto by rememberSaveable { mutableStateOf(false) }
 
     // Pengambil foto dari galeri untuk fitur cari-dengan-foto. Pemilih foto
@@ -236,6 +237,7 @@ fun HomeScreen(
                         filter = filter,
                         onFilterChange = { filter = it },
                         onResetFilter = { filter = FilterBeranda() },
+                        posTersedia = posTersedia,
                         onCariFotoClick = {
                             pilihFoto.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -479,6 +481,7 @@ private fun SearchAndFilterBar(
     filter: FilterBeranda,
     onFilterChange: (FilterBeranda) -> Unit,
     onResetFilter: () -> Unit,
+    posTersedia: List<String>,
     onCariFotoClick: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -509,6 +512,7 @@ private fun SearchAndFilterBar(
 
             FilterBox(
                 filter = filter,
+                posTersedia = posTersedia,
                 onFilterChange = onFilterChange
             )
         }
@@ -554,6 +558,21 @@ private fun SearchAndFilterBar(
                         colors = chipHijau()
                     )
                 }
+                filter.pos?.let { pos ->
+                    InputChip(
+                        selected = true,
+                        onClick = { onFilterChange(filter.copy(pos = null)) },
+                        label = { Text(pos) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = chipOranye()
+                    )
+                }
                 if (filter.waktu != RentangWaktu.SEMUA) {
                     InputChip(
                         selected = true,
@@ -589,6 +608,7 @@ private fun SearchAndFilterBar(
 @Composable
 private fun FilterBox(
     filter: FilterBeranda,
+    posTersedia: List<String>,
     onFilterChange: (FilterBeranda) -> Unit
 ) {
     val aktif = filter.aktif
@@ -638,6 +658,7 @@ private fun FilterBox(
     if (tampilkanLembar) {
         FilterSheet(
             filter = filter,
+            posTersedia = posTersedia,
             onFilterChange = onFilterChange,
             onDismiss = { tampilkanLembar = false }
         )
@@ -649,6 +670,7 @@ private fun FilterBox(
 @Composable
 private fun FilterSheet(
     filter: FilterBeranda,
+    posTersedia: List<String>,
     onFilterChange: (FilterBeranda) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -738,6 +760,26 @@ private fun FilterSheet(
                         label = { Text(kategoriLabel(kategori)) },
                         colors = chipHijau()
                     )
+                }
+            }
+
+            if (posTersedia.isNotEmpty()) {
+                FilterGroup(title = stringResource(R.string.filter_group_pos)) {
+                    FilterChip(
+                        selected = draf.pos == null,
+                        onClick = { draf = draf.copy(pos = null) },
+                        label = { Text(stringResource(R.string.filter_semua)) }
+                    )
+                    posTersedia.forEach { pos ->
+                        FilterChip(
+                            selected = draf.pos == pos,
+                            onClick = {
+                                draf = draf.copy(pos = if (draf.pos == pos) null else pos)
+                            },
+                            label = { Text(pos) },
+                            colors = chipOranye()
+                        )
+                    }
                 }
             }
 
